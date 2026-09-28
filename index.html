@@ -322,20 +322,12 @@ textarea.forminput{height:80px;resize:vertical}
     <button type="button" class="appeal-type" data-type="سكن" onclick="setAppealType('سكن')">🏘️ سكن</button>
     <button type="button" class="appeal-type" data-type="أخرى" onclick="setAppealType('أخرى')">📋 أخرى</button>
   </div>
-
-  <label class="fl">عنوان مختصر للحالة</label>
-  <input id="a-title" class="forminput" placeholder="مثلاً: علاج عملية قلب">
-
   <div id="financialFields">
     <label class="fl">المبلغ المطلوب</label>
     <input id="a-amount" class="forminput" type="number" min="0" placeholder="بالدينار العراقي">
   </div>
 
   <div id="typeSpecificFields"></div>
-
-  <label class="fl">تفاصيل الحالة</label>
-  <textarea id="a-details" class="forminput" placeholder="اكتب تفاصيل الحاجة أو الحالة"></textarea>
-
   <div class="choice-row">
     <div>
       <label class="fl">الأولوية</label>
@@ -546,9 +538,7 @@ function resetAppealForm(){
   setAppealOwnerType('registered');
   populateAppealFamilies();
   setAppealType('مالية');
-  document.getElementById('a-title').value='';
   document.getElementById('a-amount').value='';
-  document.getElementById('a-details').value='';
   document.getElementById('a-priority').value='عادية';
   document.getElementById('a-status').value='مفتوحة';
   document.getElementById('a-date').value=new Date().toISOString().slice(0,10);
@@ -578,13 +568,9 @@ function renderAppealAttachments(){
 }
 function removeAppealAttachment(i){appealAttachments.splice(i,1);renderAppealAttachments();}
 function saveAppeal(){
-  const title=document.getElementById('a-title').value.trim();
-  const details=document.getElementById('a-details').value.trim();
   const date=document.getElementById('a-date').value||new Date().toISOString().slice(0,10);
   if(appealOwnerType==='registered'&&!document.getElementById('a-family').value){alert('اختر العائلة أولاً');return}
   if(appealOwnerType==='new'&&!document.getElementById('a-name').value.trim()){alert('أدخل اسم صاحب الحالة');return}
-  if(!title){alert('أدخل عنواناً مختصراً للحالة');return}
-  if(!details){alert('أدخل تفاصيل الحالة');return}
   if(appealType==='مالية'&&!document.getElementById('a-amount').value){alert('أدخل المبلغ المطلوب');return}
 
   let familyCode=null, ownerName='', ownerPhone='', ownerAddress='', newFamilyAdded=false;
@@ -621,10 +607,10 @@ function saveAppeal(){
     ownerType:appealOwnerType,
     ownerName,ownerPhone,ownerAddress,
     ownerLandmark:appealOwnerType==='new'?document.getElementById('a-landmark').value.trim():'',
-    type:appealType,title,
+    type:appealType,
     amount:appealType==='مالية'?Number(document.getElementById('a-amount').value||0):0,
     specific:document.getElementById('a-specific')?.value.trim()||'',
-    details,priority:document.getElementById('a-priority').value,
+    priority:document.getElementById('a-priority').value,
     status:document.getElementById('a-status').value,date,
     notes:document.getElementById('a-notes').value.trim(),
     attachments:appealAttachments,
@@ -651,7 +637,7 @@ function appealCard(a,i){
       <div class="grow">
         <div class="code">مناشدة #${escapeHtml(a.id)} · ${escapeHtml(familyText)}</div>
         <div class="name">${escapeHtml(a.ownerName||'غير محدد')}</div>
-        <div class="sub">${escapeHtml(a.type)} · ${escapeHtml(a.title)}${amount}</div>
+        <div class="sub">${escapeHtml(a.type)}${amount}</div>
         <div class="sub">${escapeHtml(a.date)} · الأولوية: ${escapeHtml(a.priority)}</div>
       </div>
       <span class="appeal-status ${appealStatusClass(a.status)}">${escapeHtml(a.status)}</span>
@@ -662,7 +648,7 @@ function renderAppeals(){
   const q=(document.getElementById('appealQ')?.value||'').trim().toLowerCase();
   const filtered=appeals.filter(a=>
     (appealFilter==='الكل'||a.status===appealFilter) &&
-    [a.id,a.ownerName,a.ownerPhone,a.familyCode,a.type,a.title,a.details,a.priority,a.status].join(' ').toLowerCase().includes(q)
+    [a.id,a.ownerName,a.ownerPhone,a.familyCode,a.type,a.priority,a.status].join(' ').toLowerCase().includes(q)
   ).sort(appealSortNewest);
   const latest=filtered.slice(0,5);
   document.getElementById('appealCount').textContent=filtered.length+' مناشدة';
@@ -676,7 +662,7 @@ function showAllAppeals(){
   const q=(document.getElementById('appealQ')?.value||'').trim().toLowerCase();
   const filtered=appeals.filter(a=>
     (appealFilter==='الكل'||a.status===appealFilter) &&
-    [a.id,a.ownerName,a.ownerPhone,a.familyCode,a.type,a.title,a.details,a.priority,a.status].join(' ').toLowerCase().includes(q)
+    [a.id,a.ownerName,a.ownerPhone,a.familyCode,a.type,a.priority,a.status].join(' ').toLowerCase().includes(q)
   ).sort(appealSortNewest);
   const box=document.getElementById('appealList');
   box.innerHTML=filtered.map(a=>appealCard(a,appeals.indexOf(a))).join('')||'<div class="empty">لا توجد مناشدات مطابقة</div>';
@@ -691,7 +677,7 @@ function openAppeal(i){
   <div class="card">
     <div class="appeal-detail-head">
       <div class="avatar">${a.type==='مالية'?'💰':a.type==='طبية'?'🏥':a.type==='مواد غذائية'?'🛒':a.type==='أجهزة / أثاث'?'🏠':a.type==='سكن'?'🏘️':'📋'}</div>
-      <div class="grow"><div class="code">مناشدة #${escapeHtml(a.id)}</div><div class="name">${escapeHtml(a.ownerName)}</div><div class="sub">${escapeHtml(a.type)} · ${escapeHtml(a.title)}</div></div>
+      <div class="grow"><div class="code">مناشدة #${escapeHtml(a.id)}</div><div class="name">${escapeHtml(a.ownerName)}</div><div class="sub">${escapeHtml(a.type)}</div></div>
       <span class="appeal-status ${appealStatusClass(a.status)}">${escapeHtml(a.status)}</span>
     </div>
   </div>
@@ -706,7 +692,6 @@ function openAppeal(i){
     <div class="info"><small>آخر تحديث</small><b>${new Date(a.updatedAt||a.createdAt||Date.now()).toLocaleDateString('ar-IQ')}</b></div>
   </div>
   <div class="card" style="margin-top:9px"><div class="detail-label">العنوان</div><div class="detail-value">${escapeHtml(a.ownerAddress||family?.address||'غير مسجل')}</div></div>
-  <div class="card"><div class="detail-label">تفاصيل الحالة</div><div class="detail-value">${escapeHtml(a.details||'—')}</div></div>
   <div class="card"><div class="detail-label">الملاحظات</div><div class="detail-value">${escapeHtml(a.notes||'—')}</div></div>
   <div class="card"><div style="font-size:12px;font-weight:900;margin-bottom:8px">📎 المرفقات</div>${(a.attachments||[]).map((f,j)=>`<div class="attachment"><div>📎</div><div class="grow"><div class="fname">${escapeHtml(f.name)}</div><div class="fmeta">${Math.ceil((f.size||0)/1024)} KB</div></div><button class="action" style="flex:0 0 auto" onclick="openAppealAttachment(${i},${j})">فتح</button></div>`).join('')||'<div class="empty" style="padding:12px">لا توجد مرفقات</div>'}</div>`;
   showScreen('appeal-detail');
@@ -724,9 +709,7 @@ function editAppeal(){
   setAppealOwnerType(a.ownerType|| (a.familyCode?'registered':'new'));
   populateAppealFamilies(a.familyCode);
   setAppealType(a.type||'مالية');
-  document.getElementById('a-title').value=a.title||'';
   document.getElementById('a-amount').value=a.amount||'';
-  document.getElementById('a-details').value=a.details||'';
   document.getElementById('a-priority').value=a.priority||'عادية';
   document.getElementById('a-status').value=a.status||'مفتوحة';
   document.getElementById('a-date').value=a.date||'';
