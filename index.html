@@ -32,6 +32,7 @@ main{padding:12px 12px 65px}.screen{display:none}.screen.active{display:block}
 .detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.info{background:#fff;border-radius:14px;padding:12px}.info small{display:block;color:#788a85;font-size:10px}.info b{display:block;margin-top:5px;font-size:13px}
 .tabs{display:flex;gap:7px;overflow:auto;margin:14px 0}.tab{border:0;background:#fff;border-radius:20px;padding:9px 13px;white-space:nowrap;font-size:10px;color:#42645d}.tab.active{background:#0f5c4d;color:#fff}
 .member-card{display:flex;align-items:center;gap:10px}.member-card .avatar{width:42px;height:42px}.member-actions{display:flex;gap:6px;margin-top:8px}.member-actions button{flex:1}
+.donation-tabs{display:flex;gap:7px;margin-bottom:12px}.donation-tab{flex:1;border:0;background:#fff;border-radius:13px;padding:11px;color:#41635b;font:inherit;font-size:11px;font-weight:bold}.donation-tab.active{background:#0f5c4d;color:#fff}
 .donor-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.donor-stat{background:#f4f7f6;border-radius:10px;padding:9px;font-size:10px}.donor-stat b{display:block;font-size:15px;margin-top:3px}
 .donor-alloc{margin-top:10px;border-top:1px solid #e2ebe8;padding-top:9px}.donor-alloc-title{font-size:10px;font-weight:900;margin-bottom:6px;color:#35574f}
 .donor-alloc-row{display:flex;justify-content:space-between;align-items:center;background:#f5f8f7;border-radius:8px;padding:7px 9px;margin-top:5px;font-size:10px}
@@ -84,27 +85,41 @@ main{padding:12px 12px 65px}.screen{display:none}.screen.active{display:block}
 
 
 <section id="donations" class="screen">
-<div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">التبرعات</div><div class="count" id="donationCount"></div></div>
-<div class="actions">
-<button class="action primary" onclick="showScreen('add-donor')">＋ متبرع جديد</button><button class="action" onclick="showScreen('donors')">👤 المتبرعون</button>
-<button class="action" onclick="showScreen('add-donation')">＋ تسجيل تبرع</button>
-</div>
-<div class="search"><span>🔎</span><input id="donationQ" placeholder="ابحث باسم المتبرع أو رقم التبرع" oninput="renderDonations()"></div>
-<div class="stats">
-<div class="stat">👤 <b id="donorTotal">0</b><span>المتبرعون</span></div>
-<div class="stat">💰 <b id="cashTotal">0</b><span>التبرعات المالية</span></div>
-<div class="stat">📦 <b id="inKindTotal">0</b><span>التبرعات العينية</span></div>
-<div class="stat">🧾 <b id="donationTotal">0</b><span>إجمالي التبرعات</span></div>
-</div>
-<div class="section"><b>آخر التبرعات</b></div>
-<div id="donationList"></div>
-</section>
+<div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">التبرعات</div></div>
 
-<section id="donors" class="screen">
-<div class="top"><button class="back" onclick="showScreen('donations')">← رجوع</button><div class="screen-title">المتبرعون</div></div>
-<div class="actions"><button class="action primary" onclick="showScreen('add-donor')">＋ إضافة متبرع</button></div>
+<div class="donation-tabs">
+<button id="tabDonors" class="donation-tab active" onclick="switchDonationTab('donors')">👤 المتبرعون</button>
+<button id="tabRecords" class="donation-tab" onclick="switchDonationTab('records')">📋 سجل التبرعات</button>
+</div>
+
+<div id="donorsTab">
+<div class="actions">
+<button class="action primary" onclick="showScreen('add-donor')">＋ إضافة متبرع</button>
+</div>
 <div class="search"><span>🔎</span><input id="donorQ" placeholder="ابحث باسم المتبرع أو الهاتف" oninput="renderDonors()"></div>
 <div id="donorList"></div>
+</div>
+
+<div id="recordsTab" style="display:none">
+<div class="actions">
+<button class="action primary" onclick="showScreen('add-donation')">＋ تسجيل تبرع</button>
+</div>
+<div class="search"><span>🔎</span><input id="donationQ" placeholder="ابحث بالمتبرع أو رقم التبرع أو التخصيص" oninput="renderDonations()"></div>
+<div class="filterbar">
+<button class="chip" onclick="filterDonationType('الكل')">الكل</button>
+<button class="chip" onclick="filterDonationType('مالي')">مالي</button>
+<button class="chip" onclick="filterDonationType('جهاز')">أجهزة</button>
+<button class="chip" onclick="filterDonationType('مواد')">مواد</button>
+</div>
+<div class="stats">
+<div class="stat">👤 <b id="donorTotal">0</b><span>المتبرعون</span></div>
+<div class="stat">💰 <b id="cashTotal">0</b><span>إجمالي المالي</span></div>
+<div class="stat">📦 <b id="inKindTotal">0</b><span>العيني</span></div>
+<div class="stat">🧾 <b id="donationTotal">0</b><span>عدد التبرعات</span></div>
+</div>
+<div class="section"><b>كشف التبرعات</b><span class="count" id="donationCount"></span></div>
+<div id="donationList"></div>
+</div>
 </section>
 
 <section id="add-donor" class="screen">
@@ -309,7 +324,7 @@ let families=(()=>{
 let selectedFamilyCode=null;
 let editingMemberIndex=null;
 function getFamily(){return families.find(x=>Number(x.c)===Number(selectedFamilyCode));}
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);if(id==='families')renderFamilies();if(id==='family-detail')renderFamilyDetail();if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations')renderDonations();if(id==='donors')renderDonors();if(id==='add-donor')resetDonorForm();if(id==='add-donation')resetDonationForm()}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);if(id==='families')renderFamilies();if(id==='family-detail')renderFamilyDetail();if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation')resetDonationForm()}
 function renderFamilies(){const q=(document.getElementById('q')?.value||'').trim().toLowerCase();const a=families.filter(x=>[x.c,x.n,x.i,x.j,x.h,x.r,x.st].join(' ').toLowerCase().includes(q));document.getElementById('count').textContent=a.length+' عائلة';document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button class="more" onclick="event.stopPropagation();coming('خيارات العائلة')">⋮</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للبحث</div>'}
 function openFamily(code){selectedFamilyCode=Number(code);showScreen('family-detail');}
 function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
@@ -372,8 +387,13 @@ function saveDonor(){const name=document.getElementById('d-name').value.trim(),p
 function resetDonorForm(){editingDonorIndex=null;['d-name','d-phone','d-address','d-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.getElementById('donorFormTitle').textContent='إضافة متبرع';}
 function editDonor(i){const d=donors[i];if(!d)return;editingDonorIndex=i;document.getElementById('d-name').value=d.name||'';document.getElementById('d-phone').value=d.phone||'';document.getElementById('d-address').value=d.address||'';document.getElementById('d-notes').value=d.notes||'';document.getElementById('donorFormTitle').textContent='تعديل المتبرع';showScreen('add-donor');}
 function deleteDonor(i){if(!confirm('حذف هذا المتبرع؟'))return;const id=donors[i]?.id;donors.splice(i,1);localStorage.setItem('warith_donors',JSON.stringify(donors));renderDonors();}
+let donationTypeFilter='الكل';
+function switchDonationTab(tab){const donorsTab=document.getElementById('donorsTab'),recordsTab=document.getElementById('recordsTab'),td=document.getElementById('tabDonors'),tr=document.getElementById('tabRecords');if(tab==='records'){donorsTab.style.display='none';recordsTab.style.display='block';td.classList.remove('active');tr.classList.add('active');renderDonations();}else{recordsTab.style.display='none';donorsTab.style.display='block';tr.classList.remove('active');td.classList.add('active');renderDonors();}}
+function filterDonationType(type){donationTypeFilter=type;renderDonations();}
+
 function donorAllocationTotals(donorId){const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];const totals={};cats.forEach(c=>totals[c]=0);donations.filter(d=>Number(d.donorId)===Number(donorId)&&d.type==='مالي').forEach(d=>{const c=cats.includes(d.allocation)?d.allocation:'أخرى';totals[c]+=Number(d.amount)||0});return totals;}
-function renderDonors(){const q=(document.getElementById('donorQ')?.value||'').trim().toLowerCase();const a=donors.filter(d=>(d.name+' '+d.phone).toLowerCase().includes(q));const box=document.getElementById('donorList');if(!box)return;box.innerHTML=a.map((d)=>{const i=donors.indexOf(d),t=donorAllocationTotals(d.id);return `<div class="card"><div class="row"><div class="avatar">${(d.name||'م').charAt(0)}</div><div class="grow"><div class="name">${d.name}</div><div class="sub">${d.phone||'لا يوجد هاتف'} · ${d.address||'لا يوجد عنوان'}</div></div></div><div class="donor-alloc"><div class="donor-alloc-title">💰 مجموع التبرعات حسب التخصيص</div><div class="donor-alloc-row"><span>خاص</span><b>${t['خاص'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>عام</span><b>${t['عام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>صناديق</span><b>${t['صناديق'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>خمس السادة خمس</span><b>${t['خمس السادة خمس'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>سهم الإمام</span><b>${t['سهم الإمام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>أخرى</span><b>${t['أخرى'].toLocaleString('en-US')} د.ع</b></div></div><div class="member-actions"><button class="action primary" onclick="editDonor(${i})">✏️ تعديل</button><button class="action" onclick="deleteDonor(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا يوجد متبرعون بعد</div>';}
+function donorAllocationTotals(donorId){const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];const totals={};cats.forEach(c=>totals[c]=0);donations.filter(d=>Number(d.donorId)===Number(donorId)&&d.type==='مالي').forEach(d=>{const c=cats.includes(d.allocation)?d.allocation:'أخرى';totals[c]+=Number(d.amount)||0});return totals;}
+function renderDonors(){const q=(document.getElementById('donorQ')?.value||'').trim().toLowerCase();const a=donors.filter(d=>(d.name+' '+d.phone+' '+d.address).toLowerCase().includes(q));const box=document.getElementById('donorList');if(!box)return;box.innerHTML=a.map(d=>{const i=donors.indexOf(d),t=donorAllocationTotals(d.id);return `<div class="card"><div class="row"><div class="avatar">${(d.name||'م').charAt(0)}</div><div class="grow"><div class="name">${d.name}</div><div class="sub">الهاتف: ${d.phone||'غير مسجل'}</div><div class="sub">العنوان: ${d.address||'غير مسجل'}</div></div></div><div class="donor-alloc"><div class="donor-alloc-title">💰 مجموع التبرعات حسب التخصيص</div><div class="donor-alloc-row"><span>خاص</span><b>${t['خاص'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>عام</span><b>${t['عام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>صناديق</span><b>${t['صناديق'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>خمس السادة خمس</span><b>${t['خمس السادة خمس'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>سهم الإمام</span><b>${t['سهم الإمام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>أخرى</span><b>${t['أخرى'].toLocaleString('en-US')} د.ع</b></div></div><div class="member-actions"><button class="action primary" onclick="editDonor(${i})">✏️ تعديل</button><button class="action" onclick="deleteDonor(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا يوجد متبرعون بعد</div>';}
 function populateDonors(){const sel=document.getElementById('dn-donor');if(!sel)return;sel.innerHTML='<option value="">اختر المتبرع</option>'+donors.map(d=>`<option value="${d.id}">${d.name}${d.phone?' · '+d.phone:''}</option>`).join('');}
 function setDonationType(type){document.getElementById('dn-type').value=type;['cashTypeBtn','deviceTypeBtn','materialTypeBtn'].forEach(id=>document.getElementById(id).classList.remove('active'));const map={'مالي':'cashTypeBtn','جهاز':'deviceTypeBtn','مواد':'materialTypeBtn'};document.getElementById(map[type]).classList.add('active');document.getElementById('cashDonationFields').style.display=type==='مالي'?'block':'none';document.getElementById('inKindDonationFields').style.display=type==='مالي'?'none':'block';document.getElementById('deviceStatusWrap').style.display=type==='جهاز'?'block':'none';}
 function resetDonationForm(){editingDonationIndex=null;document.getElementById('donationFormTitle').textContent='تسجيل تبرع';document.querySelector('#add-donation button.action.primary').textContent='حفظ التبرع';document.getElementById('dn-type').value='مالي';setDonationType('مالي');populateDonors();document.getElementById('dn-date').value=new Date().toISOString().slice(0,10);['dn-amount','dn-item','dn-notes','dn-receipt'].forEach(id=>document.getElementById(id).value='');document.getElementById('dn-qty').value='1';document.getElementById('dn-paid').value='تم التسديد';document.getElementById('dn-payment').value='';document.getElementById('dn-allocation').value='خاص';document.getElementById('dn-status').value='شغال';}
@@ -382,7 +402,7 @@ function saveDonation(){const donorId=document.getElementById('dn-donor').value,
 
 function editDonation(i){const d=donations[i];if(!d)return;editingDonationIndex=i;populateDonors();document.getElementById('dn-donor').value=d.donorId||'';setDonationType(d.type||'مالي');document.getElementById('dn-amount').value=d.amount||'';document.getElementById('dn-paid').value=d.paid||'تم التسديد';document.getElementById('dn-payment').value=d.payment||'';document.getElementById('dn-allocation').value=d.allocation||'خاص';document.getElementById('dn-item').value=d.item||'';document.getElementById('dn-qty').value=d.qty||1;document.getElementById('dn-status').value=d.status||'شغال';document.getElementById('dn-receipt').value=d.receipt||'';document.getElementById('dn-date').value=d.date||'';document.getElementById('dn-notes').value=d.notes||'';document.getElementById('donationFormTitle').textContent='تعديل التبرع';document.querySelector('#add-donation button.action.primary').textContent='حفظ التعديل';showScreen('add-donation');}
 function deleteDonation(i){if(!donations[i])return;if(!confirm('حذف هذا التبرع؟'))return;donations.splice(i,1);localStorage.setItem('warith_donations',JSON.stringify(donations));renderDonations();}
-function renderDonations(){const q=(document.getElementById('donationQ')?.value||'').trim().toLowerCase();const a=donations.filter(d=>(String(d.id)+' '+d.donorName+' '+d.item+' '+d.type+' '+(d.receipt||'')).toLowerCase().includes(q));document.getElementById('donationCount').textContent=a.length+' تبرع';const cash=donations.filter(d=>d.type==='مالي').reduce((n,d)=>n+(d.amount||0),0),ink=donations.filter(d=>d.type!=='مالي').reduce((n,d)=>n+(d.qty||0),0);document.getElementById('donorTotal').textContent=donors.length;document.getElementById('cashTotal').textContent=cash.toLocaleString('en-US')+' د.ع';document.getElementById('inKindTotal').textContent=ink;document.getElementById('donationTotal').textContent=donations.length;document.getElementById('donationList').innerHTML=a.map(d=>{const i=donations.indexOf(d);return `<div class="card"><div class="row"><div class="avatar">${d.type==='مالي'?'💰':'📦'}</div><div class="grow"><div class="name">${d.donorName}</div><div class="sub">${d.type==='مالي'?`${(d.amount||0).toLocaleString('en-US')} د.ع · ${d.allocation||'أخرى'} · ${d.paid||'غير محدد'} · ${d.payment||'طريقة غير محددة'}`:`${d.item} · الكمية: ${d.qty}${d.status?' · '+d.status:''}`}</div><div class="sub">${d.date} · رقم التبرع #${d.id}${d.receipt?' · الوصل: '+d.receipt:''}</div></div></div><div class="member-actions"><button class="action primary" onclick="editDonation(${i})">✏️ تعديل</button><button class="action" onclick="deleteDonation(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد تبرعات بعد</div>';}
+function renderDonations(){const q=(document.getElementById('donationQ')?.value||'').trim().toLowerCase();const a=donations.filter(d=>(donationTypeFilter==='الكل'||d.type===donationTypeFilter)&&(String(d.id)+' '+d.donorName+' '+d.item+' '+d.type+' '+(d.receipt||'')+' '+(d.allocation||'')).toLowerCase().includes(q));document.getElementById('donationCount').textContent=a.length+' تبرع';const cash=donations.filter(d=>d.type==='مالي').reduce((n,d)=>n+(d.amount||0),0),ink=donations.filter(d=>d.type!=='مالي').reduce((n,d)=>n+(d.qty||0),0);document.getElementById('donorTotal').textContent=donors.length;document.getElementById('cashTotal').textContent=cash.toLocaleString('en-US')+' د.ع';document.getElementById('inKindTotal').textContent=ink;document.getElementById('donationTotal').textContent=donations.length;document.getElementById('donationList').innerHTML=a.map(d=>{const i=donations.indexOf(d);return `<div class="card"><div class="row"><div class="avatar">${d.type==='مالي'?'💰':'📦'}</div><div class="grow"><div class="name">${d.donorName}</div><div class="sub">${d.type==='مالي'?`${(d.amount||0).toLocaleString('en-US')} د.ع · ${d.allocation||'أخرى'} · ${d.paid||'غير محدد'} · ${d.payment||'طريقة غير محددة'}`:`${d.item} · الكمية: ${d.qty}${d.status?' · '+d.status:''}`}</div><div class="sub">${d.date} · رقم التبرع #${d.id}${d.receipt?' · الوصل: '+d.receipt:''}</div></div></div><div class="member-actions"><button class="action primary" onclick="editDonation(${i})">✏️ تعديل</button><button class="action" onclick="deleteDonation(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد تبرعات بعد</div>';}
 
 function saveFamily(){
 const code=Number(document.getElementById('f-code').value);
