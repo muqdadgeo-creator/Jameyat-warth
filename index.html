@@ -31,6 +31,7 @@ main{padding:12px 12px 65px}.screen{display:none}.screen.active{display:block}
 .forminput:focus{border-color:#8db9ad;box-shadow:0 0 0 3px #0f5c4d12}
 .detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.info{background:#fff;border-radius:14px;padding:12px}.info small{display:block;color:#788a85;font-size:10px}.info b{display:block;margin-top:5px;font-size:13px}
 .tabs{display:flex;gap:7px;overflow:auto;margin:14px 0}.tab{border:0;background:#fff;border-radius:20px;padding:9px 13px;white-space:nowrap;font-size:10px;color:#42645d}.tab.active{background:#0f5c4d;color:#fff}
+.member-card{display:flex;align-items:center;gap:10px}.member-card .avatar{width:42px;height:42px}.member-actions{display:flex;gap:6px;margin-top:8px}.member-actions button{flex:1}
 .drawer{position:fixed;inset:0;background:#0006;z-index:20;display:none}.drawer.open{display:block}.menu{width:84%;max-width:360px;height:100%;background:#fff;padding:18px;box-shadow:5px 0 20px #0002}.menu button{width:100%;border:0;background:#fff;text-align:right;padding:13px;border-radius:10px;font:inherit;color:#274a42}.menu button:hover{background:#eef5f2}
 @media(min-width:700px){.app{max-width:900px}.stats{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:repeat(8,1fr)}}
 </style>
@@ -129,10 +130,28 @@ main{padding:12px 12px 65px}.screen{display:none}.screen.active{display:block}
 
 <section id="family-detail" class="screen">
 <div class="top"><button class="back" onclick="showScreen('families')">← رجوع</button><div class="screen-title">سجل العائلة</div></div>
-<div class="card"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #651</div><div class="name">عائلة أحمد عبد</div><div class="sub">رب الأسرة: أحمد عبد · المعرف: أبو حسن</div><div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap"><a class="action primary" style="text-decoration:none;padding:8px 10px" href="tel:07700000000">📞 اتصال</a><a class="action" style="text-decoration:none;padding:8px 10px" href="https://wa.me/9647700000000" target="_blank">💬 واتساب</a><a class="action" style="text-decoration:none;padding:8px 10px" href="sms:07700000000">✉️ SMS</a></div></div><span class="badge">مستمر</span></div></div>
-<div class="detail-grid"><div class="info"><small>عدد الأفراد</small><b>5</b></div><div class="info"><small>الراتب</small><b>350,000 د.ع</b></div><div class="info"><small>هل لديه راتب؟</small><b>نعم</b></div><div class="info"><small>الجهة المانحة</small><b>جهة مانحة</b></div><div class="info"><small>السكن</small><b>إيجار</b></div><div class="info"><small>الحقوق</small><b>ش</b></div><div class="info"><small>الوظيفة</small><b>عامل</b></div><div class="info"><small>الحالة الاجتماعية</small><b>متزوج</b></div></div>
-<div class="tabs"><button class="tab active">البيانات</button><button class="tab">الأفراد</button><button class="tab">المساعدات</button><button class="tab">المناشدات</button><button class="tab">المرفقات</button></div>
-<div class="card"><b>عنوان السكن</b><div class="sub">العنوان غير مسجل في هذه العائلة التجريبية</div><div style="margin-top:8px"><b>أقرب نقطة دالة</b><div class="sub">نقطة الدالة محفوظة في السجل</div></div><a class="action" style="display:inline-block;margin-top:10px;text-decoration:none" href="https://www.google.com/maps" target="_blank">📍 فتح الموقع</a></div>
+<div id="familyDetailContent"></div>
+</section>
+
+<section id="family-members" class="screen">
+<div class="top"><button class="back" onclick="showScreen('family-detail')">← رجوع</button><div class="screen-title">أفراد العائلة</div></div>
+<div class="actions"><button class="action primary" onclick="showScreen('add-member')">＋ إضافة فرد</button></div>
+<div id="memberList"></div>
+</section>
+
+<section id="add-member" class="screen">
+<div class="top"><button class="back" onclick="showScreen('family-members')">← رجوع</button><div class="screen-title">إضافة فرد</div></div>
+<div class="card">
+<div style="font-size:12px;font-weight:900;margin-bottom:7px">👤 بيانات الفرد</div>
+<label class="fl">الاسم</label><input id="m-name" class="forminput" placeholder="اسم الفرد الكامل">
+<label class="fl">صلة القرابة</label><select id="m-relation" class="forminput"><option value="">اختر</option><option>رب الأسرة</option><option>زوجة</option><option>ابن</option><option>ابنة</option><option>أب</option><option>أم</option><option>أخ</option><option>أخت</option><option>حفيد</option><option>أخرى</option></select>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:7px"><div><label class="fl">الجنس</label><select id="m-gender" class="forminput"><option value="">اختر</option><option>ذكر</option><option>أنثى</option></select></div><div><label class="fl">تاريخ الميلاد</label><input id="m-birth" class="forminput" type="date"></div></div>
+<label class="fl">التحصيل الدراسي</label><select id="m-study" class="forminput"><option value="">اختر</option><option>أمي</option><option>ابتدائي</option><option>متوسط</option><option>إعدادي</option><option>دبلوم</option><option>بكالوريوس</option><option>دراسات عليا</option><option>طالب</option><option>أخرى</option></select></div></div>
+<label class="fl">المهنة</label><input id="m-job" class="forminput" placeholder="المهنة أو العمل">
+<label class="fl">الدخل</label><input id="m-income" class="forminput" type="number" placeholder="بالدينار إن وجد">
+<label class="fl">ملاحظات</label><textarea id="m-notes" class="forminput" style="height:70px;resize:vertical" placeholder="ملاحظات عن الفرد"></textarea>
+</div>
+<button class="action primary" style="width:100%;margin-top:2px" onclick="saveMember()">حفظ الفرد</button>
 </section>
 
 </main>
@@ -153,14 +172,29 @@ main{padding:12px 12px 65px}.screen{display:none}.screen.active{display:block}
 </div></div>
 
 <script>
-let families=JSON.parse(localStorage.getItem('warith_families')||'null')||[
+let families=(()=>{
+  try{
+    const raw=localStorage.getItem('warith_families_v2')||localStorage.getItem('warith_families');
+    return raw?JSON.parse(raw):null;
+  }catch(e){ return null; }
+})()||[
 {c:651,n:'عائلة أحمد عبد',head:'أحمد عبد',phone:'07700000000',hasSalary:'نعم',salarySource:'جهة مانحة',i:'أبو حسن',m:5,j:'عامل',s:'350,000 د.ع',h:'إيجار',r:'ش',st:'مستمر'},
 {c:652,n:'عائلة علي كاظم',head:'علي كاظم',phone:'07710000000',hasSalary:'نعم',salarySource:'جهة مانحة',i:'أبو علي',m:4,j:'موظف',s:'500,000 د.ع',h:'ملك',r:'س',st:'مستمر'},
 {c:653,n:'عائلة محمد جاسم',head:'محمد جاسم',phone:'07720000000',hasSalary:'لا',salarySource:'',i:'أبو محمد',m:7,j:'كاسب',s:'250,000 د.ع',h:'مع الأهل',r:'هـ',st:'مفتوح'},
 {c:654,n:'عائلة حسين عباس',head:'حسين عباس',phone:'07730000000',hasSalary:'نعم',salarySource:'جهة مانحة',i:'أبو زهراء',m:3,j:'عامل',s:'300,000 د.ع',h:'إيجار',r:'ع',st:'مستمر'}
 ];
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);if(id==='families')renderFamilies()}
-function renderFamilies(){const q=(document.getElementById('q')?.value||'').trim().toLowerCase();const a=families.filter(x=>[x.c,x.n,x.i,x.j,x.h,x.r,x.st].join(' ').toLowerCase().includes(q));document.getElementById('count').textContent=a.length+' عائلة';document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="showScreen('family-detail')"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button class="more" onclick="event.stopPropagation();coming('خيارات العائلة')">⋮</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 الموقع محفوظ</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للبحث</div>'}
+let selectedFamilyCode=null;
+function getFamily(){return families.find(x=>Number(x.c)===Number(selectedFamilyCode));}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);if(id==='families')renderFamilies();if(id==='family-detail')renderFamilyDetail();if(id==='family-members')renderMembers();if(id==='add-member')resetMemberForm()}
+function renderFamilies(){const q=(document.getElementById('q')?.value||'').trim().toLowerCase();const a=families.filter(x=>[x.c,x.n,x.i,x.j,x.h,x.r,x.st].join(' ').toLowerCase().includes(q));document.getElementById('count').textContent=a.length+' عائلة';document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button class="more" onclick="event.stopPropagation();coming('خيارات العائلة')">⋮</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للبحث</div>'}
+function openFamily(code){selectedFamilyCode=Number(code);showScreen('family-detail');}
+function renderFamilyDetail(){const x=getFamily();if(!x){showScreen('families');return}const members=x.membersList||[];document.getElementById('familyDetailContent').innerHTML=`<div class="card"><div class="row"><div class="avatar">${(x.head||'ع').charAt(0)}</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div><div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap"><a class="action primary" style="text-decoration:none;padding:8px 10px" href="tel:${x.phone||''}">📞 اتصال</a><a class="action" style="text-decoration:none;padding:8px 10px" href="https://wa.me/${(x.phone||'').replace(/^0/,'964').replace(/\D/g,'')}" target="_blank">💬 واتساب</a><a class="action" style="text-decoration:none;padding:8px 10px" href="sms:${x.phone||''}">✉️ SMS</a></div></div><span class="badge">${x.st}</span></div></div><div class="detail-grid"><div class="info"><small>عدد الأفراد</small><b>${members.length||x.m}</b></div><div class="info"><small>الراتب</small><b>${x.s||'0 د.ع'}</b></div><div class="info"><small>هل لديه راتب؟</small><b>${x.hasSalary||'غير محدد'}</b></div><div class="info"><small>الجهة المانحة</small><b>${x.salarySource||'لا توجد'}</b></div><div class="info"><small>السكن</small><b>${x.h||'غير محدد'}</b></div><div class="info"><small>الحقوق</small><b>${x.r||'غير محدد'}</b></div><div class="info"><small>المهنة</small><b>${x.j||'غير محدد'}</b></div><div class="info"><small>الحالة الاجتماعية</small><b>${x.social||'غير محدد'}</b></div></div><div class="tabs"><button class="tab active">البيانات</button><button class="tab" onclick="showScreen('family-members')">الأفراد (${members.length})</button><button class="tab" onclick="coming('المساعدات')">المساعدات</button><button class="tab" onclick="coming('المناشدات')">المناشدات</button><button class="tab" onclick="coming('المرفقات')">المرفقات</button></div><div class="card"><b>عنوان السكن</b><div class="sub">${x.address||'العنوان غير مسجل'}</div><div style="margin-top:8px"><b>أقرب نقطة دالة</b><div class="sub">${x.landmark||'غير مسجلة'}</div></div>${x.map?`<a class="action" style="display:inline-block;margin-top:10px;text-decoration:none" href="${x.map}" target="_blank">📍 فتح الموقع</a>`:''}</div>`}
+function renderMembers(){const x=getFamily();if(!x)return;const list=x.membersList||[];document.getElementById('memberList').innerHTML=list.map((m,i)=>`<div class="card member-card"><div class="avatar">${(m.name||'ف').charAt(0)}</div><div class="grow"><div class="name">${m.name}</div><div class="sub">${m.relation||'—'} · ${m.gender||'—'} · ${m.birth?calcAge(m.birth)+' سنة':'العمر غير محدد'}</div><div class="sub">${m.study||'لا توجد دراسة'} · ${m.job||'لا توجد مهنة'}</div></div><button class="more" onclick="deleteMember(${i})">🗑</button></div>`).join('')||'<div class="empty">لم تتم إضافة أفراد بعد</div>';}
+function calcAge(b){if(!b)return '';const d=new Date(b+'T00:00:00');const t=new Date();let a=t.getFullYear()-d.getFullYear();if(t.getMonth()<d.getMonth()||(t.getMonth()===d.getMonth()&&t.getDate()<d.getDate()))a--;return a;}
+function resetMemberForm(){['m-name','m-birth','m-job','m-income','m-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});['m-relation','m-gender','m-study'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});}
+function saveMember(){const x=getFamily();if(!x)return;const name=document.getElementById('m-name').value.trim();const relation=document.getElementById('m-relation').value;const gender=document.getElementById('m-gender').value;const birth=document.getElementById('m-birth').value;const study=document.getElementById('m-study').value;const job=document.getElementById('m-job').value.trim();const income=document.getElementById('m-income').value.trim();const notes=document.getElementById('m-notes').value.trim();if(!name||!relation){alert('يرجى إدخال اسم الفرد وصلة القرابة');return}if(!x.membersList)x.membersList=[];x.membersList.push({name,relation,gender,birth,study,job,income,notes});x.m=x.membersList.length;try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);const check=JSON.parse(localStorage.getItem('warith_families_v2')||'[]');const saved=check.find(f=>Number(f.c)===Number(x.c));if(!saved||!Array.isArray(saved.membersList)||saved.membersList.length!==x.membersList.length)throw new Error('verify');}catch(e){x.membersList.pop();x.m=x.membersList.length;alert('تعذر حفظ الفرد على هذا المتصفح.');return}alert('تم حفظ الفرد بنجاح ✓');showScreen('family-members');}
+function deleteMember(i){const x=getFamily();if(!x||!x.membersList?.[i])return;if(!confirm('حذف هذا الفرد؟'))return;x.membersList.splice(i,1);x.m=x.membersList.length;localStorage.setItem('warith_families_v2',JSON.stringify(families));localStorage.setItem('warith_families',JSON.stringify(families));renderMembers();}
+
 
 function toggleSalarySource(){
 const yes=document.getElementById('f-has-salary').value==='نعم';
@@ -214,7 +248,18 @@ if(hasSalary==='نعم'&&!salarySource){alert('يرجى إدخال الجهة ا
 if(families.some(x=>Number(x.c)===code)){alert('رقم العائلة مستخدم مسبقاً');return}
 const item={c:code,n:'عائلة '+head,head:head,phone:phone,social:social,hasSalary:hasSalary,salarySource:salarySource,address:address,landmark:document.getElementById('f-landmark').value.trim(),map:document.getElementById('f-map').value.trim(),i:identifier,m:members,j:job||'غير محدد',s:(salary||'0')+' د.ع',h:housing||'غير محدد',r:rights||'غير محدد',st:status};
 families.unshift(item);
-try{localStorage.setItem('warith_families',JSON.stringify(families));if(JSON.parse(localStorage.getItem('warith_families')||'[]')[0].c!==code){throw new Error('save verify failed')}}catch(e){alert('تعذر حفظ العائلة على هذا المتصفح.');families.shift();return}
+try{
+  const data=JSON.stringify(families);
+  localStorage.setItem('warith_families_v2',data);
+  localStorage.setItem('warith_families',data);
+  const check=JSON.parse(localStorage.getItem('warith_families_v2')||'[]');
+  if(!check.length || Number(check[0].c)!==code) throw new Error('save verify failed');
+}catch(e){
+  families.shift();
+  alert('تم إدخال البيانات لكن تعذر تخزينها على هذا المتصفح. تأكد من السماح بالتخزين للموقع ثم أعد المحاولة.');
+  return;
+}
+renderFamilies();
 alert('تم حفظ العائلة بنجاح ✓');
 ['f-head','f-phone','f-code','f-members','f-id','f-job','f-salary','f-salary-source','f-landmark','f-address','f-map'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
 document.getElementById('f-social').value='';
