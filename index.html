@@ -129,8 +129,50 @@ main{padding:12px 12px 65px}.screen{display:none}.screen.active{display:block}
 </section>
 
 <section id="family-detail" class="screen">
-<div class="top"><button class="back" onclick="showScreen('families')">← رجوع</button><div class="screen-title">سجل العائلة</div></div>
+<div class="top"><button class="back" onclick="showScreen('families')">← رجوع</button><div class="screen-title">سجل العائلة</div><button class="back" onclick="editFamily()">✏️ تعديل</button></div>
 <div id="familyDetailContent"></div>
+</section>
+
+
+<section id="edit-family" class="screen">
+<div class="top"><button class="back" onclick="showScreen('family-detail')">← رجوع</button><div class="screen-title">تعديل العائلة</div></div>
+<div class="card">
+<div style="font-size:12px;font-weight:900;margin-bottom:7px">👤 بيانات رب الأسرة</div>
+<label class="fl">اسم رب الأسرة</label><input id="e-head" class="forminput">
+<label class="fl">رقم الهاتف</label><input id="e-phone" class="forminput" type="tel" inputmode="tel">
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:10px">
+<div><label class="fl">رقم العائلة</label><input id="e-code" class="forminput" type="number" readonly></div>
+<div><label class="fl">عدد الأفراد</label><input id="e-members" class="forminput" type="number" min="1"></div>
+</div>
+<label class="fl">الحالة الاجتماعية لرئيس العائلة</label><select id="e-social" class="forminput"><option value="">اختر الحالة</option><option>حي</option><option>متوفى</option><option>شهيد</option><option>مطلق</option><option>أخرى</option></select>
+<label class="fl">المهنة</label><input id="e-job" class="forminput">
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:6px">
+<div><label class="fl">هل لديه راتب؟</label><select id="e-has-salary" class="forminput" onchange="toggleEditSalarySource()"><option value="">اختر</option><option value="نعم">نعم</option><option value="لا">لا</option></select></div>
+<div><label class="fl">الجهة المانحة</label><input id="e-salary-source" class="forminput"></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:7px">
+<div><label class="fl">مقدار الراتب</label><input id="e-salary" class="forminput" type="number"></div>
+<div><label class="fl">الموقف من الحقوق</label><select id="e-rights" class="forminput"><option value="">اختر</option><option>ملتزم</option><option>هاشمي</option><option>علوية</option><option>سني</option><option>غير</option></select></div>
+</div>
+<label class="fl">المعرف</label><input id="e-id" class="forminput">
+</div>
+
+<div class="card">
+<div style="font-size:12px;font-weight:900;margin-bottom:7px">🏠 السكن والموقع</div>
+<label class="fl">نوع السكن</label><select id="e-housing" class="forminput"><option value="">اختر نوع السكن</option><option>ملك</option><option>إيجار</option><option>مع الأهل</option><option>وقف</option><option>تجاوز</option></select>
+<label class="fl">عنوان السكن</label><input id="e-address" class="forminput">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+<div><label class="fl">أقرب نقطة</label><input id="e-landmark" class="forminput"></div>
+<div><label class="fl">الموقع</label><div style="display:flex;gap:7px"><input id="e-map" class="forminput" type="url" readonly style="flex:1"><button type="button" class="action primary" style="flex:0 0 auto;padding:0 12px" onclick="pickEditLocation()">📍 تحديث</button></div><div id="edit-location-status" class="sub" style="margin-top:5px"></div></div>
+</div>
+</div>
+
+<div class="card">
+<div style="font-size:12px;font-weight:900;margin-bottom:7px">📋 الحالة</div>
+<label class="fl">حالة العائلة</label><select id="e-status" class="forminput"><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select>
+</div>
+
+<button class="action primary" style="width:100%;margin-top:2px" onclick="saveFamilyEdit()">حفظ التعديلات</button>
 </section>
 
 <section id="family-members" class="screen">
@@ -271,6 +313,91 @@ document.getElementById('f-status').value='مستمر';
 document.getElementById('location-status').textContent='اضغط «إضافة موقع» لاستخدام موقع الهاتف الحالي.';
 showScreen('families');
 }
+
+function editFamily(){
+  const x=getFamily();
+  if(!x)return;
+  document.getElementById('e-head').value=x.head||'';
+  document.getElementById('e-phone').value=x.phone||'';
+  document.getElementById('e-code').value=x.c||'';
+  document.getElementById('e-members').value=x.m||'';
+  document.getElementById('e-social').value=x.social||'';
+  document.getElementById('e-job').value=x.j||'';
+  document.getElementById('e-has-salary').value=x.hasSalary||'';
+  document.getElementById('e-salary-source').value=x.salarySource||'';
+  document.getElementById('e-salary').value=String(x.s||'').replace(/[^0-9.]/g,'');
+  document.getElementById('e-rights').value=x.r||'';
+  document.getElementById('e-id').value=x.i||'';
+  document.getElementById('e-housing').value=x.h||'';
+  document.getElementById('e-address').value=x.address||'';
+  document.getElementById('e-landmark').value=x.landmark||'';
+  document.getElementById('e-map').value=x.map||'';
+  document.getElementById('e-status').value=x.st||'مستمر';
+  toggleEditSalarySource();
+  document.getElementById('edit-location-status').textContent=x.map?'الموقع محفوظ.':'لم تتم إضافة موقع.';
+  showScreen('edit-family');
+}
+function toggleEditSalarySource(){
+  const yes=document.getElementById('e-has-salary').value==='نعم';
+  const field=document.getElementById('e-salary-source');
+  field.disabled=!yes;
+  if(!yes)field.value='';
+}
+function pickEditLocation(){
+  const status=document.getElementById('edit-location-status');
+  if(!navigator.geolocation){alert('المتصفح لا يدعم تحديد الموقع.');return}
+  status.textContent='جارٍ تحديد موقع الهاتف…';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude.toFixed(6),lon=pos.coords.longitude.toFixed(6);
+    const url=`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+    document.getElementById('e-map').value=url;
+    status.textContent=`تم تحديث الموقع: ${lat}, ${lon}`;
+    window.open(url,'_blank');
+  },err=>{
+    let msg='تعذر تحديد الموقع.';
+    if(err.code===1)msg='تم رفض إذن الموقع. فعّل Location للمتصفح ثم حاول مرة أخرى.';
+    if(err.code===2)msg='تعذر تحديد الموقع حالياً.';
+    if(err.code===3)msg='انتهت مهلة تحديد الموقع. حاول مرة أخرى.';
+    status.textContent=msg; alert(msg);
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+}
+function saveFamilyEdit(){
+  const x=getFamily();
+  if(!x)return;
+  const head=document.getElementById('e-head').value.trim();
+  const phone=document.getElementById('e-phone').value.trim();
+  const members=Number(document.getElementById('e-members').value);
+  const social=document.getElementById('e-social').value;
+  const hasSalary=document.getElementById('e-has-salary').value;
+  const salarySource=document.getElementById('e-salary-source').value.trim();
+  if(!head||!phone||!members||!social||!hasSalary){alert('يرجى إكمال البيانات الأساسية.');return}
+  if(hasSalary==='نعم'&&!salarySource){alert('يرجى إدخال الجهة المانحة للراتب.');return}
+  x.head=head; x.n='عائلة '+head; x.phone=phone; x.m=members; x.social=social;
+  x.j=document.getElementById('e-job').value.trim()||'غير محدد';
+  x.hasSalary=hasSalary; x.salarySource=salarySource;
+  x.s=(document.getElementById('e-salary').value.trim()||'0')+' د.ع';
+  x.r=document.getElementById('e-rights').value||'غير محدد';
+  x.i=document.getElementById('e-id').value.trim();
+  x.h=document.getElementById('e-housing').value||'غير محدد';
+  x.address=document.getElementById('e-address').value.trim();
+  x.landmark=document.getElementById('e-landmark').value.trim();
+  x.map=document.getElementById('e-map').value.trim();
+  x.st=document.getElementById('e-status').value;
+  try{
+    const data=JSON.stringify(families);
+    localStorage.setItem('warith_families_v2',data);
+    localStorage.setItem('warith_families',data);
+    const check=JSON.parse(localStorage.getItem('warith_families_v2')||'[]');
+    const saved=check.find(f=>Number(f.c)===Number(x.c));
+    if(!saved||saved.head!==head)throw new Error('verify');
+  }catch(e){
+    alert('تعذر حفظ التعديلات على هذا المتصفح.');
+    return;
+  }
+  alert('تم حفظ تعديلات العائلة بنجاح ✓');
+  showScreen('family-detail');
+}
+
 function openMenu(){document.getElementById('drawer').classList.add('open')}function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}function coming(x){alert(x+' — قيد البناء في المرحلة التالية')}renderFamilies(); if(document.getElementById('f-has-salary')) toggleSalarySource();
 </script>
 </body>
