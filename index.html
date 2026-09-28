@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f5c4d">
+<title>جمعية وارث الخيرية</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f4f7f6;color:#17352f}
+.app{max-width:520px;margin:auto;min-height:100vh;background:#f4f7f6}
+header{position:sticky;top:0;z-index:5;background:#0f5c4d;color:white;padding:15px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px #0002}
+.logo{width:44px;height:44px;border-radius:50%;background:#d7b45a;color:#0f5c4d;display:grid;place-items:center;font-weight:bold;font-size:20px}
+.brand{flex:1}.brand b{display:block;font-size:17px}.brand small{opacity:.8}
+button{border:0;cursor:pointer;font:inherit}.icon{background:#ffffff1a;color:white;width:42px;height:42px;border-radius:12px;font-size:21px}
+main{padding:18px 15px 30px}.hello{font-size:14px;color:#668078}.title{font-size:25px;font-weight:800;margin:5px 0 18px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{background:white;border-radius:16px;padding:15px;box-shadow:0 2px 10px #174d4210}.stat b{display:block;font-size:22px;margin-top:6px}.stat span{font-size:12px;color:#71857f}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.tile{background:white;border-radius:16px;padding:13px 5px;text-align:center;box-shadow:0 2px 10px #174d4210;color:#24473f}.tile .ico{font-size:24px;display:block;margin-bottom:6px}.tile small{font-size:11px}
+.section{display:flex;align-items:center;justify-content:space-between;margin:25px 2px 10px}.section b{font-size:17px}.link{color:#0f5c4d;font-size:12px}
+.card{background:white;border-radius:17px;padding:14px;margin-bottom:10px;box-shadow:0 2px 10px #174d4210}.row{display:flex;align-items:center;gap:10px}.avatar{width:42px;height:42px;border-radius:13px;background:#e5f1ed;display:grid;place-items:center;color:#0f5c4d;font-weight:bold}.grow{flex:1}.muted{font-size:12px;color:#778983;margin-top:3px}.badge{padding:5px 9px;border-radius:20px;background:#e8f5ef;color:#0f5c4d;font-size:11px}
+.drawer{position:fixed;inset:0;background:#0005;z-index:20;display:none}.drawer.open{display:block}.menu{width:82%;max-width:360px;height:100%;background:white;padding:20px;box-shadow:5px 0 20px #0002}.menuhead{display:flex;align-items:center;gap:12px;padding-bottom:20px;border-bottom:1px solid #eee}.menu button{width:100%;text-align:right;background:white;padding:14px 8px;border-radius:10px;color:#24473f}.menu button:hover{background:#eef6f3}
+footer{text-align:center;padding:25px;color:#899993;font-size:11px}
+@media(min-width:700px){.app{max-width:900px}.stats{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:repeat(8,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<button class="icon" onclick="openMenu()">☰</button>
+<div class="logo">و</div>
+<div class="brand"><b>جمعية وارث الخيرية</b><small>نظام إدارة الجمعية</small></div>
+<button class="icon" onclick="alert('لا توجد إشعارات جديدة')">🔔</button>
+</header>
+<main>
+<div class="hello">السلام عليكم</div>
+<div class="title">لوحة التحكم</div>
+<div class="stats">
+<div class="stat">👨‍👩‍👧‍👦 <b>400</b><span>العوائل</span></div>
+<div class="stat">💰 <b>12</b><span>تبرعات اليوم</span></div>
+<div class="stat">📋 <b>8</b><span>مناشدات مفتوحة</span></div>
+<div class="stat">📦 <b>24</b><span>حركات المخزن</span></div>
+</div>
+<div class="grid">
+<div class="tile"><span class="ico">👨‍👩‍👧</span><small>العوائل</small></div>
+<div class="tile"><span class="ico">💝</span><small>التبرعات</small></div>
+<div class="tile"><span class="ico">📋</span><small>المناشدات</small></div>
+<div class="tile"><span class="ico">🎯</span><small>البرامج</small></div>
+<div class="tile"><span class="ico">📦</span><small>المخزن</small></div>
+<div class="tile"><span class="ico">💵</span><small>المالية</small></div>
+<div class="tile"><span class="ico">📊</span><small>التقارير</small></div>
+<div class="tile"><span class="ico">⚙️</span><small>الإعدادات</small></div>
+</div>
+<div class="section"><b>آخر النشاطات</b><span class="link">عرض الكل</span></div>
+<div class="card"><div class="row"><div class="avatar">ت</div><div class="grow"><b>تبرع جديد</b><div class="muted">تم تسجيل تبرع مالي</div></div><span class="badge">اليوم</span></div></div>
+<div class="card"><div class="row"><div class="avatar">م</div><div class="grow"><b>مناشدة جديدة</b><div class="muted">تمت إضافة مناشدة لعائلة</div></div><span class="badge">اليوم</span></div></div>
+</main>
+<footer>جمعية وارث الخيرية © 2026</footer>
+</div>
+<div class="drawer" id="drawer" onclick="closeMenu(event)">
+<div class="menu" onclick="event.stopPropagation()">
+<div class="menuhead"><div class="logo">و</div><div><b>جمعية وارث الخيرية</b><div class="muted">القائمة الرئيسية</div></div></div>
+<button onclick="closeMenu()">🏠 الرئيسية</button><button onclick="closeMenu()">👨‍👩‍👧‍👦 العوائل</button><button onclick="closeMenu()">💝 التبرعات</button><button onclick="closeMenu()">📋 المناشدات</button><button onclick="closeMenu()">📦 المخزن</button><button onclick="closeMenu()">💵 المالية</button><button onclick="closeMenu()">📊 التقارير</button>
+</div></div>
+<script>
+function openMenu(){document.getElementById('drawer').classList.add('open')}
+function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}
+</script>
+</body>
+</html>
