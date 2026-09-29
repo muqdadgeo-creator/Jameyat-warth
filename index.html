@@ -376,6 +376,9 @@ textarea.forminput{height:80px;resize:vertical}
   </div>
 </div>
 
+<div class="section"><b>🏠 أولوية تسليم الأجهزة والأثاث</b><span class="count">حسب أولوية المناشدة</span></div>
+<div class="card" id="inventoryAppealPriorityBox" style="padding:0;overflow:hidden"></div>
+
 <div class="section"><b>سجل حركة الأجهزة والمواد</b></div>
 <div class="card" style="padding:0;overflow:hidden">
   <div style="overflow-x:auto">
@@ -1329,7 +1332,7 @@ function toggleInventoryBeneficiaryMode(){
 function onInventoryAppealChange(){
   const id=document.getElementById('inv-appeal')?.value||''; const a=id?appeals.find(x=>String(x.id)===String(id)):null;
   document.getElementById('inv-beneficiary').value=a?(a.ownerName||''):'';
-  renderInventoryBeneficiaryInfo(a?{name:a.ownerName||'غير محدد',familyCode:a.familyCode,phone:a.ownerPhone,address:a.ownerAddress,landmark:a.ownerLandmark}:null);
+  renderInventoryBeneficiaryInfo(a?{name:a.ownerName||'غير محدد',familyCode:a.familyCode,phone:a.ownerPhone,address:a.ownerAddress,landmark:a.ownerLandmark,details:a.notes||''}:null);
 }
 function updateInventoryBeneficiary(){
   const mode=document.getElementById('inv-beneficiary-mode')?.value||'appeal';
@@ -1337,7 +1340,9 @@ function updateInventoryBeneficiary(){
 }
 function renderInventoryBeneficiaryInfo(info){
   const box=document.getElementById('inv-beneficiary-info'); if(!box)return; if(!info){box.innerHTML='';return;}
-  box.innerHTML=`<div class="card" style="margin:0;background:#f5faf8"><b>بيانات المناشدة</b><div class="detail-grid" style="margin-top:8px"><div class="info"><small>المستفيد</small><b>${escapeHtml(info.name||'غير محدد')}</b></div>${info.familyCode?`<div class="info"><small>رقم العائلة</small><b>#${escapeHtml(info.familyCode)}</b></div>`:''}<div class="info"><small>الهاتف</small><b>${escapeHtml(info.phone||'غير مسجل')}</b></div><div class="info"><small>العنوان</small><b>${escapeHtml(info.address||'غير مسجل')}</b></div><div class="info"><small>أقرب نقطة</small><b>${escapeHtml(info.landmark||'غير مسجلة')}</b></div></div></div>`;
+  const phone=String(info.phone||'').trim();
+  const phoneHtml=phone?`<a href="tel:${escapeHtml(phone)}" title="اتصال بالمستفيد" style="font-size:22px;text-decoration:none">📞</a>`:'<span>غير مسجل</span>';
+  box.innerHTML=`<div class="card" style="margin:0;background:#f5faf8"><b>بيانات المناشدة</b><div class="detail-grid" style="margin-top:8px"><div class="info"><small>المستفيد</small><b>${escapeHtml(info.name||'غير محدد')}</b></div>${info.familyCode?`<div class="info"><small>رقم العائلة</small><b>#${escapeHtml(info.familyCode)}</b></div>`:''}<div class="info"><small>الهاتف</small><b>${phoneHtml}</b></div><div class="info"><small>العنوان</small><b>${escapeHtml(info.address||'غير مسجل')}</b></div><div class="info"><small>أقرب نقطة</small><b>${escapeHtml(info.landmark||'غير مسجلة')}</b></div>${info.details?`<div class="info" style="grid-column:1/-1"><small>التفاصيل من المناشدة</small><b>${escapeHtml(info.details)}</b></div>`:''}</div></div>`;
 }
 
 function toggleInventoryStatus(){
@@ -1401,6 +1406,31 @@ function inventorySummary(){
   return Object.values(map).filter(x=>x.qty!==0 || x.status);
 }
 
+function inventoryAppealPriorityRank(p){
+  return p==='عاجلة'?1:p==='مهمة'?2:3;
+}
+function inventoryDeviceAppeals(){
+  const delivered=new Set(inventoryMovements.filter(m=>!isHiddenRecord(m)&&m.move==='صادر'&&m.appealId).map(m=>String(m.appealId)));
+  return appeals.filter(a=>!isHiddenRecord(a)&&a.type==='أجهزة / أثاث'&&(a.status==='مفتوحة'||a.status==='قيد المتابعة')&&!delivered.has(String(a.id)))
+    .sort((a,b)=>inventoryAppealPriorityRank(a.priority)-inventoryAppealPriorityRank(b.priority)||String(a.date||'').localeCompare(String(b.date||''))||Number(a.id||0)-Number(b.id||0));
+}
+function renderInventoryAppealPriority(){
+  const box=document.getElementById('inventoryAppealPriorityBox'); if(!box)return;
+  const list=inventoryDeviceAppeals();
+  if(!list.length){box.innerHTML='<div class="empty" style="padding:18px">لا توجد حالياً مناشدات أجهزة / أثاث بانتظار التسليم</div>';return;}
+  const priorityLabel=p=>p==='عاجلة'?'🔴 عاجلة':p==='مهمة'?'🟠 مهمة':'🟢 عادية';
+  box.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px"><thead><tr><th style="padding:10px;text-align:right">الأولوية</th><th style="padding:10px;text-align:right">رقم المناشدة</th><th style="padding:10px;text-align:right">المستفيد</th><th style="padding:10px;text-align:right">العائلة</th><th style="padding:10px;text-align:right">الهاتف</th><th style="padding:10px;text-align:right">التفاصيل</th><th style="padding:10px;text-align:right">التاريخ</th><th style="padding:10px;text-align:right">الحالة</th><th style="padding:10px;text-align:right">إجراء</th></tr></thead><tbody>${list.map(a=>`<tr><td style="padding:9px;border-top:1px solid #edf1ef;font-weight:900">${priorityLabel(a.priority)}</td><td style="padding:9px;border-top:1px solid #edf1ef">#${escapeHtml(a.id)}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.ownerName||'غير محدد')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${a.familyCode?'#'+escapeHtml(a.familyCode):'غير مسجلة'}</td><td style="padding:9px;border-top:1px solid #edf1ef">${a.ownerPhone?`<a href="tel:${escapeHtml(a.ownerPhone)}" title="اتصال بالمستفيد" style="font-size:21px;text-decoration:none">📞</a>`:'—'}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.notes||'—')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.date||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.status||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef"><button class="action primary" onclick="openAppealFromInventory(${Number(a.id)})">عرض</button><button class="action" style="margin-inline-start:5px" onclick="openInventoryForAppeal(${Number(a.id)})">إخراج</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+function openAppealFromInventory(id){
+  const i=appeals.findIndex(a=>Number(a.id)===Number(id)); if(i<0)return;
+  openAppeal(i);
+}
+function openInventoryForAppeal(id){
+  openInventoryMovement('out');
+  const sel=document.getElementById('inv-appeal');
+  if(sel){sel.value=String(id);onInventoryAppealChange();}
+}
+
 function renderInventory(){
   const q=(document.getElementById('inventoryQ')?.value||'').trim().toLowerCase();
 
@@ -1451,6 +1481,7 @@ function renderInventory(){
       </td></tr>`;
   }
 
+  renderInventoryAppealPriority();
   const count=document.getElementById('inventoryCount');
   if(count) count.textContent=summary.length+' صنف';
 }
