@@ -1593,7 +1593,8 @@ function deleteActivity(type,i){const arr=type==='help'?helps:type==='program'?p
 
 function isHiddenRecord(x){return !!(x&&x.hidden);}
 function hideRecord(collectionName,index,label){
-  const arr=window[collectionName];
+  const collections={families,donors,donations,appeals,helps,programs,expenses,inventoryMovements};
+  const arr=collections[collectionName];
   if(!Array.isArray(arr)||!arr[index]) return;
   const x=arr[index];
   const reason=prompt('اكتب سبب الحجب:',x.hiddenReason||'');
@@ -1609,7 +1610,8 @@ function hideRecord(collectionName,index,label){
   refreshAllViews();
 }
 function unhideRecord(collectionName,index){
-  const arr=window[collectionName]; if(!Array.isArray(arr)||!arr[index])return;
+  const collections={families,donors,donations,appeals,helps,programs,expenses,inventoryMovements};
+  const arr=collections[collectionName]; if(!Array.isArray(arr)||!arr[index])return;
   arr[index].hidden=false;arr[index].unhiddenAt=new Date().toISOString();
   const keys={families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'};
   const key=keys[collectionName];if(key)localStorage.setItem(key,JSON.stringify(arr));
@@ -1618,7 +1620,8 @@ function unhideRecord(collectionName,index){
 }
 
 function deleteHiddenRecord(collectionName,index){
-  const arr=window[collectionName]; if(!Array.isArray(arr)||!arr[index])return;
+  const collections={families,donors,donations,appeals,helps,programs,expenses,inventoryMovements};
+  const arr=collections[collectionName]; if(!Array.isArray(arr)||!arr[index])return;
   const x=arr[index];
   if(!confirm('⚠️ هذا حذف نهائي ولا يمكن التراجع عنه. هل تريد حذف السجل نهائياً؟'))return;
   const keys={families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'};
