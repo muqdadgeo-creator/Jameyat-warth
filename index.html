@@ -66,6 +66,16 @@ textarea.forminput{height:80px;resize:vertical}
 .activity-tabs{display:flex;gap:7px;margin-bottom:12px}.activity-tab{flex:1;border:0;background:#fff;border-radius:13px;padding:11px;color:#41635b;font:inherit;font-size:11px;font-weight:bold}.activity-tab.active{background:#0f5c4d;color:#fff}.activity-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}.mini-stat{background:#fff;border-radius:14px;padding:10px;box-shadow:0 2px 10px #0000000b}.mini-stat span{display:block;color:#71857f;font-size:9px}.mini-stat b{display:block;font-size:16px;margin-top:4px}.category-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.category-box{background:#f4f7f6;border-radius:10px;padding:9px;font-size:10px;display:flex;justify-content:space-between}.category-box b{color:#0f5c4d}.
 
 .program-family-filters{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}
+.program-filter-box{position:relative}
+.program-filter-btn{width:100%;text-align:right;border:1px solid #d7e3df;background:#fff;border-radius:9px;padding:9px;font:inherit;font-size:10px;color:#41635b;cursor:pointer}
+.program-filter-menu{display:none;position:absolute;top:42px;right:0;left:0;background:#fff;border:1px solid #d7e3df;border-radius:12px;padding:8px;z-index:12;box-shadow:0 8px 20px #0002;max-height:210px;overflow:auto}
+.program-filter-menu.open{display:block}
+.program-filter-option{display:flex;align-items:center;gap:7px;padding:7px 4px;font-size:10px;border-radius:7px}
+.program-filter-option:hover{background:#f3f7f5}
+.program-filter-option input{width:17px;height:17px;accent-color:#0f5c4d}
+.program-map-actions{display:flex;gap:7px;margin-top:7px}
+.program-map-btn{border:0;background:#e9f5f0;color:#0f5c4d;border-radius:11px;width:38px;height:38px;font-size:18px;cursor:pointer}
+
 .program-family-list{max-height:360px;overflow:auto;margin-top:9px;border:1px solid #e1ebe8;border-radius:12px;background:#fafcfb}
 .program-family-row{display:flex;align-items:center;gap:8px;padding:9px;border-bottom:1px solid #edf2f0;font-size:10px}
 .program-family-row:last-child{border-bottom:0}
@@ -315,10 +325,10 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="section" style="margin-top:16px"><b>العوائل المستفيدة</b><span class="count" id="programSelectedCount">0 محددة</span></div>
 <div class="inline-note">حدد العوائل المشمولة بالبرنامج. يمكن استخدام الفلاتر لتحديد الفئات المطلوبة، ثم اختيار العوائل.</div>
 <div class="program-family-filters">
-<select id="programFilterRights" class="forminput" onchange="renderProgramFamilyPicker()"><option value="">كل الحقوق</option></select>
-<select id="programFilterHousing" class="forminput" onchange="renderProgramFamilyPicker()"><option value="">كل أنواع السكن</option></select>
-<select id="programFilterStatus" class="forminput" onchange="renderProgramFamilyPicker()"><option value="">كل الحالات</option><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select>
-<select id="programFilterSalary" class="forminput" onchange="renderProgramFamilyPicker()"><option value="">الراتب: الكل</option><option value="نعم">لديه راتب</option><option value="لا">ليس لديه راتب</option></select>
+<div class="program-filter-box"><button type="button" id="programFilterRightsBtn" class="program-filter-btn" onclick="toggleProgramFilter('rights')">الحقوق: الكل</button><div id="programFilterRightsMenu" class="program-filter-menu"></div></div>
+<div class="program-filter-box"><button type="button" id="programFilterHousingBtn" class="program-filter-btn" onclick="toggleProgramFilter('housing')">السكن: الكل</button><div id="programFilterHousingMenu" class="program-filter-menu"></div></div>
+<div class="program-filter-box"><button type="button" id="programFilterStatusBtn" class="program-filter-btn" onclick="toggleProgramFilter('status')">الحالة: الكل</button><div id="programFilterStatusMenu" class="program-filter-menu"></div></div>
+<div class="program-filter-box"><button type="button" id="programFilterSalaryBtn" class="program-filter-btn" onclick="toggleProgramFilter('salary')">الراتب: الكل</button><div id="programFilterSalaryMenu" class="program-filter-menu"></div></div>
 </div>
 <div class="search" style="margin-top:8px"><span>🔎</span><input id="programFamilyQ" placeholder="ابحث برقم العائلة أو اسم رب الأسرة أو المعرف" oninput="renderProgramFamilyPicker()"></div>
 <div class="program-family-actions"><button type="button" class="action" onclick="selectAllProgramFamilies()">تحديد الكل الظاهر</button><button type="button" class="action" onclick="clearAllProgramFamilies()">إلغاء التحديد</button></div>
@@ -1398,34 +1408,68 @@ function normalizeProgramFamilies(x){
   const raw=Array.isArray(x?.families)?x.families:(Array.isArray(x?.familyCodes)?x.familyCodes.map(c=>({familyCode:c,received:false})):[]);
   return raw.map(v=>typeof v==='object'?{familyCode:Number(v.familyCode),received:!!v.received}:{familyCode:Number(v),received:false}).filter(v=>v.familyCode);
 }
+function programFilterState(){
+  if(!window.programFilterSelections)window.programFilterSelections={rights:[],housing:[],status:[],salary:[]};
+  return window.programFilterSelections;
+}
+function toggleProgramFilter(type){
+  const menu=document.getElementById('programFilter'+type.charAt(0).toUpperCase()+type.slice(1)+'Menu');
+  if(!menu)return;
+  document.querySelectorAll('.program-filter-menu').forEach(x=>{if(x!==menu)x.classList.remove('open')});
+  menu.classList.toggle('open');
+}
+function closeProgramFilterMenus(){document.querySelectorAll('.program-filter-menu').forEach(x=>x.classList.remove('open'));}
+document.addEventListener('click',e=>{if(!e.target.closest('.program-filter-box'))closeProgramFilterMenus()});
 function prepareProgramFamilyFilters(){
-  const rights=document.getElementById('programFilterRights'), housing=document.getElementById('programFilterHousing');
-  if(!rights||!housing)return;
-  const r=[...new Set(families.map(f=>f.r||'غير محدد').filter(Boolean))].sort();
-  const h=[...new Set(families.map(f=>f.h||'غير محدد').filter(Boolean))].sort();
-  rights.innerHTML='<option value="">كل الحقوق</option>'+r.map(v=>`<option value="${escapeHtml(v)}">الحقوق: ${escapeHtml(v)}</option>`).join('');
-  housing.innerHTML='<option value="">كل أنواع السكن</option>'+h.map(v=>`<option value="${escapeHtml(v)}">السكن: ${escapeHtml(v)}</option>`).join('');
+  const st=programFilterState();
+  const rights=[...new Set(families.map(f=>f.r||'غير محدد').filter(Boolean))].sort();
+  const housing=[...new Set(families.map(f=>f.h||'غير محدد').filter(Boolean))].sort();
+  const status=[...new Set(families.map(f=>f.st||'غير محدد').filter(Boolean))].sort();
+  const salary=[...new Set(families.map(f=>f.hasSalary||'غير محدد').filter(Boolean))].sort();
+  buildProgramFilterMenu('rights',rights,'الحقوق');
+  buildProgramFilterMenu('housing',housing,'السكن');
+  buildProgramFilterMenu('status',status,'الحالة');
+  buildProgramFilterMenu('salary',salary,'الراتب');
+  renderProgramFilterLabels();
   const q=document.getElementById('programFamilyQ'); if(q)q.value='';
-  const fs=document.getElementById('programFilterStatus'); if(fs)fs.value='';
-  const sal=document.getElementById('programFilterSalary'); if(sal)sal.value='';
+}
+function buildProgramFilterMenu(type,values,label){
+  const menu=document.getElementById('programFilter'+type.charAt(0).toUpperCase()+type.slice(1)+'Menu'); if(!menu)return;
+  const st=programFilterState();
+  menu.innerHTML='<button type="button" class="action" style="width:100%;padding:8px;margin-bottom:4px" onclick="clearProgramFilter(\''+type+'\')">مسح هذا الفلتر</button>'+values.map(v=>`<label class="program-filter-option"><input type="checkbox" ${st[type].includes(v)?'checked':''} onchange="setProgramFilter('${type}',${JSON.stringify(v)},this.checked)"><span>${escapeHtml(v)}</span></label>`).join('');
+}
+function setProgramFilter(type,value,checked){
+  const st=programFilterState();
+  if(checked){if(!st[type].includes(value))st[type].push(value)}else st[type]=st[type].filter(v=>v!==value);
+  renderProgramFilterLabels();renderProgramFamilyPicker();
+}
+function clearProgramFilter(type){programFilterState()[type]=[];renderProgramFilterMenus();renderProgramFilterLabels();renderProgramFamilyPicker();}
+function renderProgramFilterMenus(){const st=programFilterState();const vals={rights:[...new Set(families.map(f=>f.r||'غير محدد').filter(Boolean))].sort(),housing:[...new Set(families.map(f=>f.h||'غير محدد').filter(Boolean))].sort(),status:[...new Set(families.map(f=>f.st||'غير محدد').filter(Boolean))].sort(),salary:[...new Set(families.map(f=>f.hasSalary||'غير محدد').filter(Boolean))].sort()};Object.keys(vals).forEach(k=>buildProgramFilterMenu(k,vals[k],k));}
+function renderProgramFilterLabels(){
+  const st=programFilterState();
+  const labels={rights:'الحقوق',housing:'السكن',status:'الحالة',salary:'الراتب'};
+  Object.keys(labels).forEach(k=>{const b=document.getElementById('programFilter'+k.charAt(0).toUpperCase()+k.slice(1)+'Btn');if(b)b.textContent=labels[k]+': '+(st[k].length?st[k].join('، '):'الكل')});
 }
 function renderProgramFamilyPicker(){
   const box=document.getElementById('programFamilyList'); if(!box)return;
   const q=(document.getElementById('programFamilyQ')?.value||'').trim().toLowerCase();
-  const rights=document.getElementById('programFilterRights')?.value||'';
-  const housing=document.getElementById('programFilterHousing')?.value||'';
-  const status=document.getElementById('programFilterStatus')?.value||'';
-  const salary=document.getElementById('programFilterSalary')?.value||'';
+  const st=programFilterState();
   const list=families.filter(f=>{
     const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();
-    return (!q||text.includes(q))&&(!rights||(f.r||'غير محدد')===rights)&&(!housing||(f.h||'غير محدد')===housing)&&(!status||(f.st||'')===status)&&(!salary||(f.hasSalary||'')===salary);
+    return (!q||text.includes(q))&&(!st.rights.length||st.rights.includes(f.r||'غير محدد'))&&(!st.housing.length||st.housing.includes(f.h||'غير محدد'))&&(!st.status.length||st.status.includes(f.st||'غير محدد'))&&(!st.salary.length||st.salary.includes(f.hasSalary||'غير محدد'));
   });
   box.innerHTML=list.map(f=>{
     const code=Number(f.c), item=programSelectedFamilies.find(v=>v.familyCode===code), checked=!!item;
-    return `<label class="program-family-row"><input type="checkbox" ${checked?'checked':''} onchange="toggleProgramFamily(${code},this.checked)"><div class="pf-main"><div class="pf-name">#${escapeHtml(code)} · ${escapeHtml(f.head||f.n||'عائلة')}</div><div class="pf-meta">${escapeHtml(f.r||'غير محدد')} · ${escapeHtml(f.h||'غير محدد')} · ${escapeHtml(f.m||0)} أفراد${f.address?' · '+escapeHtml(f.address):''}</div></div></label>`;
+    return `<label class="program-family-row"><input type="checkbox" ${checked?'checked':''} onchange="toggleProgramFamily(${code},this.checked)"><div class="pf-main"><div class="pf-name">#${escapeHtml(code)} · ${escapeHtml(f.head||f.n||'عائلة')}</div><div class="pf-meta">${escapeHtml(f.r||'غير محدد')} · ${escapeHtml(f.h||'غير محدد')} · ${escapeHtml(f.m||0)} أفراد</div></div></label>`;
   }).join('')||'<div class="empty">لا توجد عوائل مطابقة للفلاتر</div>';
   const c=document.getElementById('programSelectedCount'); if(c)c.textContent=`${programSelectedFamilies.length} محددة`;
 }
+function getProgramFilteredFamilies(){
+  const q=(document.getElementById('programFamilyQ')?.value||'').trim().toLowerCase(),st=programFilterState();
+  return families.filter(f=>{const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();return(!q||text.includes(q))&&(!st.rights.length||st.rights.includes(f.r||'غير محدد'))&&(!st.housing.length||st.housing.includes(f.h||'غير محدد'))&&(!st.status.length||st.status.includes(f.st||'غير محدد'))&&(!st.salary.length||st.salary.includes(f.hasSalary||'غير محدد'))});
+}
+function selectAllProgramFamilies(){getProgramFilteredFamilies().forEach(f=>{if(!programSelectedFamilies.some(v=>v.familyCode===Number(f.c)))programSelectedFamilies.push({familyCode:Number(f.c),received:false})});renderProgramFamilyPicker();}
+function clearAllProgramFamilies(){programSelectedFamilies=[];renderProgramFamilyPicker();}
 function toggleProgramFamily(code,checked){
   code=Number(code);
   const i=programSelectedFamilies.findIndex(v=>v.familyCode===code);
@@ -1433,20 +1477,14 @@ function toggleProgramFamily(code,checked){
   if(!checked&&i>=0)programSelectedFamilies.splice(i,1);
   renderProgramFamilyPicker();
 }
-function selectAllProgramFamilies(){
-  const q=(document.getElementById('programFamilyQ')?.value||'').trim().toLowerCase();
-  const rights=document.getElementById('programFilterRights')?.value||'',housing=document.getElementById('programFilterHousing')?.value||'',status=document.getElementById('programFilterStatus')?.value||'',salary=document.getElementById('programFilterSalary')?.value||'';
-  families.filter(f=>{const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();return(!q||text.includes(q))&&(!rights||(f.r||'غير محدد')===rights)&&(!housing||(f.h||'غير محدد')===housing)&&(!status||(f.st||'')===status)&&(!salary||(f.hasSalary||'')===salary)}).forEach(f=>{if(!programSelectedFamilies.some(v=>v.familyCode===Number(f.c)))programSelectedFamilies.push({familyCode:Number(f.c),received:false})});renderProgramFamilyPicker();
-}
-function clearAllProgramFamilies(){
-  programSelectedFamilies=[];renderProgramFamilyPicker();
-}
 function toggleProgramReceived(code,received){const i=programSelectedFamilies.findIndex(v=>v.familyCode===Number(code));if(i>=0){programSelectedFamilies[i].received=!!received;renderProgramDetailView();}}
 function saveActivity(){const t=editingActivityType;if(t==='help'){const fc=document.getElementById('a-family').value,appealId=document.getElementById('a-appeal').value,type=document.getElementById('a-help-type').value,date=document.getElementById('a-help-date').value||todayStr(),amount=Number(document.getElementById('a-help-amount').value||0),details=document.getElementById('a-help-details').value.trim();if(!fc){alert('اختر العائلة المستفيدة');return}if(!details){alert('أدخل تفاصيل المساعدة');return}const f=families.find(x=>String(x.c)===String(fc));const item={id:editingActivityIndex!==null?helps[editingActivityIndex].id:Date.now(),familyCode:Number(fc),familyName:f?.head||f?.n||'',appealId:appealId?Number(appealId):null,type,amount,date,details};if(editingActivityIndex!==null)helps[editingActivityIndex]=item;else helps.unshift(item);localStorage.setItem('warith_help',JSON.stringify(helps));}else if(t==='program'){const name=document.getElementById('a-program-name').value.trim(),date=document.getElementById('a-program-date').value||todayStr(),status=document.getElementById('a-program-status').value,details=document.getElementById('a-program-details').value.trim();if(!name){alert('أدخل اسم البرنامج');return}if(!programSelectedFamilies.length){if(!confirm('لم يتم تحديد أي عائلة. هل تريد حفظ البرنامج بدون عوائل؟'))return}const item={id:editingActivityIndex!==null?programs[editingActivityIndex].id:Date.now(),name,date,status,details,families:programSelectedFamilies.map(v=>({familyCode:Number(v.familyCode),received:!!v.received}))};if(editingActivityIndex!==null)programs[editingActivityIndex]=item;else programs.unshift(item);localStorage.setItem('warith_programs',JSON.stringify(programs));}else{const amount=Number(document.getElementById('a-expense-amount').value||0),details=document.getElementById('a-expense-details').value.trim(),category=document.getElementById('a-expense-category').value,date=document.getElementById('a-expense-date').value||todayStr();if(!amount){alert('أدخل مبلغ المصروف');return}if(!details){alert('أدخل تفاصيل المصروف');return}const item={id:editingActivityIndex!==null?expenses[editingActivityIndex].id:Date.now(),amount,details,category,date};if(editingActivityIndex!==null)expenses[editingActivityIndex]=item;else expenses.unshift(item);localStorage.setItem('warith_expenses',JSON.stringify(expenses));}const wasEdit=editingActivityIndex!==null;editingActivityIndex=null;alert(wasEdit?'تم التعديل بنجاح ✓':'تم الحفظ بنجاح ✓');showScreen('activities');switchActivityTab(t);}
 function renderActivities(){renderHelps();renderPrograms();renderExpenses();}
 function renderHelps(){const q=(document.getElementById('helpQ')?.value||'').trim().toLowerCase();const all=helps.filter(x=>(x.familyName+' '+x.type+' '+x.details).toLowerCase().includes(q));const a=activityExpanded.help?all:all.slice(0,5);const c=document.getElementById('helpMoreBtn');if(c)c.textContent=all.length>5?(activityExpanded.help?'عرض آخر 5':'عرض الكل'):'';const b=document.getElementById('helpList');if(!b)return;b.innerHTML=a.map(x=>{const i=helps.indexOf(x);return `<div class="card"><div class="row"><div class="avatar">🤝</div><div class="grow"><div class="name">${escapeHtml(x.familyName||('عائلة #'+x.familyCode))}</div><div class="sub">${escapeHtml(x.type)} · ${(x.amount||0).toLocaleString('en-US')} د.ع</div><div class="sub">${escapeHtml(x.date)} · ${escapeHtml(x.details)}</div>${x.appealId?`<div class="sub" style="color:#0f5c4d">📋 المناشدة #${escapeHtml(x.appealId)}</div>`:''}</div></div><div class="member-actions"><button class="action primary" onclick="openActivityForm('help',${i})">✏️ تعديل</button><button class="action" onclick="deleteActivity('help',${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد مساعدات بعد</div>';}
 function renderPrograms(){const q=(document.getElementById('programQ')?.value||'').trim().toLowerCase();const all=programs.filter(x=>(x.name+' '+x.details+' '+x.status).toLowerCase().includes(q));const a=activityExpanded.program?all:all.slice(0,5);const c=document.getElementById('programMoreBtn');if(c)c.textContent=all.length>5?(activityExpanded.program?'عرض آخر 5':'عرض الكل'):'';const b=document.getElementById('programList');if(!b)return;b.innerHTML=a.map(x=>{const i=programs.indexOf(x),fs=normalizeProgramFamilies(x),received=fs.filter(v=>v.received).length;return `<div class="card"><div class="row"><div class="avatar">🎯</div><div class="grow"><div class="name">${escapeHtml(x.name)}</div><div class="sub">${escapeHtml(x.status)} · ${escapeHtml(x.date)}</div><div class="sub">العوائل: ${fs.length} · تم الاستلام: ${received}</div><div class="sub">${escapeHtml(x.details||'بدون وصف')}</div></div></div><div class="member-actions"><button class="action primary" onclick="openProgramDetail(${i})">👁️ العوائل</button><button class="action" onclick="openActivityForm('program',${i})">✏️ تعديل</button><button class="action" onclick="deleteActivity('program',${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد برامج بعد</div>';} 
-function openProgramDetail(i){const x=programs[i];if(!x)return;programSelectedFamilies=normalizeProgramFamilies(x);const rows=programSelectedFamilies.map(v=>{const f=families.find(z=>Number(z.c)===Number(v.familyCode));return `<div class="card"><div class="row"><div class="avatar">👨‍👩‍👧</div><div class="grow"><div class="name">#${escapeHtml(v.familyCode)} · ${escapeHtml(f?.head||f?.n||'عائلة')}</div><div class="sub">${escapeHtml(f?.address||'العنوان غير مسجل')} · ${escapeHtml(f?.r||'غير محدد')}</div></div><label class="program-received"><input type="checkbox" ${v.received?'checked':''} onchange="toggleProgramReceived(${v.familyCode},this.checked)"> استلم</label></div></div>`}).join('')||'<div class="empty">لا توجد عوائل مرتبطة بهذا البرنامج</div>';const box=document.createElement('div');box.id='programDetailOverlay';box.style.cssText='position:fixed;inset:0;background:#0006;z-index:30;padding:18px;overflow:auto';box.innerHTML=`<div style="max-width:520px;margin:25px auto;background:#f3f6f5;border-radius:18px;padding:14px"><div class="top"><button class="back" onclick="document.getElementById('programDetailOverlay')?.remove()">← رجوع</button><div class="screen-title">${escapeHtml(x.name)}</div></div><div class="card"><div class="sub">${escapeHtml(x.status)} · ${escapeHtml(x.date)}</div><div class="sub" style="margin-top:5px">${escapeHtml(x.details||'بدون وصف')}</div><div class="program-recipients"><b>العوائل المستفيدة</b><div class="sub">حدد «استلم» بعد تسليم المساعدة للعائلة.</div></div></div>${rows}<button class="action primary" style="width:100%;margin-top:8px" onclick="saveProgramRecipients(${i})">حفظ حالة الاستلام</button></div>`;document.body.appendChild(box)}
+function mapUrlForFamily(f){if(!f)return'';if(f.map)return f.map;const q=[f.address,f.landmark,f.head||f.n].filter(Boolean).join('، ');return q?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q):'';}
+function openFamilyMap(f){const u=mapUrlForFamily(f);if(!u){alert('لا يوجد عنوان أو موقع محفوظ لهذه العائلة.');return}window.open(u,'_blank');}
+function openProgramDetail(i){const x=programs[i];if(!x)return;programSelectedFamilies=normalizeProgramFamilies(x);const rows=programSelectedFamilies.map(v=>{const f=families.find(z=>Number(z.c)===Number(v.familyCode));const mu=mapUrlForFamily(f);return `<div class="card"><div class="row"><div class="avatar">👨‍👩‍👧</div><div class="grow"><div class="name">#${escapeHtml(v.familyCode)} · ${escapeHtml(f?.head||f?.n||'عائلة')}</div><div class="sub">${escapeHtml(f?.r||'غير محدد')} · ${escapeHtml(f?.h||'غير محدد')} · ${escapeHtml(f?.m||0)} أفراد</div><div class="program-map-actions"><button type="button" class="program-map-btn" title="فتح العنوان في الخرائط" onclick="openFamilyMap(${JSON.stringify(f||{}).replace(/"/g,'&quot;')})">🏠</button><button type="button" class="program-map-btn" title="فتح الموقع في الخرائط" onclick="openFamilyMap(${JSON.stringify(f||{}).replace(/"/g,'&quot;')})">📍</button><span class="sub" style="align-self:center">${f?.address?'العنوان محفوظ':''}</span></div></div><label class="program-received"><input type="checkbox" ${v.received?'checked':''} onchange="toggleProgramReceived(${v.familyCode},this.checked)"> استلم</label></div></div>`}).join('')||'<div class="empty">لا توجد عوائل مرتبطة بهذا البرنامج</div>';const box=document.createElement('div');box.id='programDetailOverlay';box.style.cssText='position:fixed;inset:0;background:#0006;z-index:30;padding:18px;overflow:auto';box.innerHTML=`<div style="max-width:520px;margin:25px auto;background:#f3f6f5;border-radius:18px;padding:14px"><div class="top"><button class="back" onclick="document.getElementById('programDetailOverlay')?.remove()">← رجوع</button><div class="screen-title">${escapeHtml(x.name)}</div></div><div class="card"><div class="sub">${escapeHtml(x.status)} · ${escapeHtml(x.date)}</div><div class="sub" style="margin-top:5px">${escapeHtml(x.details||'بدون وصف')}</div><div class="program-recipients"><b>العوائل المستفيدة</b><div class="sub">حدد «استلم» بعد تسليم المساعدة للعائلة.</div></div></div>${rows}<button class="action primary" style="width:100%;margin-top:8px" onclick="saveProgramRecipients(${i})">حفظ حالة الاستلام</button></div>`;document.body.appendChild(box)}
 function renderProgramDetailView(){const overlay=document.getElementById('programDetailOverlay');if(!overlay)return;const i=programs.findIndex(p=>p===programs.find((_,idx)=>idx===editingActivityIndex));}
 function saveProgramRecipients(i){if(!programs[i])return;programs[i].families=programSelectedFamilies.map(v=>({familyCode:Number(v.familyCode),received:!!v.received}));localStorage.setItem('warith_programs',JSON.stringify(programs));document.getElementById('programDetailOverlay')?.remove();renderActivities();alert('تم حفظ حالة الاستلام ✓');}
 
