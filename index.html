@@ -510,7 +510,8 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="program-filter-box"><button type="button" id="programFilterSalaryBtn" class="program-filter-btn" onclick="toggleProgramFilter('salary')">الراتب: الكل</button><div id="programFilterSalaryMenu" class="program-filter-menu"></div></div>
 </div>
 <div class="search" style="margin-top:8px"><span>🔎</span><input id="programFamilyQ" placeholder="ابحث برقم العائلة أو اسم رب الأسرة أو المعرف" oninput="renderProgramFamilyPicker()"></div>
-<div class="program-family-actions"><button type="button" class="action" onclick="selectAllProgramFamilies()">تحديد الكل الظاهر</button><button type="button" class="action" onclick="clearAllProgramFamilies()">إلغاء التحديد</button></div>
+<div class="program-family-actions"><button type="button" class="action primary" onclick="applyProgramFilters()">تطبيق الفلاتر</button><button type="button" class="action" onclick="selectAllProgramFamilies()">تحديد الكل الظاهر</button><button type="button" class="action" onclick="clearAllProgramFamilies()">إلغاء التحديد</button></div>
+<div class="program-family-actions" style="margin-top:7px"><button type="button" class="action" onclick="exportSelectedProgramFamilies()">📤 تصدير العوائل المختارة</button></div>
 <div class="program-family-list" id="programFamilyList"></div>
 </div>
 <div id="expenseFormFields" style="display:none">
@@ -1904,9 +1905,39 @@ function buildProgramFilterMenu(type,values,label){
 function setProgramFilter(type,value,checked){
   const st=programFilterState();
   if(checked){if(!st[type].includes(value))st[type].push(value)}else st[type]=st[type].filter(v=>v!==value);
-  renderProgramFilterLabels();renderProgramFamilyPicker();
+  renderProgramFilterLabels();
+}
+function applyProgramFilters(){
+  renderProgramFamilyPicker();
+  closeProgramFilterMenus();
 }
 function clearProgramFilter(type){programFilterState()[type]=[];renderProgramFilterMenus();renderProgramFilterLabels();renderProgramFamilyPicker();}
+function exportSelectedProgramFamilies(){
+  if(!programSelectedFamilies.length){alert('حدد عائلة واحدة على الأقل قبل التصدير.');return;}
+  const rows=programSelectedFamilies.map((v,idx)=>{
+    const f=families.find(z=>Number(z.c)===Number(v.familyCode));
+    return {
+      no:idx+1,
+      code:f?.c??v.familyCode,
+      head:f?.head||f?.n||'',
+      address:f?.address||'',
+      landmark:f?.landmark||'',
+      rights:f?.r||'',
+      members:f?.m||0,
+      phone:f?.phone||'',
+      location:f?.map||'',
+      received:v.received?'نعم':'لا'
+    };
+  });
+  const headers=['ت','رقم العائلة','رب الأسرة','عنوان السكن','أقرب نقطة','الحقوق','عدد الأفراد','الهاتف','الموقع','استلم'];
+  const csvRow=arr=>arr.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',');
+  const csv='\ufeff'+csvRow(headers)+'\r\n'+rows.map(r=>csvRow([r.no,r.code,r.head,r.address,r.landmark,r.rights,r.members,r.phone,r.location,r.received])).join('\r\n');
+  const name=(document.getElementById('a-program-name')?.value||'برنامج').trim().replace(/[\\/:*?"<>|]+/g,'_');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='عوائل_'+name+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  alert('تم تصدير '+rows.length+' عائلة إلى ملف Excel/CSV ✓');
+}
 function renderProgramFilterMenus(){const st=programFilterState();const vals={rights:[...new Set(families.map(f=>f.r||'غير محدد').filter(Boolean))].sort(),housing:[...new Set(families.map(f=>f.h||'غير محدد').filter(Boolean))].sort(),status:[...new Set(families.map(f=>f.st||'غير محدد').filter(Boolean))].sort(),salary:[...new Set(families.map(f=>f.hasSalary||'غير محدد').filter(Boolean))].sort()};Object.keys(vals).forEach(k=>buildProgramFilterMenu(k,vals[k],k));}
 function renderProgramFilterLabels(){
   const st=programFilterState();
