@@ -112,21 +112,31 @@ textarea.forminput{height:80px;resize:vertical}
   min-height:297mm;
   box-sizing:border-box;
   margin:0 auto;
-  padding:14mm 13mm 13mm;
+  padding:10mm 11mm 12mm;
   background:#fff;
   color:#243b35;
-  border-radius:4px;
+  border:0.45mm solid #b9a77f;
+  border-radius:2mm;
   box-shadow:0 2px 14px #00000010;
   direction:rtl;
+  position:relative;
 }
-.report-paper-head{text-align:center;border-bottom:1px solid #dfe8e5;padding-bottom:8mm;margin-bottom:5mm}
+.report-paper-head{
+  text-align:center;
+  background:#f3e8cf;
+  border:0.35mm solid #d5c39b;
+  border-radius:2mm;
+  padding:6mm 7mm 5.5mm;
+  margin-bottom:5mm;
+}
 .report-paper-logo{
-  width:48px;height:48px;border-radius:50%;margin:0 auto 7px;
+  width:52px;height:52px;border-radius:50%;margin:0 auto 7px;
   display:flex;align-items:center;justify-content:center;
-  background:#0f5c4d;color:#fff;font-size:28px;font-weight:900;
+  background:#0f5c4d;color:#d7b45a;font-size:30px;font-weight:900;
+  border:2px solid #d7b45a;
 }
 .report-paper-org{font-size:20px;font-weight:900;color:#0f5c4d}
-.report-paper-title{font-size:18px;font-weight:900;margin-top:12px;color:#0f5c4d;background:#f7f0df;border:1px solid #eadbb7;border-radius:9px;padding:7px 12px;display:inline-block;min-width:55%}
+.report-paper-title{font-size:18px;font-weight:900;margin-top:12px;color:#0f5c4d;background:#fffaf0;border:1px solid #d5c39b;border-radius:9px;padding:7px 12px;display:inline-block;min-width:55%}
 .report-paper-subtitle{display:none}
 .report-paper-greeting{font-size:12.5px;font-weight:700;margin-top:10px;color:#31554b}
 .report-paper-meta{font-size:10px;color:#71857f;margin-top:5px}
@@ -152,9 +162,15 @@ textarea.forminput{height:80px;resize:vertical}
 .report-a4-table tbody tr:nth-child(even){background:#f7faf9}
 .report-a4-total{font-weight:900;color:#0f5c4d}
 .report-paper-footer{
-  margin-top:12mm;padding-top:5mm;border-top:1px solid #dfe8e5;
-  text-align:center;font-size:9px;color:#71857f;
+  margin-top:12mm;padding-top:5mm;border-top:1px solid #d5c39b;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:12mm;
+  font-size:9px;color:#71857f;
 }
+.report-paper-signature{flex:1;text-align:right;min-height:28mm;color:#243b35}
+.report-paper-stamp{width:42mm;min-height:28mm;text-align:center;color:#0f5c4d}
+.report-paper-stamp-box{width:27mm;height:27mm;margin:0 auto 2mm;border:0.7mm solid #0f5c4d;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:10px;line-height:1.35;transform:rotate(-5deg)}
+.report-paper-sign-line{width:48mm;border-bottom:0.35mm solid #777;margin-top:12mm}
+.report-paper-footer-note{text-align:center;font-size:8.5px;color:#71857f;margin-top:3mm}
 .report-paper .report-section-title{
   font-size:13px;font-weight:900;color:#0f5c4d;margin:7mm 0 3mm;
 }
@@ -176,10 +192,13 @@ textarea.forminput{height:80px;resize:vertical}
     width:210mm!important;
     min-height:297mm!important;
     margin:0!important;
-    padding:14mm 13mm 13mm!important;
+    padding:10mm 11mm 12mm!important;
     box-shadow:none!important;
-    border-radius:0!important;
+    border:0.45mm solid #b9a77f!important;
+    border-radius:2mm!important;
   }
+  .report-paper-head{background:#f3e8cf!important;border:0.35mm solid #d5c39b!important;}
+  .report-paper-footer{display:flex!important;}
   .report-paper-head{break-inside:avoid}.report-paper-title,.report-paper-greeting,.report-paper-quote,.report-paper-quote-attrib{break-inside:avoid}.report-period-line{break-inside:avoid}
   .report-a4-table{font-size:9.5pt}
   .report-a4-table tr{break-inside:avoid}
@@ -2083,7 +2102,16 @@ function reportCard(title,body){
       <div class="report-paper-title">تقرير مفصل عن ${escapeHtml(clean)}</div>
     </div>
     ${body}
-    <div class="report-paper-footer">جمعية وارث الخيرية © 2026</div>
+    <div class="report-paper-footer">
+      <div class="report-paper-signature">
+        <div style="font-weight:900">توقيع إدارة الجمعية</div>
+        <div class="report-paper-sign-line"></div>
+      </div>
+      <div class="report-paper-stamp">
+        <div class="report-paper-stamp-box">ختم<br>إدارة الجمعية</div>
+      </div>
+    </div>
+    <div class="report-paper-footer-note">جمعية وارث الخيرية © 2026</div>
   </div>`;
 }
 function renderGeneralReport(){const ds=donations.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), hs=helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), es=expenses.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), inv=inventoryMovements.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));const fin=ds.filter(x=>x.type==='مالي'), rec=fin.filter(x=>x.paid==='تم التسديد'), un=fin.filter(x=>x.paid!=='تم التسديد');const rows=[['العوائل',families.filter(x=>!isHiddenRecord(x)).length],['التبرعات المالية',reportMoney(fin.reduce((n,x)=>n+Number(x.amount||0),0))],['التبرعات المستلمة',reportMoney(rec.reduce((n,x)=>n+Number(x.amount||0),0))],['التبرعات غير المستلمة',reportMoney(un.reduce((n,x)=>n+Number(x.amount||0),0))],['المساعدات',reportMoney(hs.reduce((n,x)=>n+Number(x.amount||0),0))],['المصروفات',reportMoney(es.reduce((n,x)=>n+Number(x.amount||0),0))],['حركات المخزن',inv.length]];document.getElementById('reportGeneral').innerHTML=reportCard('📊 الملخص العام',`<div class="detail-grid">${rows.map(r=>`<div class="info"><small>${r[0]}</small><b>${r[1]}</b></div>`).join('')}</div>`)}
