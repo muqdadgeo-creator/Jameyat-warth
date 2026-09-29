@@ -407,7 +407,16 @@ textarea.forminput{height:80px;resize:vertical}
 <label>العدد<input class="forminput" id="inv-qty" type="number" min="1" value="1"></label>
 <div id="inv-status-wrap"><label>الحالة<select class="forminput" id="inv-status"><option>شغال</option><option>عاطل</option><option>مستهلك</option></select></label></div>
 <label>التاريخ<input class="forminput" id="inv-date" type="date"></label>
-<label>المستفيد<input class="forminput" id="inv-beneficiary" placeholder="للاخراج"></label>
+<div id="inv-out-fields" style="display:none;grid-column:1/-1">
+  <div style="font-weight:700;margin-bottom:8px;color:#0f5c4d">👤 المستفيد من الإخراج</div>
+  <div class="formgrid" style="margin:0">
+    <label>نوع المستفيد<select class="forminput" id="inv-beneficiary-mode" onchange="toggleInventoryBeneficiaryMode()"><option value="appeal">مناشدة مسجلة</option><option value="new">غير مسجلة</option></select></label>
+    <label id="inv-appeal-wrap">رقم المناشدة<select class="forminput" id="inv-appeal" onchange="onInventoryAppealChange()"><option value="">اختر رقم المناشدة</option></select></label>
+    <label id="inv-new-head-wrap" style="display:none">اسم المستفيد<input class="forminput" id="inv-new-head" placeholder="اكتب اسم المستفيد / رب الأسرة"></label>
+    <div id="inv-beneficiary-info" style="grid-column:1/-1"></div>
+  </div>
+  <input type="hidden" id="inv-beneficiary">
+</div>
 <label>المصدر<input class="forminput" id="inv-source"></label>
 <label>ملاحظات<textarea class="forminput" id="inv-notes"></textarea></label>
 </div>
@@ -1289,31 +1298,51 @@ function openInventoryMovement(move){
   editingInventoryIndex=null;
   const title=document.getElementById('inventoryFormTitle');
   if(title) title.textContent=move==='وارد'?'إدخال للمخزن':'إخراج من المخزن';
-  const moveEl=document.getElementById('inv-move-type');
-  if(moveEl) moveEl.value=move;
-  const typeEl=document.getElementById('inv-item-type');
-  if(typeEl) typeEl.value='جهاز';
-  const nameEl=document.getElementById('inv-name');
-  if(nameEl) nameEl.value='';
-  const qtyEl=document.getElementById('inv-qty');
-  if(qtyEl) qtyEl.value='1';
-  const statusEl=document.getElementById('inv-status');
-  if(statusEl) statusEl.value='شغال';
-  const dateEl=document.getElementById('inv-date');
-  if(dateEl) dateEl.value=new Date().toISOString().slice(0,10);
-  const beneficiaryEl=document.getElementById('inv-beneficiary');
-  if(beneficiaryEl) beneficiaryEl.value='';
-  const sourceEl=document.getElementById('inv-source');
-  if(sourceEl) sourceEl.value='';
-  const notesEl=document.getElementById('inv-notes');
-  if(notesEl) notesEl.value='';
-  toggleInventoryStatus();
-  const btn=document.querySelector('#add-inventory button.action.primary');
-  if(btn) btn.textContent='حفظ الحركة';
+  document.getElementById('inv-move-type').value=move;
+  document.getElementById('inv-item-type').value='جهاز';
+  document.getElementById('inv-name').value='';
+  document.getElementById('inv-qty').value='1';
+  document.getElementById('inv-status').value='شغال';
+  document.getElementById('inv-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('inv-source').value=''; document.getElementById('inv-notes').value='';
+  document.getElementById('inv-beneficiary').value=''; document.getElementById('inv-new-head').value='';
+  populateInventoryAppeals();
+  document.getElementById('inv-beneficiary-mode').value='appeal';
+  document.getElementById('inv-appeal').value='';
+  toggleInventoryStatus(); toggleInventoryBeneficiaryMode();
+  const btn=document.querySelector('#add-inventory button.action.primary'); if(btn) btn.textContent='حفظ الحركة';
   showScreen('add-inventory');
+}
+function populateInventoryAppeals(selected=''){
+  const s=document.getElementById('inv-appeal'); if(!s)return;
+  const list=appeals.filter(a=>!isHiddenRecord(a)).sort((a,b)=>Number(b.id||0)-Number(a.id||0));
+  s.innerHTML='<option value="">اختر رقم المناشدة</option>'+list.map(a=>`<option value="${escapeHtml(a.id)}">#${escapeHtml(a.id)} · ${escapeHtml(a.type||'مناشدة')} · ${escapeHtml(a.status||'')}</option>`).join('');
+  s.value=selected?String(selected):'';
+}
+function toggleInventoryBeneficiaryMode(){
+  const out=document.getElementById('inv-out-fields'); const mode=document.getElementById('inv-beneficiary-mode')?.value||'appeal';
+  const aw=document.getElementById('inv-appeal-wrap'), nw=document.getElementById('inv-new-head-wrap');
+  if(out) out.style.display=(document.getElementById('inv-move-type')?.value==='صادر')?'block':'none';
+  if(aw) aw.style.display=mode==='appeal'?'block':'none'; if(nw) nw.style.display=mode==='new'?'block':'none';
+  updateInventoryBeneficiary();
+}
+function onInventoryAppealChange(){
+  const id=document.getElementById('inv-appeal')?.value||''; const a=id?appeals.find(x=>String(x.id)===String(id)):null;
+  document.getElementById('inv-beneficiary').value=a?(a.ownerName||''):'';
+  renderInventoryBeneficiaryInfo(a?{name:a.ownerName||'غير محدد',familyCode:a.familyCode,phone:a.ownerPhone,address:a.ownerAddress,landmark:a.ownerLandmark}:null);
+}
+function updateInventoryBeneficiary(){
+  const mode=document.getElementById('inv-beneficiary-mode')?.value||'appeal';
+  if(mode==='appeal') onInventoryAppealChange(); else { const name=(document.getElementById('inv-new-head')?.value||'').trim(); document.getElementById('inv-beneficiary').value=name; renderInventoryBeneficiaryInfo(name?{name}:null); }
+}
+function renderInventoryBeneficiaryInfo(info){
+  const box=document.getElementById('inv-beneficiary-info'); if(!box)return; if(!info){box.innerHTML='';return;}
+  box.innerHTML=`<div class="card" style="margin:0;background:#f5faf8"><b>بيانات المناشدة</b><div class="detail-grid" style="margin-top:8px"><div class="info"><small>المستفيد</small><b>${escapeHtml(info.name||'غير محدد')}</b></div>${info.familyCode?`<div class="info"><small>رقم العائلة</small><b>#${escapeHtml(info.familyCode)}</b></div>`:''}<div class="info"><small>الهاتف</small><b>${escapeHtml(info.phone||'غير مسجل')}</b></div><div class="info"><small>العنوان</small><b>${escapeHtml(info.address||'غير مسجل')}</b></div><div class="info"><small>أقرب نقطة</small><b>${escapeHtml(info.landmark||'غير مسجلة')}</b></div></div></div>`;
 }
 
 function toggleInventoryStatus(){
+  const move=document.getElementById('inv-move-type');
+  if(move) move.onchange=toggleInventoryBeneficiaryMode;
   const wrap=document.getElementById('inv-status-wrap');
   const type=document.getElementById('inv-item-type');
   if(wrap) wrap.style.display=(type && type.value==='جهاز')?'block':'none';
@@ -1325,11 +1354,17 @@ function saveInventoryMovement(){
   const name=(document.getElementById('inv-name')?.value||'').trim();
   const qty=Number(document.getElementById('inv-qty')?.value||0);
   const date=document.getElementById('inv-date')?.value||new Date().toISOString().slice(0,10);
-  const beneficiary=(document.getElementById('inv-beneficiary')?.value||'').trim();
+  const mode=document.getElementById('inv-beneficiary-mode')?.value||'appeal';
+  const appealId=Number(document.getElementById('inv-appeal')?.value||0)||null;
+  const manualBeneficiary=(document.getElementById('inv-new-head')?.value||'').trim();
+  const appeal=appealId?appeals.find(a=>String(a.id)===String(appealId)):null;
+  const beneficiary=mode==='appeal'?(appeal?.ownerName||'').trim():manualBeneficiary;
+  const familyCode=mode==='appeal'?(Number(appeal?.familyCode||0)||null):null;
 
   if(!name){alert('أدخل اسم الجهاز أو المادة');return}
   if(qty<=0){alert('أدخل عدد صحيح أكبر من صفر');return}
-  if(move==='صادر' && !beneficiary){alert('أدخل اسم المستفيد');return}
+  if(move==='صادر' && mode==='appeal' && !appealId){alert('اختر رقم المناشدة');return}
+  if(move==='صادر' && mode==='new' && !manualBeneficiary){alert('اكتب اسم المستفيد');return}
 
   const item={
     id:editingInventoryIndex!==null?inventoryMovements[editingInventoryIndex].id:Date.now(),
@@ -1337,6 +1372,9 @@ function saveInventoryMovement(){
     status:type==='جهاز'?(document.getElementById('inv-status')?.value||'شغال'):'',
     date,
     beneficiary,
+    beneficiaryMode:move==='صادر'?mode:'',
+    familyCode:move==='صادر'?familyCode:null,
+    appealId:move==='صادر'?appealId:null,
     source:(document.getElementById('inv-source')?.value||'').trim(),
     notes:(document.getElementById('inv-notes')?.value||'').trim()
   };
@@ -1428,7 +1466,12 @@ function editInventoryMovement(i){
   document.getElementById('inv-qty').value=m.qty||1;
   document.getElementById('inv-status').value=m.status||'شغال';
   document.getElementById('inv-date').value=m.date||'';
+  populateInventoryAppeals(m.appealId||'');
+  document.getElementById('inv-beneficiary-mode').value=m.beneficiaryMode|| (m.appealId?'appeal':'new');
+  document.getElementById('inv-new-head').value=m.beneficiaryMode==='new'?(m.beneficiary||''):'';
   document.getElementById('inv-beneficiary').value=m.beneficiary||'';
+  toggleInventoryBeneficiaryMode();
+  if(m.appealId) onInventoryAppealChange();
   document.getElementById('inv-source').value=m.source||'';
   document.getElementById('inv-notes').value=m.notes||'';
   toggleInventoryStatus();
