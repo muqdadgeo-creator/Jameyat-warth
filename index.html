@@ -1910,8 +1910,12 @@ function setProgramFilter(type,value,checked){
   value=normalizeProgramFilterValue(value);
   const arr=programFilterPending[type];
   if(checked&&!arr.includes(value))arr.push(value);
-  if(!checked){programFilterPending[type]=arr.filter(v=>v!==value)}
+  if(!checked)programFilterPending[type]=arr.filter(v=>v!==value);
+  // تطبيق الفلتر مباشرة عند اختيار/إلغاء أي قيمة، مثل فلاتر Excel.
+  // نُبقي حالة الانتظار والحالة المطبقة متزامنتين حتى لا تضيع النتيجة عند تغيير أكثر من فلتر.
+  programFilterCommitted[type]=[...programFilterPending[type]];
   renderProgramFilterLabels();
+  renderProgramFamilyPicker();
 }
 function applyProgramFilter(type){
   programFilterCommitted[type]=[...programFilterPending[type]];
