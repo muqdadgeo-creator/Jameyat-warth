@@ -1048,18 +1048,174 @@ function saveFamilyEdit(){
 }
 
 
-let inventoryMovements=(()=>{try{return JSON.parse(localStorage.getItem('warith_inventory')||'[]')}catch(e){return []}})();
-let inventoryFilter='الكل';
-let editingInventoryIndex=null;
-function setInventoryFilter(v,btn){inventoryFilter=v;document.querySelectorAll('#inventory .filterbar .chip').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');renderInventory();}
-function openInventoryMovement(type){editingInventoryIndex=null;document.getElementById('inventoryFormTitle').textContent=type==='in'?'إضافة وارد':'تسجيل صادر';document.getElementById('inv-move-type').value=type==='in'?'وارد':'صادر';document.getElementById('inv-item-type').value='جهاز';document.getElementById('inv-name').value='';document.getElementById('inv-qty').value=1;document.getElementById('inv-status').value='شغال';document.getElementById('inv-date').value=new Date().toISOString().slice(0,10);document.getElementById('inv-source').value='';document.getElementById('inv-notes').value='';toggleInventoryStatus();showScreen('add-inventory');}
-function toggleInventoryStatus(){document.getElementById('inv-status-wrap').style.display=document.getElementById('inv-item-type').value==='جهاز'?'block':'none';}
-function saveInventoryMovement(){const move=document.getElementById('inv-move-type').value,type=document.getElementById('inv-item-type').value,name=document.getElementById('inv-name').value.trim(),qty=Number(document.getElementById('inv-qty').value||0),date=document.getElementById('inv-date').value||new Date().toISOString().slice(0,10);if(!name){alert('أدخل اسم الصنف');return}if(qty<=0){alert('أدخل كمية صحيحة');return}const item={id:editingInventoryIndex!==null?inventoryMovements[editingInventoryIndex].id:Date.now(),move,type,name,qty,status:type==='جهاز'?document.getElementById('inv-status').value:'',date,source:document.getElementById('inv-source').value.trim(),notes:document.getElementById('inv-notes').value.trim()};if(editingInventoryIndex!==null)inventoryMovements[editingInventoryIndex]=item;else inventoryMovements.unshift(item);localStorage.setItem('warith_inventory',JSON.stringify(inventoryMovements));alert(editingInventoryIndex!==null?'تم تعديل حركة المخزن بنجاح ✓':'تم حفظ حركة المخزن بنجاح ✓');editingInventoryIndex=null;showScreen('inventory');}
-function inventorySummary(){const map={};inventoryMovements.forEach(m=>{const key=m.type+'|'+m.name; if(!map[key])map[key]={type:m.type,name:m.name,in:0,out:0,status:m.status||''}; if(m.move==='وارد')map[key].in+=Number(m.qty||0);else map[key].out+=Number(m.qty||0);if(m.status)map[key].status=m.status});return Object.values(map).map(x=>({...x,net:x.in-x.out}));}
-function renderInventory(){const q=(document.getElementById('inventoryQ')?.value||'').trim().toLowerCase();const all=inventorySummary();const filtered=all.filter(x=>(x.name+' '+x.status).toLowerCase().includes(q));const totalIn=inventoryMovements.filter(x=>x.move==='وارد').reduce((n,x)=>n+Number(x.qty||0),0),totalOut=inventoryMovements.filter(x=>x.move==='صادر').reduce((n,x)=>n+Number(x.qty||0),0);document.getElementById('inventoryCount').textContent=filtered.length+' صنف';document.getElementById('invItemsCount').textContent=all.length;document.getElementById('invInCount').textContent=totalIn;document.getElementById('invOutCount').textContent=totalOut;document.getElementById('invNetCount').textContent=totalIn-totalOut;document.getElementById('inventoryItems').innerHTML=filtered.map(x=>`<div class="card"><div class="row"><div class="avatar">${x.type==='جهاز'?'🔌':'📦'}</div><div class="grow"><div class="name">${escapeHtml(x.name)}</div><div class="sub">${x.status?'الحالة: '+escapeHtml(x.status):''}</div></div><span class="badge">${x.net} متوفر</span></div><div class="meta"><div>⬆️ وارد: ${x.in}</div><div>⬇️ صادر: ${x.out}</div><div>📊 صافي: ${x.net}</div></div></div>`).join('')||'<div class="empty">لا توجد أصناف في المخزن</div>';const latest=inventoryMovements.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.id-a.id).slice(0,5);document.getElementById('inventoryMovements').innerHTML=latest.map((m)=>{const i=inventoryMovements.indexOf(m);return `<div class="card"><div class="row"><div class="avatar">${m.move==='وارد'?'⬆️':'⬇️'}</div><div class="grow"><div class="name">${escapeHtml(m.name)} · ${m.qty}</div><div class="sub">${escapeHtml(m.move)}${m.status?' · الحالة: '+escapeHtml(m.status):''}</div><div class="sub">${escapeHtml(m.date)}${m.source?' · '+escapeHtml(m.source):''}</div></div></div><div class="member-actions"><button class="action primary" onclick="editInventoryMovement(${i})">✏️ تعديل</button><button class="action" onclick="deleteInventoryMovement(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد حركات مخزن بعد</div>';}
-function editInventoryMovement(i){const m=inventoryMovements[i];if(!m)return;editingInventoryIndex=i;document.getElementById('inventoryFormTitle').textContent='تعديل حركة المخزن';document.getElementById('inv-move-type').value=m.move;document.getElementById('inv-item-type').value=m.type;document.getElementById('inv-name').value=m.name;document.getElementById('inv-qty').value=m.qty;document.getElementById('inv-status').value=m.status||'شغال';document.getElementById('inv-date').value=m.date;document.getElementById('inv-source').value=m.source||'';document.getElementById('inv-notes').value=m.notes||'';toggleInventoryStatus();showScreen('add-inventory');}
-function deleteInventoryMovement(i){if(!inventoryMovements[i])return;if(!confirm('حذف هذه الحركة؟'))return;inventoryMovements.splice(i,1);localStorage.setItem('warith_inventory',JSON.stringify(inventoryMovements));renderInventory();}
 
+let inventoryMovements=(()=>{try{
+  const x=JSON.parse(localStorage.getItem('warith_inventory')||'[]');
+  return Array.isArray(x)?x:[];
+}catch(e){return []}})();
+let editingInventoryIndex=null;
+
+function openInventoryMovement(type){
+  editingInventoryIndex=null;
+  const title=document.getElementById('inventoryFormTitle');
+  if(title) title.textContent=type==='in'?'إضافة وارد':'تسجيل صادر';
+  const move=document.getElementById('inv-move-type');
+  if(move) move.value=type==='in'?'وارد':'صادر';
+  const itemType=document.getElementById('inv-item-type');
+  if(itemType) itemType.value='جهاز';
+  const name=document.getElementById('inv-name');
+  if(name) name.value='';
+  const qty=document.getElementById('inv-qty');
+  if(qty) qty.value='1';
+  const status=document.getElementById('inv-status');
+  if(status) status.value='شغال';
+  const date=document.getElementById('inv-date');
+  if(date) date.value=new Date().toISOString().slice(0,10);
+  const source=document.getElementById('inv-source');
+  if(source) source.value='';
+  const notes=document.getElementById('inv-notes');
+  if(notes) notes.value='';
+  const btn=document.querySelector('#add-inventory button.action.primary');
+  if(btn) btn.textContent='حفظ الحركة';
+  toggleInventoryStatus();
+  showScreen('add-inventory');
+}
+
+function toggleInventoryStatus(){
+  const wrap=document.getElementById('inv-status-wrap');
+  const type=document.getElementById('inv-item-type');
+  if(wrap) wrap.style.display=(type && type.value==='جهاز')?'block':'none';
+}
+
+function saveInventoryMovement(){
+  const move=document.getElementById('inv-move-type')?.value||'وارد';
+  const type=document.getElementById('inv-item-type')?.value||'جهاز';
+  const name=(document.getElementById('inv-name')?.value||'').trim();
+  const qty=Number(document.getElementById('inv-qty')?.value||0);
+  const date=document.getElementById('inv-date')?.value||new Date().toISOString().slice(0,10);
+  if(!name){alert('أدخل اسم الصنف');return}
+  if(qty<=0){alert('أدخل كمية صحيحة');return}
+
+  const item={
+    id:editingInventoryIndex!==null ? inventoryMovements[editingInventoryIndex].id : Date.now(),
+    move,type,name,qty,
+    status:type==='جهاز'?(document.getElementById('inv-status')?.value||'شغال'):'',
+    date,
+    source:(document.getElementById('inv-source')?.value||'').trim(),
+    notes:(document.getElementById('inv-notes')?.value||'').trim()
+  };
+
+  if(editingInventoryIndex!==null) inventoryMovements[editingInventoryIndex]=item;
+  else inventoryMovements.unshift(item);
+
+  localStorage.setItem('warith_inventory',JSON.stringify(inventoryMovements));
+  editingInventoryIndex=null;
+  alert('تم حفظ حركة المخزن بنجاح ✓');
+  showScreen('inventory');
+}
+
+function inventorySummary(){
+  const map={};
+  inventoryMovements.forEach(m=>{
+    const key=(m.name||'')+'';
+    if(!map[key]) map[key]={name:m.name||'',in:0,out:0,status:m.status||''};
+    if(m.move==='وارد') map[key].in+=Number(m.qty||0);
+    else if(m.move==='صادر') map[key].out+=Number(m.qty||0);
+    if(m.status) map[key].status=m.status;
+  });
+  return Object.values(map).map(x=>({...x,net:x.in-x.out}));
+}
+
+function renderInventory(){
+  const q=(document.getElementById('inventoryQ')?.value||'').trim().toLowerCase();
+  const all=inventorySummary();
+  const filtered=all.filter(x=>(x.name+' '+x.status).toLowerCase().includes(q));
+
+  const totalIn=inventoryMovements.filter(x=>x.move==='وارد')
+    .reduce((n,x)=>n+Number(x.qty||0),0);
+  const totalOut=inventoryMovements.filter(x=>x.move==='صادر')
+    .reduce((n,x)=>n+Number(x.qty||0),0);
+
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('inventoryCount',filtered.length+' صنف');
+  set('invItemsCount',all.length);
+  set('invInCount',totalIn);
+  set('invOutCount',totalOut);
+  set('invNetCount',totalIn-totalOut);
+
+  const items=document.getElementById('inventoryItems');
+  if(items){
+    items.innerHTML=filtered.map(x=>`
+      <div class="card">
+        <div class="row">
+          <div class="avatar">📦</div>
+          <div class="grow">
+            <div class="name">${escapeHtml(x.name)}</div>
+            <div class="sub">${x.status?'الحالة: '+escapeHtml(x.status):''}</div>
+          </div>
+          <span class="badge">${x.net} متوفر</span>
+        </div>
+        <div class="meta">
+          <div>⬆️ وارد: ${x.in}</div>
+          <div>⬇️ صادر: ${x.out}</div>
+          <div>📊 صافي: ${x.net}</div>
+        </div>
+      </div>`).join('') ||
+      '<div class="empty">لا توجد أصناف في المخزن</div>';
+  }
+
+  const movements=document.getElementById('inventoryMovements');
+  if(movements){
+    const latest=inventoryMovements.slice()
+      .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')) || Number(b.id||0)-Number(a.id||0))
+      .slice(0,5);
+
+    movements.innerHTML=latest.map(m=>{
+      const i=inventoryMovements.indexOf(m);
+      return `<div class="card">
+        <div class="row">
+          <div class="avatar">${m.move==='وارد'?'⬆️':'⬇️'}</div>
+          <div class="grow">
+            <div class="name">${escapeHtml(m.name||'')} · ${Number(m.qty||0)}</div>
+            <div class="sub">${escapeHtml(m.move||'')}${m.status?' · الحالة: '+escapeHtml(m.status):''}</div>
+            <div class="sub">${escapeHtml(m.date||'')}${m.source?' · '+escapeHtml(m.source):''}</div>
+          </div>
+        </div>
+        <div class="member-actions">
+          <button class="action primary" onclick="editInventoryMovement(${i})">✏️ تعديل</button>
+          <button class="action" onclick="deleteInventoryMovement(${i})">🗑 حذف</button>
+        </div>
+      </div>`;
+    }).join('') || '<div class="empty">لا توجد حركات مخزن بعد</div>';
+  }
+}
+
+function editInventoryMovement(i){
+  const m=inventoryMovements[i];
+  if(!m)return;
+  editingInventoryIndex=i;
+  document.getElementById('inventoryFormTitle').textContent='تعديل حركة المخزن';
+  document.getElementById('inv-move-type').value=m.move||'وارد';
+  document.getElementById('inv-item-type').value=m.type||'جهاز';
+  document.getElementById('inv-name').value=m.name||'';
+  document.getElementById('inv-qty').value=m.qty||1;
+  document.getElementById('inv-status').value=m.status||'شغال';
+  document.getElementById('inv-date').value=m.date||'';
+  document.getElementById('inv-source').value=m.source||'';
+  document.getElementById('inv-notes').value=m.notes||'';
+  const btn=document.querySelector('#add-inventory button.action.primary');
+  if(btn)btn.textContent='حفظ التعديل';
+  toggleInventoryStatus();
+  showScreen('add-inventory');
+}
+
+function deleteInventoryMovement(i){
+  if(!inventoryMovements[i])return;
+  if(!confirm('حذف هذه الحركة؟'))return;
+  inventoryMovements.splice(i,1);
+  localStorage.setItem('warith_inventory',JSON.stringify(inventoryMovements));
+  renderInventory();
+}
 function openMenu(){document.getElementById('drawer').classList.add('open')}function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}function coming(x){alert(x+' — قيد البناء في المرحلة التالية')}
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='inv-item-type')toggleInventoryStatus();});renderFamilies(); renderDonations(); renderAppeals(); renderInventory(); updateAppealDashboard(); if(document.getElementById('f-has-salary')) toggleSalarySource();
 </script>
