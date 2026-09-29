@@ -383,7 +383,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="section"><b>سجل حركة الأجهزة والمواد</b></div>
 <div class="card" style="padding:0;overflow:hidden">
   <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;min-width:850px">
+    <table style="width:max-content;min-width:100%;border-collapse:collapse">
       <thead>
         <tr>
           <th style="padding:10px;text-align:right">ت</th>
@@ -392,7 +392,8 @@ textarea.forminput{height:80px;resize:vertical}
           <th style="padding:10px;text-align:right">الحالة</th>
           <th style="padding:10px;text-align:right">العدد</th>
           <th style="padding:10px;text-align:right">تاريخ الإدخال / الإخراج</th>
-          <th style="padding:10px;text-align:right">المستفيد</th>
+          <th style="padding:10px;text-align:right;min-width:180px">المستفيد</th>
+          <th style="padding:10px;text-align:right;min-width:240px">الملاحظات</th>
           <th style="padding:10px;text-align:right">إجراءات</th>
         </tr>
       </thead>
@@ -477,7 +478,7 @@ textarea.forminput{height:80px;resize:vertical}
 
   <div id="registeredOwnerFields" style="margin-top:8px">
     <label class="fl">اختيار العائلة</label>
-    <select id="a-family" class="forminput" onchange="showSelectedAppealFamily()">
+    <select id="appeal-family" class="forminput" onchange="showSelectedAppealFamily()">
       <option value="">اختر العائلة</option>
     </select>
     <div id="selectedAppealFamily" class="inline-note"></div>
@@ -711,15 +712,26 @@ function setAppealOwnerType(v){
   document.getElementById('newFamilySaveChoice').style.display=v==='new'?'block':'none';
 }
 function populateAppealFamilies(selected){
-  const sel=document.getElementById('a-family'); if(!sel)return;
-  const ordered=[...families].sort((a,b)=>Number(a.c)-Number(b.c));
-  sel.innerHTML='<option value="">اختر العائلة</option>'+ordered.map(f=>`<option value="${escapeHtml(f.c)}">#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'عائلة')}</option>`).join('');
-  if(selected!==undefined)sel.value=String(selected||'');
+  const sel=document.getElementById('appeal-family'); if(!sel)return;
+  // أعد قراءة العوائل من التخزين حتى تظهر العوائل المضافة حديثاً داخل المناشدة
+  try{
+    const raw=localStorage.getItem('warith_families_v2')||localStorage.getItem('warith_families');
+    if(raw){
+      const stored=JSON.parse(raw);
+      if(Array.isArray(stored)) families=stored;
+    }
+  }catch(e){}
+  const ordered=(Array.isArray(families)?families:[])
+    .filter(f=>f && (f.c!==undefined || f.head || f.n))
+    .sort((a,b)=>Number(a.c||0)-Number(b.c||0));
+  sel.innerHTML='<option value="">'+(ordered.length?'اختر العائلة':'لا توجد عوائل مسجلة')+'</option>'+
+    ordered.map(f=>`<option value="${escapeHtml(f.c??'')}">#${escapeHtml(f.c??'')} — ${escapeHtml(f.head||f.n||'عائلة')}</option>`).join('');
+  if(selected!==undefined && selected!==null && selected!=='') sel.value=String(selected);
   showSelectedAppealFamily();
 }
 function showSelectedAppealFamily(){
   const box=document.getElementById('selectedAppealFamily'); if(!box)return;
-  const code=document.getElementById('a-family')?.value;
+  const code=document.getElementById('appeal-family')?.value;
   const f=families.find(x=>String(x.c)===String(code));
   if(!f){box.textContent='';return}
   box.innerHTML=`العائلة: <b>${escapeHtml(f.head||f.n||'')}</b> · الهاتف: ${phoneToolsHtml(f.phone)} · العنوان: ${escapeHtml(f.address||'غير مسجل')}`;
@@ -768,13 +780,13 @@ function renderAppealAttachments(){
 function removeAppealAttachment(i){appealAttachments.splice(i,1);renderAppealAttachments();}
 function saveAppeal(){
   const date=document.getElementById('a-date').value||new Date().toISOString().slice(0,10);
-  if(appealOwnerType==='registered'&&!document.getElementById('a-family').value){alert('اختر العائلة أولاً');return}
+  if(appealOwnerType==='registered'&&!document.getElementById('appeal-family').value){alert('اختر العائلة أولاً');return}
   if(appealOwnerType==='new'&&!document.getElementById('a-name').value.trim()){alert('أدخل اسم صاحب الحالة');return}
   if(!document.getElementById('a-amount').value){alert('أدخل المبلغ المطلوب');return}
 
   let familyCode=null, ownerName='', ownerPhone='', ownerAddress='', newFamilyAdded=false;
   if(appealOwnerType==='registered'){
-    familyCode=Number(document.getElementById('a-family').value);
+    familyCode=Number(document.getElementById('appeal-family').value);
     const f=families.find(x=>Number(x.c)===familyCode);
     ownerName=f?.head||f?.n||''; ownerPhone=f?.phone||''; ownerAddress=f?.address||'';
   }else{
@@ -1005,7 +1017,7 @@ function renderHomeDashboard(){
   if(!box)return;
   box.innerHTML=events.slice(0,6).map(e=>`<div class="card"><div class="row"><div class="avatar">${escapeHtml(e.icon)}</div><div class="grow"><b>${escapeHtml(e.title)}</b><div class="sub">${escapeHtml(e.desc)}</div></div><span class="badge">${escapeHtml(homeDateLabel(e.date))}</span></div></div>`).join('')||'<div class="empty">لا توجد نشاطات مسجلة حالياً</div>';
 }
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='families')renderFamilies();if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='families')renderFamilies();if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'){if(editingAppealIndex===null)resetAppealForm();else populateAppealFamilies(appeals[editingAppealIndex]?.familyCode||'');}if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
 function phoneToolsHtml(phone){
   const raw=String(phone||'').trim();
   if(!raw)return '<span class=\"sub\">غير مسجل</span>';
@@ -1428,8 +1440,9 @@ function renderInventoryAppealPriority(){
   const list=inventoryDeviceAppeals();
   if(!list.length){box.innerHTML='<div class="empty" style="padding:18px">لا توجد حالياً مناشدات أجهزة / أثاث بانتظار التسليم</div>';return;}
   const priorityLabel=p=>p==='عاجلة'?'🔴 عاجلة':p==='مهمة'?'🟠 مهمة':'🟢 عادية';
-  box.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px"><thead><tr><th style="padding:10px;text-align:right">الأولوية</th><th style="padding:10px;text-align:right">رقم المناشدة</th><th style="padding:10px;text-align:right">المستفيد</th><th style="padding:10px;text-align:right">العائلة</th><th style="padding:10px;text-align:right">الهاتف</th><th style="padding:10px;text-align:right">التاريخ</th><th style="padding:10px;text-align:right">الحالة</th><th style="padding:10px;text-align:right">إجراء</th></tr></thead><tbody>${list.map(a=>`<tr><td style="padding:9px;border-top:1px solid #edf1ef;font-weight:900">${priorityLabel(a.priority)}</td><td style="padding:9px;border-top:1px solid #edf1ef">#${escapeHtml(a.id)}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.ownerName||'غير محدد')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${a.familyCode?'#'+escapeHtml(a.familyCode):'غير مسجلة'}</td><td style="padding:9px;border-top:1px solid #edf1ef">${phoneToolsHtml(a.ownerPhone)}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.date||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.status||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef"><button class="action primary" onclick="openAppealFromInventory(${Number(a.id)})">عرض</button><button class="action" style="margin-inline-start:5px" onclick="openInventoryForAppeal(${Number(a.id)})">إخراج</button></td></tr>`).join('')}</tbody></table></div>`;
+  box.innerHTML=`<div style="overflow-x:auto;width:100%"><table style="width:100%;border-collapse:collapse;min-width:1100px;table-layout:auto"><thead><tr><th style="padding:10px;text-align:right">الأولوية</th><th style="padding:10px;text-align:right">رقم المناشدة</th><th style="padding:10px;text-align:right">المستفيد</th><th style="padding:10px;text-align:right">العائلة</th><th style="padding:10px;text-align:right">الهاتف</th><th style="padding:10px;text-align:right;min-width:280px">الملاحظات / التفاصيل</th><th style="padding:10px;text-align:right">التاريخ</th><th style="padding:10px;text-align:right">الحالة</th><th style="padding:10px;text-align:right;white-space:nowrap">إجراء</th></tr></thead><tbody>${list.map(a=>`<tr><td style="padding:9px;border-top:1px solid #edf1ef;font-weight:900;white-space:nowrap">${priorityLabel(a.priority)}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">#${escapeHtml(a.id)}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">${escapeHtml(a.ownerName||'غير محدد')}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">${a.familyCode?'#'+escapeHtml(a.familyCode):'غير مسجلة'}</td><td style="padding:9px;border-top:1px solid #edf1ef">${phoneToolsHtml(a.ownerPhone)}</td><td style="padding:9px;border-top:1px solid #edf1ef;min-width:280px;white-space:pre-wrap;line-height:1.7">${escapeHtml(a.notes||'—')}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">${escapeHtml(a.date||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">${escapeHtml(a.status||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap"><button class="action primary" onclick="openAppealFromInventory(${Number(a.id)})">عرض</button><button class="action" style="margin-inline-start:5px" onclick="openInventoryForAppeal(${Number(a.id)})">إخراج</button></td></tr>`).join('')}</tbody></table></div>`;
 }
+
 function openAppealFromInventory(id){
   const i=appeals.findIndex(a=>Number(a.id)===Number(id)); if(i<0)return;
   openAppeal(i);
@@ -1478,14 +1491,15 @@ function renderInventory(){
         <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.status||'—')}</td>
         <td style="padding:9px;border-top:1px solid #edf1ef">${Number(m.qty||0)}</td>
         <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.date||'')}</td>
-        <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.beneficiary||'—')}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef;min-width:180px">${escapeHtml(m.beneficiary||'—')}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef;min-width:240px;white-space:pre-wrap">${escapeHtml(m.notes||'—')}</td>
         <td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">
           <button class="action primary" onclick="editInventoryMovement(${originalIndex})">✏️</button>
           <button class="action" onclick="hideRecord('inventoryMovements',${originalIndex},'حركة المخزن')">🚫</button><button class="action" onclick="deleteInventoryMovement(${originalIndex})">🗑</button>
         </td>
       </tr>`;
     }).join('') || `
-      <tr><td colspan="8" style="padding:18px;text-align:center;color:#71857f">
+      <tr><td colspan="9" style="padding:18px;text-align:center;color:#71857f">
         لا توجد حركات للمخزن بعد
       </td></tr>`;
   }
