@@ -69,7 +69,7 @@ textarea.forminput{height:80px;resize:vertical}
 <header><button class="icon" onclick="openMenu()">☰</button><div class="logo">و</div><div class="brand"><b>جمعية وارث الخيرية</b><small>نظام إدارة الجمعية</small></div><button class="icon" onclick="alert('لا توجد إشعارات جديدة')">🔔</button></header>
 <main>
 
-<section id="home" class="screen active">
+<section id="home" class="screen active" style="display:block!important">
 <div class="hello">السلام عليكم</div><div class="title">لوحة التحكم</div>
 <div class="stats">
 <div class="stat">👨‍👩‍👧‍👦 <b>400</b><span>العوائل</span></div><div class="stat">💰 <b>12</b><span>تبرعات اليوم</span></div>
@@ -90,7 +90,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="card"><div class="row"><div class="avatar">م</div><div class="grow"><b>مناشدة جديدة</b><div class="sub">تمت إضافة مناشدة لعائلة</div></div><span class="badge">اليوم</span></div></div>
 </section>
 
-<section id="families" class="screen">
+<section id="families" class="screen" style="display:none!important">
 <div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">العوائل</div><div class="count" id="count"></div></div>
 <div class="search"><span>🔎</span><input id="q" placeholder="ابحث برقم العائلة أو المعرف أو الاسم" oninput="renderFamilies()"><button onclick="coming('الفلاتر المتقدمة')">☷</button></div>
 <div class="filterbar"><button class="chip">الكل</button><button class="chip">مستمر</button><button class="chip">مفتوح</button><button class="chip">ملك</button><button class="chip">إيجار</button><button class="chip">حقوق</button></div>
@@ -101,7 +101,7 @@ textarea.forminput{height:80px;resize:vertical}
 
 
 
-<section id="donations" class="screen">
+<section id="donations" class="screen" style="display:none!important">
 <div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">التبرعات</div></div>
 
 <div class="donation-tabs">
@@ -139,7 +139,7 @@ textarea.forminput{height:80px;resize:vertical}
 </div>
 </section>
 
-<section id="add-donor" class="screen">
+<section id="add-donor" class="screen" style="display:none!important">
 <div class="top"><button class="back" onclick="showScreen('donations')">← رجوع</button><div class="screen-title" id="donorFormTitle">إضافة متبرع</div></div>
 <div class="card">
 <label class="fl">اسم المتبرع</label><input id="d-name" class="forminput" placeholder="الاسم الكامل">
@@ -150,7 +150,7 @@ textarea.forminput{height:80px;resize:vertical}
 <button class="action primary" style="width:100%" onclick="saveDonor()">حفظ المتبرع</button>
 </section>
 
-<section id="add-donation" class="screen">
+<section id="add-donation" class="screen" style="display:none!important">
 <div class="top"><button class="back" onclick="showScreen('donations')">← رجوع</button><div class="screen-title" id="donationFormTitle">تسجيل تبرع</div></div>
 <div class="card">
 <label class="fl">المتبرع</label><select id="dn-donor" class="forminput"></select>
@@ -182,7 +182,7 @@ textarea.forminput{height:80px;resize:vertical}
 <button class="action primary" style="width:100%" onclick="saveDonation()">حفظ التبرع</button>
 </section>
 
-<section id="add-family" class="screen">
+<section id="add-family" class="screen" style="display:none!important">
 <div class="top"><button class="back" onclick="showScreen('families')">← رجوع</button><div class="screen-title">إضافة عائلة</div></div>
 
 <div class="card">
@@ -242,7 +242,7 @@ textarea.forminput{height:80px;resize:vertical}
 </section>
 
 
-<section id="appeals" class="screen">
+<section id="appeals" class="screen" style="display:none!important">
 <div class="top">
   <button class="back" onclick="showScreen('home')">← رجوع</button>
   <div class="screen-title">المناشدات</div>
@@ -268,7 +268,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div id="appealAllWrap" style="display:none"></div>
 </section>
 
-<section id="appeal-detail" class="screen">
+<section id="appeal-detail" class="screen" style="display:none!important">
 <div class="top">
   <button class="back" onclick="showScreen('appeals')">← رجوع</button>
   <div class="screen-title">تفاصيل المناشدة</div>
@@ -277,7 +277,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div id="appealDetailContent"></div>
 </section>
 
-<section id="add-appeal" class="screen">
+<section id="add-appeal" class="screen" style="display:none!important">
 <div class="top">
   <button class="back" onclick="showScreen('appeals')">← رجوع</button>
   <div class="screen-title" id="appealFormTitle">إضافة مناشدة</div>
@@ -371,13 +371,13 @@ textarea.forminput{height:80px;resize:vertical}
 <button class="action primary" style="width:100%;margin-top:2px" onclick="saveAppeal()">حفظ وخروج</button>
 </section>
 
-<section id="family-detail" class="screen">
+<section id="family-detail" class="screen" style="display:none!important">
 <div class="top"><button class="back" onclick="showScreen('families')">← رجوع</button><div class="screen-title">سجل العائلة</div><button class="back" onclick="editFamily()">✏️ تعديل</button></div>
 <div id="familyDetailContent"></div>
 </section>
 
 
-<section id="edit-family" class="screen">
+<section id="edit-family" class="screen" style="display:none!important">
 <div class="top"><button class="back" onclick="showScreen('family-detail')">← رجوع</button><div class="screen-title">تعديل العائلة</div></div>
 <div class="card">
 <div style="font-size:12px;font-weight:900;margin-bottom:7px">👤 بيانات رب الأسرة</div>
@@ -418,13 +418,13 @@ textarea.forminput{height:80px;resize:vertical}
 <button class="action primary" style="width:100%;margin-top:2px" onclick="saveFamilyEdit()">حفظ التعديلات</button>
 </section>
 
-<section id="family-members" class="screen">
+<section id="family-members" class="screen" style="display:none!important">
 <div class="top"><button class="back" onclick="showScreen('family-detail')">← رجوع</button><div class="screen-title">أفراد العائلة</div></div>
 <div class="actions"><button class="action primary" onclick="showScreen('add-member')">＋ إضافة فرد</button></div>
 <div id="memberList"></div>
 </section>
 
-<section id="add-member" class="screen">
+<section id="add-member" class="screen" style="display:none!important">
 <div class="top"><button class="back" onclick="showScreen('family-members')">← رجوع</button><div class="screen-title" id="member-form-title">إضافة فرد</div></div>
 <div class="card">
 <div style="font-size:12px;font-weight:900;margin-bottom:7px">👤 بيانات الفرد</div>
@@ -723,33 +723,27 @@ function deleteAppeal(){
 }
 
 function getFamily(){return families.find(x=>Number(x.c)===Number(selectedFamilyCode));}
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='families')renderFamilies();if(id==='family-detail')renderFamilyDetail();if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation')resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm()}
-function renderFamilies(){const q=(document.getElementById('q')?.value||'').trim().toLowerCase();const a=families.filter(x=>[x.c,x.n,x.i,x.j,x.h,x.r,x.st].join(' ').toLowerCase().includes(q));document.getElementById('count').textContent=a.length+' عائلة';document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button class="more" onclick="event.stopPropagation();coming('خيارات العائلة')">⋮</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للبحث</div>'}
-function openFamily(code){selectedFamilyCode=Number(code);showScreen('family-detail');}
-function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
-function renderFamilyAttachments(){const x=getFamily();if(!x)return;const list=x.attachments||[];const box=document.getElementById('familyAttachments');if(box)box.innerHTML=list.map((a,i)=>`<div class="attachment"><div>📄</div><div class="grow"><div class="fname">${a.name}</div><div class="fmeta">${a.type||'ملف'} · ${formatFileSize(a.size||0)}</div></div><button class="more" onclick="openAttachment(${i})">↗</button><button class="more" onclick="deleteAttachment(${i})">🗑</button></div>`).join('')||'<div class="empty" style="padding:15px">لا توجد مرفقات</div>';}
-function addFamilyAttachment(input){const x=getFamily();const file=input?.files?.[0];if(!x||!file)return;if(file.size>5*1024*1024){alert('حجم الملف أكبر من 5 MB.');input.value='';return}const reader=new FileReader();reader.onload=()=>{if(!x.attachments)x.attachments=[];x.attachments.push({name:file.name,type:file.type,size:file.size,data:reader.result});try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);renderFamilyAttachments();const box=document.getElementById('new-family-attachments');if(box)box.innerHTML='<div class="sub">تمت إضافة المرفق وسيظهر ضمن سجل العائلة.</div>';alert('تم حفظ المرفق بنجاح ✓');}catch(e){x.attachments.pop();alert('تعذر حفظ المرفق. قد تكون مساحة التخزين غير كافية.');}input.value='';};reader.readAsDataURL(file);}
-function openAttachment(i){const x=getFamily();const a=x?.attachments?.[i];if(!a)return;const w=window.open();if(!w){alert('اسمح للمتصفح بفتح النوافذ المنبثقة.');return}w.document.write('<title>'+a.name.replace(/</g,'&lt;')+'</title><iframe src="'+a.data+'" style="width:100%;height:100vh;border:0"></iframe>');w.document.close();}
-function deleteAttachment(i){const x=getFamily();if(!x||!x.attachments?.[i])return;if(!confirm('حذف هذا المرفق؟'))return;x.attachments.splice(i,1);localStorage.setItem('warith_families_v2',JSON.stringify(families));localStorage.setItem('warith_families',JSON.stringify(families));renderFamilyAttachments();}
-function renderFamilyDetail(){const x=getFamily();if(!x){showScreen('families');return}const members=x.membersList||[];document.getElementById('familyDetailContent').innerHTML=`<div class="card"><div class="row"><div class="avatar">${(x.head||'ع').charAt(0)}</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div><div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap"><a class="action primary" style="text-decoration:none;padding:8px 10px" href="tel:${x.phone||''}">📞 اتصال</a><a class="action" style="text-decoration:none;padding:8px 10px" href="https://wa.me/${(x.phone||'').replace(/^0/,'964').replace(/\D/g,'')}" target="_blank">💬 واتساب</a><a class="action" style="text-decoration:none;padding:8px 10px" href="sms:${x.phone||''}">✉️ SMS</a></div></div><span class="badge">${x.st}</span></div></div><div class="detail-grid"><div class="info"><small>عدد الأفراد</small><b>${members.length||x.m}</b></div><div class="info"><small>الراتب</small><b>${x.s||'0 د.ع'}</b></div><div class="info"><small>هل لديه راتب؟</small><b>${x.hasSalary||'غير محدد'}</b></div><div class="info"><small>الجهة المانحة</small><b>${x.salarySource||'لا توجد'}</b></div><div class="info"><small>السكن</small><b>${x.h||'غير محدد'}</b></div><div class="info"><small>الحقوق</small><b>${x.r||'غير محدد'}</b></div><div class="info"><small>المهنة</small><b>${x.j||'غير محدد'}</b></div><div class="info"><small>الحالة الاجتماعية</small><b>${x.social||'غير محدد'}</b></div></div><div class="card"><b>📎 مرفقات العائلة</b><div id="familyAttachments" class="attachments"></div><div class="attach-row"><label class="action primary" style="flex:1;text-align:center;cursor:pointer">＋ إضافة مرفق<input type="file" id="detail-attachment-input" onchange="addFamilyAttachment(this)"></label></div></div><div class="tabs"><button class="tab active">البيانات</button><button class="tab" onclick="showScreen('family-members')">الأفراد (${members.length})</button><button class="tab" onclick="coming('المساعدات')">المساعدات</button><button class="tab" onclick="coming('المناشدات')">المناشدات</button><button class="tab" onclick="coming('المرفقات')">المرفقات</button></div><div class="card"><b>عنوان السكن</b><div class="sub">${x.address||'العنوان غير مسجل'}</div><div style="margin-top:8px"><b>أقرب نقطة دالة</b><div class="sub">${x.landmark||'غير مسجلة'}</div></div>${x.map?`<a class="action" style="display:inline-block;margin-top:10px;text-decoration:none" href="${x.map}" target="_blank">📍 فتح الموقع</a>`:''}</div>`}
-renderFamilyAttachments();
-function renderMembers(){const x=getFamily();if(!x)return;const list=x.membersList||[];document.getElementById('memberList').innerHTML=list.map((m,i)=>`<div class="card member-card"><div class="avatar">${(m.name||'ف').charAt(0)}</div><div class="grow"><div class="name">${m.name}</div><div class="sub">${m.relation||'—'} · ${m.gender||'—'} · ${m.birth?calcAge(m.birth)+' سنة':'العمر غير محدد'}</div><div class="sub">${m.study||'لا توجد دراسة'} · ${m.job||'لا توجد مهنة'}</div><div class="member-actions"><button class="action primary" onclick="editMember(${i})">✏️ تعديل</button><button class="action" onclick="deleteMember(${i})">🗑 حذف</button></div></div></div>`).join('')||'<div class="empty">لم تتم إضافة أفراد بعد</div>';}
-function calcAge(b){if(!b)return '';const d=new Date(b+'T00:00:00');const t=new Date();let a=t.getFullYear()-d.getFullYear();if(t.getMonth()<d.getMonth()||(t.getMonth()===d.getMonth()&&t.getDate()<d.getDate()))a--;return a;}
-function resetMemberForm(){editingMemberIndex=null;['m-name','m-birth','m-job','m-income','m-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});['m-relation','m-gender','m-study'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.getElementById('member-form-title').textContent='إضافة فرد';document.getElementById('member-save-btn').textContent='حفظ الفرد';}
-
-function editMember(i){const x=getFamily();if(!x||!x.membersList?.[i])return;const m=x.membersList[i];editingMemberIndex=i;document.getElementById('m-name').value=m.name||'';document.getElementById('m-relation').value=m.relation||'';document.getElementById('m-gender').value=m.gender||'';document.getElementById('m-birth').value=m.birth||'';document.getElementById('m-study').value=m.study||'';document.getElementById('m-job').value=m.job||'';document.getElementById('m-income').value=m.income||'';document.getElementById('m-notes').value=m.notes||'';document.getElementById('member-form-title').textContent='تعديل الفرد';document.getElementById('member-save-btn').textContent='حفظ التعديل';showScreen('add-member');}
-
-function saveMember(){const x=getFamily();if(!x)return;const name=document.getElementById('m-name').value.trim();const relation=document.getElementById('m-relation').value;const gender=document.getElementById('m-gender').value;const birth=document.getElementById('m-birth').value;const study=document.getElementById('m-study').value;const job=document.getElementById('m-job').value.trim();const income=document.getElementById('m-income').value.trim();const notes=document.getElementById('m-notes').value.trim();if(!name||!relation){alert('يرجى إدخال اسم الفرد وصلة القرابة');return}if(!x.membersList)x.membersList=[];const member={name,relation,gender,birth,study,job,income,notes};const isEdit=editingMemberIndex!==null&&x.membersList[editingMemberIndex];if(isEdit){x.membersList[editingMemberIndex]=member;}else{x.membersList.push(member);}x.m=x.membersList.length;try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);const check=JSON.parse(localStorage.getItem('warith_families_v2')||'[]');const saved=check.find(f=>Number(f.c)===Number(x.c));if(!saved||!Array.isArray(saved.membersList)||saved.membersList.length!==x.membersList.length)throw new Error('verify');}catch(e){if(isEdit){x.membersList[editingMemberIndex]=isEdit;}else{x.membersList.pop();}x.m=x.membersList.length;alert('تعذر حفظ التعديل على هذا المتصفح.');return}alert(isEdit?'تم تعديل الفرد بنجاح ✓':'تم حفظ الفرد بنجاح ✓');editingMemberIndex=null;showScreen('family-members');}
-
-function deleteMember(i){const x=getFamily();if(!x||!x.membersList?.[i])return;if(!confirm('حذف هذا الفرد؟'))return;x.membersList.splice(i,1);x.m=x.membersList.length;localStorage.setItem('warith_families_v2',JSON.stringify(families));localStorage.setItem('warith_families',JSON.stringify(families));renderMembers();}
-
-
-function toggleSalarySource(){
-const yes=document.getElementById('f-has-salary').value==='نعم';
-const field=document.getElementById('f-salary-source');
-field.disabled=!yes;
-field.placeholder=yes?'اسم الجهة المانحة':'يظهر عند اختيار نعم';
-if(!yes)field.value='';
+function showScreen(id){
+  document.querySelectorAll('main > section.screen').forEach(s=>{
+    s.classList.remove('active');
+    s.style.setProperty('display','none','important');
+  });
+  const target=document.getElementById(id);
+  if(!target)return;
+  target.classList.add('active');
+  target.style.setProperty('display','block','important');
+  window.scrollTo(0,0);
+  if(id==='families')renderFamilies();
+  if(id==='family-detail')renderFamilyDetail();
+  if(id==='family-members')renderMembers();
+  if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();
+  if(id==='donations')switchDonationTab('donors');
+  if(id==='donors')switchDonationTab('donors');
+  if(id==='add-donor')resetDonorForm();
+  if(id==='add-donation')resetDonationForm();
+  if(id==='appeals')renderAppeals();
+  if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);
+  if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();
 }
 
 function pickLocation(){
@@ -931,7 +925,14 @@ function saveFamilyEdit(){
   showScreen('family-detail');
 }
 
-function openMenu(){document.getElementById('drawer').classList.add('open')}function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}function coming(x){alert(x+' — قيد البناء في المرحلة التالية')}renderFamilies(); renderDonations(); renderAppeals(); updateAppealDashboard(); if(document.getElementById('f-has-salary')) toggleSalarySource();
+function openMenu(){document.getElementById('drawer').classList.add('open')}function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}function coming(x){alert(x+' — قيد البناء في المرحلة التالية')}(function enforceSingleScreen(){
+  document.querySelectorAll('main > section.screen').forEach(s=>{
+    const isHome=s.id==='home';
+    s.style.setProperty('display',isHome?'block':'none','important');
+    s.classList.toggle('active',isHome);
+  });
+})();
+renderFamilies(); renderDonations(); renderAppeals(); updateAppealDashboard(); if(document.getElementById('f-has-salary')) toggleSalarySource();
 </script>
 </body>
 </html>
