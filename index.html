@@ -509,6 +509,9 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterHousingBtn" class="program-filter-btn" onclick="toggleProgramFilter('housing')">السكن: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('housing')">تطبيق</button></div><div id="programFilterHousingMenu" class="program-filter-menu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterStatusBtn" class="program-filter-btn" onclick="toggleProgramFilter('status')">الحالة: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('status')">تطبيق</button></div><div id="programFilterStatusMenu" class="program-filter-menu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterSalaryBtn" class="program-filter-btn" onclick="toggleProgramFilter('salary')">الراتب: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('salary')">تطبيق</button></div><div id="programFilterSalaryMenu" class="program-filter-menu"></div></div>
+<div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterJobBtn" class="program-filter-btn" onclick="toggleProgramFilter('job')">المهنة: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('job')">تطبيق</button></div><div id="programFilterJobMenu" class="program-filter-menu"></div></div>
+<div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterSocialBtn" class="program-filter-btn" onclick="toggleProgramFilter('social')">الحالة الاجتماعية: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('social')">تطبيق</button></div><div id="programFilterSocialMenu" class="program-filter-menu"></div></div>
+<div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterStudentBtn" class="program-filter-btn" onclick="toggleProgramFilter('student')">الطلبة: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('student')">تطبيق</button></div><div id="programFilterStudentMenu" class="program-filter-menu"></div></div>
 </div>
 <div class="search" style="margin-top:8px"><span>🔎</span><input id="programFamilyQ" placeholder="ابحث برقم العائلة أو اسم رب الأسرة أو المعرف" oninput="renderProgramFamilyPicker()"></div>
 <div id="programFilterActiveNote" class="inline-note" style="margin-top:7px">الفلاتر غير مفعّلة حالياً</div>
@@ -806,6 +809,7 @@ textarea.forminput{height:80px;resize:vertical}
 <label class="fl">صلة القرابة</label><select id="m-relation" class="forminput"><option value="">اختر</option><option>رب الأسرة</option><option>زوجة</option><option>ابن</option><option>ابنة</option><option>أب</option><option>أم</option><option>أخ</option><option>أخت</option><option>حفيد</option><option>أخرى</option></select>
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:7px"><div><label class="fl">الجنس</label><select id="m-gender" class="forminput"><option value="">اختر</option><option>ذكر</option><option>أنثى</option></select></div><div><label class="fl">تاريخ الميلاد</label><input id="m-birth" class="forminput" type="date"></div></div>
 <label class="fl">التحصيل الدراسي</label><select id="m-study" class="forminput"><option value="">اختر</option><option>أمي</option><option>ابتدائي</option><option>متوسط</option><option>إعدادي</option><option>دبلوم</option><option>بكالوريوس</option><option>دراسات عليا</option><option>طالب</option><option>أخرى</option></select>
+<label class="fl" style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="m-student" type="checkbox" style="width:18px;height:18px;accent-color:#0f5c4d"> طالب / طالبة</label>
 <label class="fl">المهنة</label><input id="m-job" class="forminput" placeholder="المهنة أو العمل">
 <label class="fl">الدخل</label><input id="m-income" class="forminput" type="number" placeholder="بالدينار إن وجد">
 <label class="fl">ملاحظات</label><textarea id="m-notes" class="forminput" style="height:70px;resize:vertical" placeholder="ملاحظات عن الفرد"></textarea>
@@ -1366,13 +1370,13 @@ function addAppealForFamily(code){
   showScreen('add-appeal');
 }
 
-function renderMembers(){const x=getFamily();if(!x)return;const list=x.membersList||[];document.getElementById('memberList').innerHTML=list.map((m,i)=>`<div class="card member-card"><div class="avatar">${(m.name||'ف').charAt(0)}</div><div class="grow"><div class="name">${m.name}</div><div class="sub">${m.relation||'—'} · ${m.gender||'—'} · ${m.birth?calcAge(m.birth)+' سنة':'العمر غير محدد'}</div><div class="sub">${m.study||'لا توجد دراسة'} · ${m.job||'لا توجد مهنة'}</div><div class="member-actions"><button class="action primary" onclick="editMember(${i})">✏️ تعديل</button><button class="action" onclick="deleteMember(${i})">🗑 حذف</button></div></div></div>`).join('')||'<div class="empty">لم تتم إضافة أفراد بعد</div>';}
+function renderMembers(){const x=getFamily();if(!x)return;const list=x.membersList||[];document.getElementById('memberList').innerHTML=list.map((m,i)=>`<div class="card member-card"><div class="avatar">${(m.name||'ف').charAt(0)}</div><div class="grow"><div class="name">${m.name}</div><div class="sub">${m.relation||'—'} · ${m.gender||'—'} · ${m.birth?calcAge(m.birth)+' سنة':'العمر غير محدد'}</div><div class="sub">${m.study||'لا توجد دراسة'}${(m.student===true||m.student==='نعم'||m.study==='طالب')?' · 🎓 طالب/طالبة':''} · ${m.job||'لا توجد مهنة'}</div><div class="member-actions"><button class="action primary" onclick="editMember(${i})">✏️ تعديل</button><button class="action" onclick="deleteMember(${i})">🗑 حذف</button></div></div></div>`).join('')||'<div class="empty">لم تتم إضافة أفراد بعد</div>';}
 function calcAge(b){if(!b)return '';const d=new Date(b+'T00:00:00');const t=new Date();let a=t.getFullYear()-d.getFullYear();if(t.getMonth()<d.getMonth()||(t.getMonth()===d.getMonth()&&t.getDate()<d.getDate()))a--;return a;}
-function resetMemberForm(){editingMemberIndex=null;['m-name','m-birth','m-job','m-income','m-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});['m-relation','m-gender','m-study'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.getElementById('member-form-title').textContent='إضافة فرد';document.getElementById('member-save-btn').textContent='حفظ الفرد';}
+function resetMemberForm(){editingMemberIndex=null;['m-name','m-birth','m-job','m-income','m-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});['m-relation','m-gender','m-study'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});const ms=document.getElementById('m-student');if(ms)ms.checked=false;document.getElementById('member-form-title').textContent='إضافة فرد';document.getElementById('member-save-btn').textContent='حفظ الفرد';}
 
-function editMember(i){const x=getFamily();if(!x||!x.membersList?.[i])return;const m=x.membersList[i];editingMemberIndex=i;document.getElementById('m-name').value=m.name||'';document.getElementById('m-relation').value=m.relation||'';document.getElementById('m-gender').value=m.gender||'';document.getElementById('m-birth').value=m.birth||'';document.getElementById('m-study').value=m.study||'';document.getElementById('m-job').value=m.job||'';document.getElementById('m-income').value=m.income||'';document.getElementById('m-notes').value=m.notes||'';document.getElementById('member-form-title').textContent='تعديل الفرد';document.getElementById('member-save-btn').textContent='حفظ التعديل';showScreen('add-member');}
+function editMember(i){const x=getFamily();if(!x||!x.membersList?.[i])return;const m=x.membersList[i];editingMemberIndex=i;document.getElementById('m-name').value=m.name||'';document.getElementById('m-relation').value=m.relation||'';document.getElementById('m-gender').value=m.gender||'';document.getElementById('m-birth').value=m.birth||'';document.getElementById('m-study').value=m.study||'';const ms=document.getElementById('m-student');if(ms)ms.checked=!!(m.student===true||m.student==='نعم'||m.study==='طالب');document.getElementById('m-job').value=m.job||'';document.getElementById('m-income').value=m.income||'';document.getElementById('m-notes').value=m.notes||'';document.getElementById('member-form-title').textContent='تعديل الفرد';document.getElementById('member-save-btn').textContent='حفظ التعديل';showScreen('add-member');}
 
-function saveMember(){const x=getFamily();if(!x)return;const name=document.getElementById('m-name').value.trim();const relation=document.getElementById('m-relation').value;const gender=document.getElementById('m-gender').value;const birth=document.getElementById('m-birth').value;const study=document.getElementById('m-study').value;const job=document.getElementById('m-job').value.trim();const income=document.getElementById('m-income').value.trim();const notes=document.getElementById('m-notes').value.trim();if(!name||!relation){alert('يرجى إدخال اسم الفرد وصلة القرابة');return}if(!x.membersList)x.membersList=[];const member={name,relation,gender,birth,study,job,income,notes};const isEdit=editingMemberIndex!==null&&x.membersList[editingMemberIndex];if(isEdit){x.membersList[editingMemberIndex]=member;}else{x.membersList.push(member);}x.m=x.membersList.length;try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);const check=JSON.parse(localStorage.getItem('warith_families_v2')||'[]');const saved=check.find(f=>Number(f.c)===Number(x.c));if(!saved||!Array.isArray(saved.membersList)||saved.membersList.length!==x.membersList.length)throw new Error('verify');}catch(e){if(isEdit){x.membersList[editingMemberIndex]=isEdit;}else{x.membersList.pop();}x.m=x.membersList.length;alert('تعذر حفظ التعديل على هذا المتصفح.');return}alert(isEdit?'تم تعديل الفرد بنجاح ✓':'تم حفظ الفرد بنجاح ✓');editingMemberIndex=null;showScreen('family-members');}
+function saveMember(){const x=getFamily();if(!x)return;const name=document.getElementById('m-name').value.trim();const relation=document.getElementById('m-relation').value;const gender=document.getElementById('m-gender').value;const birth=document.getElementById('m-birth').value;const study=document.getElementById('m-study').value;const student=!!document.getElementById('m-student')?.checked;const job=document.getElementById('m-job').value.trim();const income=document.getElementById('m-income').value.trim();const notes=document.getElementById('m-notes').value.trim();if(!name||!relation){alert('يرجى إدخال اسم الفرد وصلة القرابة');return}if(!x.membersList)x.membersList=[];const member={name,relation,gender,birth,study,student,job,income,notes};const isEdit=editingMemberIndex!==null&&x.membersList[editingMemberIndex];if(isEdit){x.membersList[editingMemberIndex]=member;}else{x.membersList.push(member);}x.m=x.membersList.length;try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);const check=JSON.parse(localStorage.getItem('warith_families_v2')||'[]');const saved=check.find(f=>Number(f.c)===Number(x.c));if(!saved||!Array.isArray(saved.membersList)||saved.membersList.length!==x.membersList.length)throw new Error('verify');}catch(e){if(isEdit){x.membersList[editingMemberIndex]=isEdit;}else{x.membersList.pop();}x.m=x.membersList.length;alert('تعذر حفظ التعديل على هذا المتصفح.');return}alert(isEdit?'تم تعديل الفرد بنجاح ✓':'تم حفظ الفرد بنجاح ✓');editingMemberIndex=null;showScreen('family-members');}
 
 function deleteMember(i){const x=getFamily();if(!x||!x.membersList?.[i])return;if(!confirm('حذف هذا الفرد؟'))return;x.membersList.splice(i,1);x.m=x.membersList.length;localStorage.setItem('warith_families_v2',JSON.stringify(families));localStorage.setItem('warith_families',JSON.stringify(families));renderMembers();}
 
@@ -1886,20 +1890,23 @@ function toggleProgramFilter(type){
 function closeProgramFilterMenus(){document.querySelectorAll('.program-filter-menu').forEach(x=>x.classList.remove('open'));}
 document.addEventListener('click',e=>{if(!e.target.closest('.program-filter-box'))closeProgramFilterMenus()});
 function prepareProgramFamilyFilters(){
-  const rights=[...new Set(families.map(f=>normalizeProgramFilterValue(f.r)))].sort();
-  const housing=[...new Set(families.map(f=>normalizeProgramFilterValue(f.h)))].sort();
-  const status=[...new Set(families.map(f=>normalizeProgramFilterValue(f.st)))].sort();
-  const salary=[...new Set(families.map(f=>normalizeProgramFilterValue(f.hasSalary)))].sort();
-  programFilterCommitted={rights:[],housing:[],status:[],salary:[]};
-  programFilterPending={rights:[],housing:[],status:[],salary:[]};
-  buildProgramFilterMenu('rights',rights,'الحقوق');
-  buildProgramFilterMenu('housing',housing,'السكن');
-  buildProgramFilterMenu('status',status,'الحالة');
-  buildProgramFilterMenu('salary',salary,'الراتب');
+  const vals={
+    rights:[...new Set(families.map(f=>normalizeProgramFilterValue(f.r)))].sort(),
+    housing:[...new Set(families.map(f=>normalizeProgramFilterValue(f.h)))].sort(),
+    status:[...new Set(families.map(f=>normalizeProgramFilterValue(f.st)))].sort(),
+    salary:[...new Set(families.map(f=>normalizeProgramFilterValue(f.hasSalary)))].sort(),
+    job:[...new Set(families.map(f=>normalizeProgramFilterValue(f.j)))].sort(),
+    social:[...new Set(families.map(f=>normalizeProgramFilterValue(f.social)))].sort(),
+    student:['نعم','لا']
+  };
+  programFilterCommitted={rights:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
+  programFilterPending={rights:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
+  Object.keys(vals).forEach(k=>buildProgramFilterMenu(k,vals[k],k));
   renderProgramFilterLabels();
   const q=document.getElementById('programFamilyQ');if(q)q.value='';
 }
 function normalizeProgramFilterValue(v){return String(v??'').trim()||'غير محدد'}
+function familyIsStudent(f){return Array.isArray(f.membersList)&&f.membersList.some(m=>m&&(m.student===true||m.student==='نعم'||m.study==='طالب'));}
 function buildProgramFilterMenu(type,values,label){
   const menu=document.getElementById('programFilter'+type.charAt(0).toUpperCase()+type.slice(1)+'Menu');if(!menu)return;
   const st=programFilterPending;
@@ -1908,35 +1915,32 @@ function buildProgramFilterMenu(type,values,label){
 }
 function setProgramFilter(type,value,checked){
   value=normalizeProgramFilterValue(value);
+  if(!programFilterPending[type])programFilterPending[type]=[];
   const arr=programFilterPending[type];
   if(checked&&!arr.includes(value))arr.push(value);
   if(!checked)programFilterPending[type]=arr.filter(v=>v!==value);
-  // تطبيق الفلتر مباشرة عند اختيار/إلغاء أي قيمة، مثل فلاتر Excel.
-  // نُبقي حالة الانتظار والحالة المطبقة متزامنتين حتى لا تضيع النتيجة عند تغيير أكثر من فلتر.
-  programFilterCommitted[type]=[...programFilterPending[type]];
+  // تطبيق فوري حتى لا يبقى المستخدم بحاجة لزر تطبيق
+  programFilterCommitted[type]=[...(programFilterPending[type]||[])];
   renderProgramFilterLabels();
   renderProgramFamilyPicker();
 }
 function applyProgramFilter(type){
-  programFilterCommitted[type]=[...programFilterPending[type]];
+  programFilterCommitted[type]=[...(programFilterPending[type]||[])];
   renderProgramFilterLabels();
   renderProgramFamilyPicker();
   const menu=document.getElementById('programFilter'+type.charAt(0).toUpperCase()+type.slice(1)+'Menu');
   if(menu)menu.classList.remove('open');
 }
 function applyProgramFilters(){
-  ['rights','housing','status','salary'].forEach(t=>programFilterCommitted[t]=[...programFilterPending[t]]);
-  renderProgramFilterLabels();
-  renderProgramFamilyPicker();
-  closeProgramFilterMenus();
+  Object.keys(programFilterPending).forEach(t=>programFilterCommitted[t]=[...(programFilterPending[t]||[])]);
+  renderProgramFilterLabels();renderProgramFamilyPicker();closeProgramFilterMenus();
 }
 function clearProgramFilter(type){
-  programFilterPending[type]=[];
-  programFilterCommitted[type]=[];
+  if(!programFilterPending[type])programFilterPending[type]=[];
+  programFilterPending[type]=[];programFilterCommitted[type]=[];
   const menu=document.getElementById('programFilter'+type.charAt(0).toUpperCase()+type.slice(1)+'Menu');
   if(menu){menu.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);menu.classList.remove('open')}
-  renderProgramFilterLabels();
-  renderProgramFamilyPicker();
+  renderProgramFilterLabels();renderProgramFamilyPicker();
 }
 function exportSelectedProgramFamilies(){
   if(!programSelectedFamilies.length){alert('حدد عائلة واحدة على الأقل قبل التصدير.');return;}
@@ -1967,19 +1971,16 @@ function exportSelectedProgramFamilies(){
 function renderProgramFilterMenus(){const st=programFilterState();const vals={rights:[...new Set(families.map(f=>f.r||'غير محدد').filter(Boolean))].sort(),housing:[...new Set(families.map(f=>f.h||'غير محدد').filter(Boolean))].sort(),status:[...new Set(families.map(f=>f.st||'غير محدد').filter(Boolean))].sort(),salary:[...new Set(families.map(f=>f.hasSalary||'غير محدد').filter(Boolean))].sort()};Object.keys(vals).forEach(k=>buildProgramFilterMenu(k,vals[k],k));}
 function renderProgramFilterLabels(){
   const st=programFilterCommitted;
-  const labels={rights:'الحقوق',housing:'السكن',status:'الحالة',salary:'الراتب'};
-  Object.keys(labels).forEach(k=>{const b=document.getElementById('programFilter'+k.charAt(0).toUpperCase()+k.slice(1)+'Btn');if(b)b.textContent=labels[k]+': '+(st[k].length?st[k].join('، '):'الكل')});
+  const labels={rights:'الحقوق',housing:'السكن',status:'الحالة',salary:'الراتب',job:'المهنة',social:'الحالة الاجتماعية',student:'الطلبة'};
+  Object.keys(labels).forEach(k=>{const b=document.getElementById('programFilter'+k.charAt(0).toUpperCase()+k.slice(1)+'Btn');if(b)b.textContent=labels[k]+': '+(st[k]?.length?st[k].join('، '):'الكل')});
   const note=document.getElementById('programFilterActiveNote');
-  if(note){const active=Object.keys(st).filter(k=>st[k].length);note.textContent=active.length?'الفلاتر المطبقة: '+active.map(k=>labels[k]+': '+st[k].join('، ')).join('  ·  '):'الفلاتر غير مفعّلة حالياً';}
+  if(note){const active=Object.keys(st).filter(k=>st[k]?.length);note.textContent=active.length?'الفلاتر المطبقة: '+active.map(k=>labels[k]+': '+st[k].join('، ')).join('  ·  '):'الفلاتر غير مفعّلة حالياً';}
 }
 function renderProgramFamilyPicker(){
   const box=document.getElementById('programFamilyList'); if(!box)return;
   const q=(document.getElementById('programFamilyQ')?.value||'').trim().toLowerCase();
   const st=programFilterCommitted;
-  const list=families.filter(f=>{
-    const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();
-    return (!q||text.includes(q))&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)));
-  });
+  const list=getProgramFilteredFamilies();
   box.innerHTML=list.map(f=>{
     const code=Number(f.c), item=programSelectedFamilies.find(v=>v.familyCode===code), checked=!!item;
     return `<label class="program-family-row"><input type="checkbox" ${checked?'checked':''} onchange="toggleProgramFamily(${code},this.checked)"><div class="pf-main"><div class="pf-name">#${escapeHtml(code)} · ${escapeHtml(f.head||f.n||'عائلة')}</div><div class="pf-meta">${escapeHtml(f.r||'غير محدد')} · ${escapeHtml(f.h||'غير محدد')} · ${escapeHtml(f.m||0)} أفراد</div></div></label>`;
@@ -1988,7 +1989,11 @@ function renderProgramFamilyPicker(){
 }
 function getProgramFilteredFamilies(){
   const q=(document.getElementById('programFamilyQ')?.value||'').trim().toLowerCase(),st=programFilterCommitted;
-  return families.filter(f=>{const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();return(!q||text.includes(q))&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))});
+  return families.filter(f=>{
+    const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();
+    const student=familyIsStudent(f)?'نعم':'لا';
+    return (!q||text.includes(q))&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))&&(!st.job.length||st.job.includes(normalizeProgramFilterValue(f.j)))&&(!st.social.length||st.social.includes(normalizeProgramFilterValue(f.social)))&&(!st.student.length||st.student.includes(student));
+  });
 }
 function selectAllProgramFamilies(){getProgramFilteredFamilies().forEach(f=>{if(!programSelectedFamilies.some(v=>v.familyCode===Number(f.c)))programSelectedFamilies.push({familyCode:Number(f.c),received:false})});renderProgramFamilyPicker();}
 function clearAllProgramFamilies(){programSelectedFamilies=[];renderProgramFamilyPicker();}
