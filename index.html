@@ -477,7 +477,7 @@ textarea.forminput{height:80px;resize:vertical}
 
   <div id="registeredOwnerFields" style="margin-top:8px">
     <label class="fl">اختيار العائلة</label>
-    <select id="a-family" class="forminput" onchange="showSelectedAppealFamily()">
+    <select id="appeal-family" class="forminput" onchange="showSelectedAppealFamily()">
       <option value="">اختر العائلة</option>
     </select>
     <div id="selectedAppealFamily" class="inline-note"></div>
@@ -711,7 +711,7 @@ function setAppealOwnerType(v){
   document.getElementById('newFamilySaveChoice').style.display=v==='new'?'block':'none';
 }
 function populateAppealFamilies(selected){
-  const sel=document.getElementById('a-family'); if(!sel)return;
+  const sel=document.getElementById('appeal-family'); if(!sel)return;
   // أعد قراءة العوائل من التخزين حتى تظهر العوائل المضافة حديثاً داخل المناشدة
   try{
     const raw=localStorage.getItem('warith_families_v2')||localStorage.getItem('warith_families');
@@ -730,7 +730,7 @@ function populateAppealFamilies(selected){
 }
 function showSelectedAppealFamily(){
   const box=document.getElementById('selectedAppealFamily'); if(!box)return;
-  const code=document.getElementById('a-family')?.value;
+  const code=document.getElementById('appeal-family')?.value;
   const f=families.find(x=>String(x.c)===String(code));
   if(!f){box.textContent='';return}
   box.innerHTML=`العائلة: <b>${escapeHtml(f.head||f.n||'')}</b> · الهاتف: ${phoneToolsHtml(f.phone)} · العنوان: ${escapeHtml(f.address||'غير مسجل')}`;
@@ -779,13 +779,13 @@ function renderAppealAttachments(){
 function removeAppealAttachment(i){appealAttachments.splice(i,1);renderAppealAttachments();}
 function saveAppeal(){
   const date=document.getElementById('a-date').value||new Date().toISOString().slice(0,10);
-  if(appealOwnerType==='registered'&&!document.getElementById('a-family').value){alert('اختر العائلة أولاً');return}
+  if(appealOwnerType==='registered'&&!document.getElementById('appeal-family').value){alert('اختر العائلة أولاً');return}
   if(appealOwnerType==='new'&&!document.getElementById('a-name').value.trim()){alert('أدخل اسم صاحب الحالة');return}
   if(!document.getElementById('a-amount').value){alert('أدخل المبلغ المطلوب');return}
 
   let familyCode=null, ownerName='', ownerPhone='', ownerAddress='', newFamilyAdded=false;
   if(appealOwnerType==='registered'){
-    familyCode=Number(document.getElementById('a-family').value);
+    familyCode=Number(document.getElementById('appeal-family').value);
     const f=families.find(x=>Number(x.c)===familyCode);
     ownerName=f?.head||f?.n||''; ownerPhone=f?.phone||''; ownerAddress=f?.address||'';
   }else{
