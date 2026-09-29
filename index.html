@@ -322,12 +322,10 @@ textarea.forminput{height:80px;resize:vertical}
     <button type="button" class="appeal-type" data-type="سكن" onclick="setAppealType('سكن')">🏘️ سكن</button>
     <button type="button" class="appeal-type" data-type="أخرى" onclick="setAppealType('أخرى')">📋 أخرى</button>
   </div>
-  <div id="financialFields">
+  <div>
     <label class="fl">المبلغ المطلوب</label>
-    <input id="a-amount" class="forminput" type="number" min="0" placeholder="بالدينار العراقي">
+    <input id="a-amount" class="forminput" type="number" min="0" inputmode="numeric" placeholder="بالدينار العراقي">
   </div>
-
-  <div id="typeSpecificFields"></div>
   <div class="choice-row">
     <div>
       <label class="fl">الأولوية</label>
@@ -346,8 +344,8 @@ textarea.forminput{height:80px;resize:vertical}
   <label class="fl">تاريخ المناشدة</label>
   <input id="a-date" class="forminput" type="date">
 
-  <label class="fl">ملاحظات</label>
-  <textarea id="a-notes" class="forminput" placeholder="ملاحظات إضافية"></textarea>
+  <label class="fl">ملاحظات / تفاصيل الحالة</label>
+  <textarea id="a-notes" class="forminput" placeholder="اكتب هنا كل تفاصيل الحالة والملاحظات"></textarea>
 </div>
 
 <div class="card">
@@ -518,16 +516,6 @@ function showSelectedAppealFamily(){
 function setAppealType(v){
   appealType=v;
   document.querySelectorAll('.appeal-type').forEach(b=>b.classList.toggle('active',b.dataset.type===v));
-  document.getElementById('financialFields').style.display=v==='مالية'?'block':'none';
-  const box=document.getElementById('typeSpecificFields'); if(!box)return;
-  const fields={
-    'طبية':'<label class="fl">اسم العلاج / العملية</label><input id="a-specific" class="forminput" placeholder="اسم العلاج أو العملية">',
-    'مواد غذائية':'<label class="fl">المواد المطلوبة</label><input id="a-specific" class="forminput" placeholder="مثلاً: سلة غذائية، مواد محددة">',
-    'أجهزة / أثاث':'<label class="fl">الجهاز / الأثاث المطلوب</label><input id="a-specific" class="forminput" placeholder="اسم الجهاز أو قطعة الأثاث">',
-    'سكن':'<label class="fl">نوع الحاجة السكنية</label><input id="a-specific" class="forminput" placeholder="إيجار، ترميم، سكن...">',
-    'أخرى':'<label class="fl">تفاصيل النوع</label><input id="a-specific" class="forminput" placeholder="حدد نوع الحاجة">'
-  };
-  box.innerHTML=fields[v]||'';
 }
 function resetAppealForm(){
   editingAppealIndex=null;
@@ -571,7 +559,7 @@ function saveAppeal(){
   const date=document.getElementById('a-date').value||new Date().toISOString().slice(0,10);
   if(appealOwnerType==='registered'&&!document.getElementById('a-family').value){alert('اختر العائلة أولاً');return}
   if(appealOwnerType==='new'&&!document.getElementById('a-name').value.trim()){alert('أدخل اسم صاحب الحالة');return}
-  if(appealType==='مالية'&&!document.getElementById('a-amount').value){alert('أدخل المبلغ المطلوب');return}
+  if(!document.getElementById('a-amount').value){alert('أدخل المبلغ المطلوب');return}
 
   let familyCode=null, ownerName='', ownerPhone='', ownerAddress='', newFamilyAdded=false;
   if(appealOwnerType==='registered'){
@@ -608,8 +596,7 @@ function saveAppeal(){
     ownerName,ownerPhone,ownerAddress,
     ownerLandmark:appealOwnerType==='new'?document.getElementById('a-landmark').value.trim():'',
     type:appealType,
-    amount:appealType==='مالية'?Number(document.getElementById('a-amount').value||0):0,
-    specific:document.getElementById('a-specific')?.value.trim()||'',
+    amount:Number(document.getElementById('a-amount').value||0),
     priority:document.getElementById('a-priority').value,
     status:document.getElementById('a-status').value,date,
     notes:document.getElementById('a-notes').value.trim(),
@@ -648,7 +635,7 @@ function renderAppeals(){
   const q=(document.getElementById('appealQ')?.value||'').trim().toLowerCase();
   const filtered=appeals.filter(a=>
     (appealFilter==='الكل'||a.status===appealFilter) &&
-    [a.id,a.ownerName,a.ownerPhone,a.familyCode,a.type,a.priority,a.status].join(' ').toLowerCase().includes(q)
+    [a.id,a.ownerName,a.ownerPhone,a.familyCode,a.type,a.priority,a.status,a.notes].join(' ').toLowerCase().includes(q)
   ).sort(appealSortNewest);
   const latest=filtered.slice(0,5);
   document.getElementById('appealCount').textContent=filtered.length+' مناشدة';
@@ -662,7 +649,7 @@ function showAllAppeals(){
   const q=(document.getElementById('appealQ')?.value||'').trim().toLowerCase();
   const filtered=appeals.filter(a=>
     (appealFilter==='الكل'||a.status===appealFilter) &&
-    [a.id,a.ownerName,a.ownerPhone,a.familyCode,a.type,a.priority,a.status].join(' ').toLowerCase().includes(q)
+    [a.id,a.ownerName,a.ownerPhone,a.familyCode,a.type,a.priority,a.status,a.notes].join(' ').toLowerCase().includes(q)
   ).sort(appealSortNewest);
   const box=document.getElementById('appealList');
   box.innerHTML=filtered.map(a=>appealCard(a,appeals.indexOf(a))).join('')||'<div class="empty">لا توجد مناشدات مطابقة</div>';
@@ -687,8 +674,7 @@ function openAppeal(i){
     <div class="info"><small>رقم الهاتف</small><b>${escapeHtml(a.ownerPhone||'غير مسجل')}</b></div>
     <div class="info"><small>التاريخ</small><b>${escapeHtml(a.date||'')}</b></div>
     <div class="info"><small>الأولوية</small><b>${escapeHtml(a.priority||'')}</b></div>
-    <div class="info"><small>المبلغ المطلوب</small><b>${a.type==='مالية'?(a.amount||0).toLocaleString('en-US')+' د.ع':'—'}</b></div>
-    <div class="info"><small>التفصيل الخاص</small><b>${escapeHtml(a.specific||'—')}</b></div>
+    <div class="info"><small>المبلغ المطلوب</small><b>${(a.amount||0).toLocaleString('en-US')} د.ع</b></div>
     <div class="info"><small>آخر تحديث</small><b>${new Date(a.updatedAt||a.createdAt||Date.now()).toLocaleDateString('ar-IQ')}</b></div>
   </div>
   <div class="card" style="margin-top:9px"><div class="detail-label">العنوان</div><div class="detail-value">${escapeHtml(a.ownerAddress||family?.address||'غير مسجل')}</div></div>
@@ -721,7 +707,6 @@ function editAppeal(){
   document.getElementById('a-add-family').checked=false;
   appealAttachments=JSON.parse(JSON.stringify(a.attachments||[]));
   renderAppealAttachments();
-  setTimeout(()=>{const sp=document.getElementById('a-specific');if(sp)sp.value=a.specific||''},0);
   showScreen('add-appeal');
 }
 function updateAppealDashboard(){
