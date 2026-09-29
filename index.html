@@ -80,7 +80,7 @@ textarea.forminput{height:80px;resize:vertical}
 <button class="tile" onclick="showScreen('donations')"><span class="ico">💝</span><small>التبرعات</small></button>
 <button class="tile" onclick="showScreen('appeals')"><span class="ico">📋</span><small>المناشدات</small></button>
 <button class="tile" onclick="coming('البرامج')"><span class="ico">🎯</span><small>البرامج</small></button>
-<button class="tile" onclick="coming('المخزن')"><span class="ico">📦</span><small>المخزن</small></button>
+<button class="tile" onclick="showScreen('inventory')"><span class="ico">📦</span><small>المخزن</small></button>
 <button class="tile" onclick="coming('المالية')"><span class="ico">💵</span><small>المالية</small></button>
 <button class="tile" onclick="coming('التقارير')"><span class="ico">📊</span><small>التقارير</small></button>
 <button class="tile" onclick="coming('الإعدادات')"><span class="ico">⚙️</span><small>الإعدادات</small></button>
@@ -441,6 +441,40 @@ textarea.forminput{height:80px;resize:vertical}
 <button class="action primary" id="member-save-btn" style="width:100%;margin-top:2px" onclick="saveMember()">حفظ الفرد</button>
 </section>
 
+<section id="inventory" class="screen">
+<div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">المخزن</div><div class="count" id="inventoryCount"></div></div>
+<div class="stats">
+<div class="stat">📦 <b id="invItemsCount">0</b><span>الأصناف</span></div>
+<div class="stat">⬆️ <b id="invInCount">0</b><span>الوارد</span></div>
+<div class="stat">⬇️ <b id="invOutCount">0</b><span>الصادر</span></div>
+<div class="stat">📊 <b id="invNetCount">0</b><span>الرصيد</span></div>
+</div>
+<div class="actions"><button class="action primary" onclick="openInventoryMovement('in')">＋ إضافة وارد</button><button class="action" onclick="openInventoryMovement('out')">− تسجيل صادر</button></div>
+<div class="search"><span>🔎</span><input id="inventoryQ" placeholder="ابحث باسم الصنف" oninput="renderInventory()"></div>
+<div class="section"><b>الأصناف الحالية</b></div>
+<div id="inventoryItems"></div>
+<div class="section"><b>آخر حركات المخزن</b></div>
+<div id="inventoryMovements"></div>
+<div id="inventoryAllWrap"></div>
+</section>
+
+<section id="add-inventory" class="screen">
+<div class="top"><button class="back" onclick="showScreen('inventory')">← رجوع</button><div class="screen-title" id="inventoryFormTitle">إضافة حركة مخزن</div></div>
+<div class="card">
+<label class="fl">نوع الحركة</label><select id="inv-move-type" class="forminput"><option value="وارد">وارد</option><option value="صادر">صادر</option></select>
+<label class="fl">نوع الصنف</label><select id="inv-item-type" class="forminput"><option value="جهاز">جهاز</option><option value="مواد">مواد</option></select>
+<label class="fl">اسم الصنف</label><input id="inv-name" class="forminput" placeholder="مثلاً: ثلاجة، فريزر، بطانية">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+<div><label class="fl">الكمية</label><input id="inv-qty" class="forminput" type="number" min="1" value="1"></div>
+<div id="inv-status-wrap"><label class="fl">حالة الجهاز</label><select id="inv-status" class="forminput"><option>شغال</option><option>عاطل</option><option>مستهلك</option></select></div>
+</div>
+<label class="fl">التاريخ</label><input id="inv-date" class="forminput" type="date">
+<label class="fl">المصدر / الجهة</label><input id="inv-source" class="forminput" placeholder="المتبرع أو الجهة">
+<label class="fl">ملاحظات</label><textarea id="inv-notes" class="forminput" placeholder="ملاحظات الحركة"></textarea>
+</div>
+<button class="action primary" style="width:100%;margin-top:2px" onclick="saveInventoryMovement()">حفظ الحركة</button>
+</section>
+
 </main>
 <div class="footer">جمعية وارث الخيرية © 2026</div>
 </div>
@@ -453,7 +487,7 @@ textarea.forminput{height:80px;resize:vertical}
 <button onclick="coming('التبرعات');closeMenu()">💝 التبرعات</button>
 <button onclick="showScreen('appeals');closeMenu()">📋 المناشدات</button>
 <button onclick="coming('البرامج');closeMenu()">🎯 البرامج</button>
-<button onclick="coming('المخزن');closeMenu()">📦 المخزن</button>
+<button onclick="showScreen('inventory');closeMenu()">📦 المخزن</button>
 <button onclick="coming('المالية');closeMenu()">💵 المالية</button>
 <button onclick="coming('التقارير');closeMenu()">📊 التقارير</button>
 </div></div>
@@ -735,7 +769,7 @@ function deleteAppeal(){
 }
 
 function getFamily(){return families.find(x=>Number(x.c)===Number(selectedFamilyCode));}
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='families')renderFamilies();if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation')resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm()}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='families')renderFamilies();if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation')resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm()}
 function renderFamilies(){const q=(document.getElementById('q')?.value||'').trim().toLowerCase();const a=families.filter(x=>[x.c,x.n,x.i,x.j,x.h,x.r,x.st].join(' ').toLowerCase().includes(q));document.getElementById('count').textContent=a.length+' عائلة';document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button class="more" onclick="event.stopPropagation();coming('خيارات العائلة')">⋮</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للبحث</div>'}
 function openFamily(code){selectedFamilyCode=Number(code);showScreen('family-detail');}
 function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
@@ -1013,7 +1047,21 @@ function saveFamilyEdit(){
   showScreen('family-detail');
 }
 
-function openMenu(){document.getElementById('drawer').classList.add('open')}function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}function coming(x){alert(x+' — قيد البناء في المرحلة التالية')}renderFamilies(); renderDonations(); renderAppeals(); updateAppealDashboard(); if(document.getElementById('f-has-salary')) toggleSalarySource();
+
+let inventoryMovements=(()=>{try{return JSON.parse(localStorage.getItem('warith_inventory')||'[]')}catch(e){return []}})();
+let inventoryFilter='الكل';
+let editingInventoryIndex=null;
+function setInventoryFilter(v,btn){inventoryFilter=v;document.querySelectorAll('#inventory .filterbar .chip').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');renderInventory();}
+function openInventoryMovement(type){editingInventoryIndex=null;document.getElementById('inventoryFormTitle').textContent=type==='in'?'إضافة وارد':'تسجيل صادر';document.getElementById('inv-move-type').value=type==='in'?'وارد':'صادر';document.getElementById('inv-item-type').value='جهاز';document.getElementById('inv-name').value='';document.getElementById('inv-qty').value=1;document.getElementById('inv-status').value='شغال';document.getElementById('inv-date').value=new Date().toISOString().slice(0,10);document.getElementById('inv-source').value='';document.getElementById('inv-notes').value='';toggleInventoryStatus();showScreen('add-inventory');}
+function toggleInventoryStatus(){document.getElementById('inv-status-wrap').style.display=document.getElementById('inv-item-type').value==='جهاز'?'block':'none';}
+function saveInventoryMovement(){const move=document.getElementById('inv-move-type').value,type=document.getElementById('inv-item-type').value,name=document.getElementById('inv-name').value.trim(),qty=Number(document.getElementById('inv-qty').value||0),date=document.getElementById('inv-date').value||new Date().toISOString().slice(0,10);if(!name){alert('أدخل اسم الصنف');return}if(qty<=0){alert('أدخل كمية صحيحة');return}const item={id:editingInventoryIndex!==null?inventoryMovements[editingInventoryIndex].id:Date.now(),move,type,name,qty,status:type==='جهاز'?document.getElementById('inv-status').value:'',date,source:document.getElementById('inv-source').value.trim(),notes:document.getElementById('inv-notes').value.trim()};if(editingInventoryIndex!==null)inventoryMovements[editingInventoryIndex]=item;else inventoryMovements.unshift(item);localStorage.setItem('warith_inventory',JSON.stringify(inventoryMovements));alert(editingInventoryIndex!==null?'تم تعديل حركة المخزن بنجاح ✓':'تم حفظ حركة المخزن بنجاح ✓');editingInventoryIndex=null;showScreen('inventory');}
+function inventorySummary(){const map={};inventoryMovements.forEach(m=>{const key=m.type+'|'+m.name; if(!map[key])map[key]={type:m.type,name:m.name,in:0,out:0,status:m.status||''}; if(m.move==='وارد')map[key].in+=Number(m.qty||0);else map[key].out+=Number(m.qty||0);if(m.status)map[key].status=m.status});return Object.values(map).map(x=>({...x,net:x.in-x.out}));}
+function renderInventory(){const q=(document.getElementById('inventoryQ')?.value||'').trim().toLowerCase();const all=inventorySummary();const filtered=all.filter(x=>(x.name+' '+x.status).toLowerCase().includes(q));const totalIn=inventoryMovements.filter(x=>x.move==='وارد').reduce((n,x)=>n+Number(x.qty||0),0),totalOut=inventoryMovements.filter(x=>x.move==='صادر').reduce((n,x)=>n+Number(x.qty||0),0);document.getElementById('inventoryCount').textContent=filtered.length+' صنف';document.getElementById('invItemsCount').textContent=all.length;document.getElementById('invInCount').textContent=totalIn;document.getElementById('invOutCount').textContent=totalOut;document.getElementById('invNetCount').textContent=totalIn-totalOut;document.getElementById('inventoryItems').innerHTML=filtered.map(x=>`<div class="card"><div class="row"><div class="avatar">${x.type==='جهاز'?'🔌':'📦'}</div><div class="grow"><div class="name">${escapeHtml(x.name)}</div><div class="sub">${x.status?'الحالة: '+escapeHtml(x.status):''}</div></div><span class="badge">${x.net} متوفر</span></div><div class="meta"><div>⬆️ وارد: ${x.in}</div><div>⬇️ صادر: ${x.out}</div><div>📊 صافي: ${x.net}</div></div></div>`).join('')||'<div class="empty">لا توجد أصناف في المخزن</div>';const latest=inventoryMovements.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||b.id-a.id).slice(0,5);document.getElementById('inventoryMovements').innerHTML=latest.map((m)=>{const i=inventoryMovements.indexOf(m);return `<div class="card"><div class="row"><div class="avatar">${m.move==='وارد'?'⬆️':'⬇️'}</div><div class="grow"><div class="name">${escapeHtml(m.name)} · ${m.qty}</div><div class="sub">${escapeHtml(m.move)}${m.status?' · الحالة: '+escapeHtml(m.status):''}</div><div class="sub">${escapeHtml(m.date)}${m.source?' · '+escapeHtml(m.source):''}</div></div></div><div class="member-actions"><button class="action primary" onclick="editInventoryMovement(${i})">✏️ تعديل</button><button class="action" onclick="deleteInventoryMovement(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد حركات مخزن بعد</div>';}
+function editInventoryMovement(i){const m=inventoryMovements[i];if(!m)return;editingInventoryIndex=i;document.getElementById('inventoryFormTitle').textContent='تعديل حركة المخزن';document.getElementById('inv-move-type').value=m.move;document.getElementById('inv-item-type').value=m.type;document.getElementById('inv-name').value=m.name;document.getElementById('inv-qty').value=m.qty;document.getElementById('inv-status').value=m.status||'شغال';document.getElementById('inv-date').value=m.date;document.getElementById('inv-source').value=m.source||'';document.getElementById('inv-notes').value=m.notes||'';toggleInventoryStatus();showScreen('add-inventory');}
+function deleteInventoryMovement(i){if(!inventoryMovements[i])return;if(!confirm('حذف هذه الحركة؟'))return;inventoryMovements.splice(i,1);localStorage.setItem('warith_inventory',JSON.stringify(inventoryMovements));renderInventory();}
+
+function openMenu(){document.getElementById('drawer').classList.add('open')}function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}function coming(x){alert(x+' — قيد البناء في المرحلة التالية')}
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='inv-item-type')toggleInventoryStatus();});renderFamilies(); renderDonations(); renderAppeals(); renderInventory(); updateAppealDashboard(); if(document.getElementById('f-has-salary')) toggleSalarySource();
 </script>
 </body>
 </html>
