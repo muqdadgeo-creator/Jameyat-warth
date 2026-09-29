@@ -87,6 +87,105 @@ textarea.forminput{height:80px;resize:vertical}
 .program-received{color:#0f5c4d;font-weight:bold}
 
 .financial-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:9px}.financial-summary .fs{background:#f4f7f6;border-radius:11px;padding:10px}.financial-summary .fs small{display:block;color:#71857f;font-size:9px}.financial-summary .fs b{display:block;margin-top:4px;font-size:13px;color:#0f5c4d}.financial-summary .fs.remaining b{color:#8a6517}.financial-summary .fs.covered b{color:#2f6f4e}
+
+.home-dashboard{display:grid;gap:10px;margin-bottom:17px}
+.home-card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 10px #0000000b}
+.home-card-title{display:flex;align-items:center;gap:6px;font-size:14px;color:#24473f;margin-bottom:11px}
+.home-card-title b{font-size:15px}
+.home-card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.home-card-grid>div{background:#f4f7f6;border-radius:11px;padding:10px 7px;text-align:center}
+.home-card-grid b{display:block;font-size:20px;color:#0f5c4d}
+.home-card-grid span{display:block;font-size:10px;color:#71857f;margin-top:3px}
+.home-two-cols{grid-template-columns:1fr 1fr}
+.home-big-value{font-size:24px;font-weight:900;color:#0f5c4d;line-height:1.25}
+.home-card-note{font-size:9px;color:#7a8985;margin-top:7px}
+.home-inventory-list{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.home-inventory-item{background:#f4f7f6;border-radius:10px;padding:9px;display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:10px}
+.home-inventory-item b{font-size:14px;color:#0f5c4d}
+.home-empty{text-align:center;color:#7c8d88;font-size:10px;padding:8px;grid-column:1/-1}
+@media(min-width:700px){.home-dashboard{grid-template-columns:repeat(2,1fr)}}
+
+/* ===== تقارير A4 ===== */
+.report-panel{width:100%}
+.report-paper{
+  width:210mm;
+  min-height:297mm;
+  box-sizing:border-box;
+  margin:0 auto;
+  padding:14mm 13mm 13mm;
+  background:#fff;
+  color:#243b35;
+  border-radius:4px;
+  box-shadow:0 2px 14px #00000010;
+  direction:rtl;
+}
+.report-paper-head{text-align:center;border-bottom:1px solid #dfe8e5;padding-bottom:8mm;margin-bottom:5mm}
+.report-paper-logo{
+  width:48px;height:48px;border-radius:50%;margin:0 auto 7px;
+  display:flex;align-items:center;justify-content:center;
+  background:#0f5c4d;color:#fff;font-size:28px;font-weight:900;
+}
+.report-paper-org{font-size:20px;font-weight:900;color:#0f5c4d}
+.report-paper-title{font-size:18px;font-weight:900;margin-top:12px;color:#0f5c4d;background:#f7f0df;border:1px solid #eadbb7;border-radius:9px;padding:7px 12px;display:inline-block;min-width:55%}
+.report-paper-subtitle{display:none}
+.report-paper-greeting{font-size:12.5px;font-weight:700;margin-top:10px;color:#31554b}
+.report-paper-meta{font-size:10px;color:#71857f;margin-top:5px}
+.report-paper-quote{font-size:13px;font-weight:900;margin-top:11px;color:#0f5c4d;line-height:1.55;white-space:nowrap}
+.report-paper-quote-attrib{font-size:11.5px;font-weight:500;margin-top:2px;color:#0f5c4d}
+.report-period-line{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 10px;background:#f4f7f6;border:1px solid #dfe8e5;border-radius:7px;font-size:10px;margin-bottom:8px}
+.report-period-line span{color:#71857f}
+.report-period-line b{color:#31554b}
+.report-summary-line{
+  display:flex;justify-content:flex-start;gap:18px;flex-wrap:wrap;
+  padding:7px 0;border-bottom:1px solid #dfe8e5;
+  font-size:11px;font-weight:900;color:#31554b;margin-bottom:8px;
+}
+.report-a4-table{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}
+.report-a4-table th{
+  background:#0f5c4d;color:#fff;padding:8px 6px;text-align:right;
+  font-weight:900;border:1px solid #0f5c4d;
+}
+.report-a4-table td{
+  padding:7px 6px;text-align:right;border:1px solid #d8e2df;
+  vertical-align:top;line-height:1.45;word-break:break-word;
+}
+.report-a4-table tbody tr:nth-child(even){background:#f7faf9}
+.report-a4-total{font-weight:900;color:#0f5c4d}
+.report-paper-footer{
+  margin-top:12mm;padding-top:5mm;border-top:1px solid #dfe8e5;
+  text-align:center;font-size:9px;color:#71857f;
+}
+.report-paper .report-section-title{
+  font-size:13px;font-weight:900;color:#0f5c4d;margin:7mm 0 3mm;
+}
+@media(max-width:900px){
+  .report-paper{width:100%;min-height:auto;padding:18px 12px;box-shadow:none}
+  .report-paper-org{font-size:18px}.report-paper-title{font-size:16px;min-width:0}.report-paper-quote{font-size:11.5px;white-space:normal}.report-paper-quote-attrib{font-size:11px}
+  .report-a4-table{font-size:9px}
+}
+@media print{
+  @page{size:A4 portrait;margin:0}
+  body{background:#fff!important}
+  body *{visibility:hidden!important}
+  #reports,#reports *{visibility:visible!important}
+  #reports{position:static!important;width:auto!important;margin:0!important;padding:0!important;background:#fff!important}
+  #reports>.top,#reports>.donation-tabs,#reports>.card{display:none!important}
+  .report-panel{display:none!important}
+  .report-panel[style*="display: block"]{display:block!important}
+  .report-paper{
+    width:210mm!important;
+    min-height:297mm!important;
+    margin:0!important;
+    padding:14mm 13mm 13mm!important;
+    box-shadow:none!important;
+    border-radius:0!important;
+  }
+  .report-paper-head{break-inside:avoid}.report-paper-title,.report-paper-greeting,.report-paper-quote,.report-paper-quote-attrib{break-inside:avoid}.report-period-line{break-inside:avoid}
+  .report-a4-table{font-size:9.5pt}
+  .report-a4-table tr{break-inside:avoid}
+  .report-paper-footer{break-inside:avoid}
+}
+
 </style>
 </head>
 <body>
@@ -96,9 +195,36 @@ textarea.forminput{height:80px;resize:vertical}
 
 <section id="home" class="screen active">
 <div class="hello">السلام عليكم</div><div class="title">لوحة التحكم</div>
-<div class="stats">
-<div class="stat">👨‍👩‍👧‍👦 <b id="homeFamiliesStat">0</b><span>العوائل</span></div><div class="stat">💰 <b id="homeTodayDonationsStat">0</b><span>تبرعات اليوم</span></div>
-<div class="stat">📋 <b id="openAppealsStat">0</b><span>مناشدات مفتوحة</span></div><div class="stat">📦 <b id="homeInventoryMovesStat">0</b><span>حركات المخزن</span></div>
+<div class="home-dashboard">
+  <div class="home-card home-families-card">
+    <div class="home-card-title">👨‍👩‍👧‍👦 <b>العوائل</b></div>
+    <div class="home-card-grid">
+      <div><b id="homeFamiliesActive">0</b><span>مستمرة</span></div>
+      <div><b id="homeFamiliesOpen">0</b><span>مفتوحة</span></div>
+      <div><b id="homeFamiliesClosed">0</b><span>مغلقة</span></div>
+    </div>
+  </div>
+
+  <div class="home-card home-donations-card">
+    <div class="home-card-title">💰 <b>التبرعات</b></div>
+    <div class="home-big-value" id="homeMonthlyDonations">0 د.ع</div>
+    <div class="home-card-note">مجموع التبرعات المالية لهذا الشهر</div>
+  </div>
+
+  <div class="home-card home-appeals-card">
+    <div class="home-card-title">📋 <b>المناشدات</b></div>
+    <div class="home-card-grid home-two-cols">
+      <div><b id="homeAppealsDone">0</b><span>مكتملة</span></div>
+      <div><b id="homeAppealsNotDone">0</b><span>غير مكتملة</span></div>
+    </div>
+    <div class="home-card-note">محسوبة لهذا الشهر</div>
+  </div>
+
+  <div class="home-card home-inventory-card">
+    <div class="home-card-title">📦 <b>تم تجهيز</b></div>
+    <div id="homeInventoryItems" class="home-inventory-list"><div class="home-empty">لا توجد حركات إخراج لهذا الشهر</div></div>
+    <div class="home-card-note">حسب حركات الإخراج لهذا الشهر</div>
+  </div>
 </div>
 <div class="grid">
 <button class="tile" onclick="showScreen('families')"><span class="ico">👨‍👩‍👧</span><small>العوائل</small></button>
@@ -509,6 +635,13 @@ textarea.forminput{height:80px;resize:vertical}
     <label class="fl">المطلوب</label>
     <input id="a-amount" class="forminput" type="number" min="0" inputmode="numeric" placeholder="بالدينار العراقي">
   </div>
+  <label class="fl">موقف الكشف</label>
+  <select id="a-assessment" class="forminput">
+    <option value="">اختر موقف الكشف (اختياري)</option>
+    <option value="مستحق">مستحق</option>
+    <option value="غير مستحق">غير مستحق</option>
+  </select>
+
   <div class="choice-row">
     <div>
       <label class="fl">الأولوية</label>
@@ -523,13 +656,6 @@ textarea.forminput{height:80px;resize:vertical}
       </select>
     </div>
   </div>
-
-  <label class="fl">موقف الكشف</label>
-  <select id="a-survey-status" class="forminput">
-    <option value="">اختر موقف الكشف</option>
-    <option value="مستحق">مستحق</option>
-    <option value="غير مستحق">غير مستحق</option>
-  </select>
 
   <label class="fl">تاريخ المناشدة</label>
   <input id="a-date" class="forminput" type="date">
@@ -744,9 +870,9 @@ function resetAppealForm(){
   populateAppealFamilies();
   setAppealType('مالية');
   document.getElementById('a-amount').value='';
+  document.getElementById('a-assessment').value='';
   document.getElementById('a-priority').value='عادية';
   document.getElementById('a-status').value='مفتوحة';
-  document.getElementById('a-survey-status').value='';
   document.getElementById('a-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('a-notes').value='';
   document.getElementById('a-name').value='';
@@ -815,10 +941,9 @@ function saveAppeal(){
     ownerLandmark:appealOwnerType==='new'?document.getElementById('a-landmark').value.trim():'',
     type:appealType,
     amount:Number(document.getElementById('a-amount').value||0),
+    assessment:document.getElementById('a-assessment').value,
     priority:document.getElementById('a-priority').value,
-    status:document.getElementById('a-status').value,
-    surveyStatus:document.getElementById('a-survey-status').value,
-    date,
+    status:document.getElementById('a-status').value,date,
     notes:document.getElementById('a-notes').value.trim(),
     attachments:appealAttachments,
     createdAt:old?.createdAt||now,
@@ -954,9 +1079,9 @@ function editAppeal(){
   populateAppealFamilies(a.familyCode);
   setAppealType(a.type||'مالية');
   document.getElementById('a-amount').value=a.amount||'';
+  document.getElementById('a-assessment').value=a.assessment||'';
   document.getElementById('a-priority').value=a.priority||'عادية';
   document.getElementById('a-status').value=a.status||'مفتوحة';
-  document.getElementById('a-survey-status').value=a.surveyStatus||'';
   document.getElementById('a-date').value=a.date||'';
   document.getElementById('a-notes').value=a.notes||'';
   document.getElementById('a-name').value=a.ownerName||'';
@@ -988,28 +1113,61 @@ function homeDateLabel(v){
   if(String(v).slice(0,10)===today)return 'اليوم';
   return String(v).slice(0,10);
 }
+function homeIsCurrentMonth(v){
+  if(!v)return false;
+  const raw=String(v).slice(0,10);
+  const m=raw.match(/^(\d{4})-(\d{1,2})-\d{1,2}$/);
+  if(!m)return false;
+  const now=new Date();
+  return Number(m[1])===now.getFullYear() && Number(m[2])===now.getMonth()+1;
+}
 function renderHomeDashboard(){
   const visibleFamilies=families.filter(x=>!isHiddenRecord(x));
   const visibleDonations=donations.filter(x=>!isHiddenRecord(x));
   const visibleAppeals=appeals.filter(x=>!isHiddenRecord(x));
   const visibleInventory=inventoryMovements.filter(x=>!isHiddenRecord(x));
-  const today=new Date().toISOString().slice(0,10);
-  const famEl=document.getElementById('homeFamiliesStat');
-  const todayDonEl=document.getElementById('homeTodayDonationsStat');
-  const openEl=document.getElementById('openAppealsStat');
-  const invEl=document.getElementById('homeInventoryMovesStat');
-  if(famEl)famEl.textContent=visibleFamilies.length.toLocaleString('en-US');
-  if(todayDonEl)todayDonEl.textContent=visibleDonations.filter(x=>String(x.date||'').slice(0,10)===today).length.toLocaleString('en-US');
-  if(openEl)openEl.textContent=visibleAppeals.filter(x=>x.status==='مفتوحة').length.toLocaleString('en-US');
-  if(invEl)invEl.textContent=visibleInventory.length.toLocaleString('en-US');
 
+  // العوائل: العدد الحالي حسب حالة العائلة، بدون أي فلتر زمني.
+  const activeFamilies=visibleFamilies.filter(x=>x.st==='مستمر').length;
+  const openFamilies=visibleFamilies.filter(x=>x.st==='مفتوح').length;
+  const closedFamilies=visibleFamilies.filter(x=>x.st==='مغلق').length;
+  const setText=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=Number(v||0).toLocaleString('en-US');};
+  setText('homeFamiliesActive',activeFamilies);
+  setText('homeFamiliesOpen',openFamilies);
+  setText('homeFamiliesClosed',closedFamilies);
+
+  // التبرعات: مجموع التبرعات المالية لهذا الشهر.
+  const monthlyCash=visibleDonations
+    .filter(x=>x.type==='مالي'&&homeIsCurrentMonth(x.date))
+    .reduce((n,x)=>n+Number(x.amount||0),0);
+  const cashEl=document.getElementById('homeMonthlyDonations');
+  if(cashEl)cashEl.textContent=monthlyCash.toLocaleString('en-US')+' د.ع';
+
+  // المناشدات: مكتملة / غير مكتملة لهذا الشهر.
+  const monthlyAppeals=visibleAppeals.filter(x=>homeIsCurrentMonth(x.date));
+  setText('homeAppealsDone',monthlyAppeals.filter(x=>x.status==='مكتملة').length);
+  setText('homeAppealsNotDone',monthlyAppeals.filter(x=>x.status!=='مكتملة').length);
+
+  // تم تجهيز: تجميع كل الأجهزة والمواد التي خرجت من المخزن خلال هذا الشهر حسب الاسم والكمية.
+  const prepared={};
+  visibleInventory.filter(x=>x.move==='صادر'&&homeIsCurrentMonth(x.date)).forEach(x=>{
+    const name=(x.name||'غير محدد').trim()||'غير محدد';
+    prepared[name]=(prepared[name]||0)+Number(x.qty||0);
+  });
+  const invBox=document.getElementById('homeInventoryItems');
+  if(invBox){
+    const rows=Object.entries(prepared).sort((a,b)=>a[0].localeCompare(b[0],'ar'));
+    invBox.innerHTML=rows.map(([name,qty])=>`<div class="home-inventory-item"><span>${escapeHtml(name)}</span><b>${Number(qty||0).toLocaleString('en-US')}</b></div>`).join('')||'<div class="home-empty">لا توجد حركات إخراج لهذا الشهر</div>';
+  }
+
+  // آخر النشاطات تبقى كما هي، ولا ترتبط بفلتر الرئيسية.
   const events=[];
   visibleDonations.forEach(x=>events.push({date:x.date||'',type:'تبرع',icon:'ت',title:x.donorName||'تبرع جديد',desc:x.type==='مالي'?`تبرع مالي ${Number(x.amount||0).toLocaleString('en-US')} د.ع`:'تبرع عيني'}));
   visibleAppeals.forEach(x=>events.push({date:x.date||'',type:'مناشدة',icon:'م',title:x.familyCode?`مناشدة للعائلة #${x.familyCode}`:'مناشدة جديدة',desc:`${x.type||'مناشدة'} · ${x.status||''}`}));
   helps.filter(x=>!isHiddenRecord(x)).forEach(x=>events.push({date:x.date||'',type:'مساعدة',icon:'م',title:'مساعدة مقدمة',desc:`${x.type||'مساعدة'}${x.amount?` · ${Number(x.amount).toLocaleString('en-US')} د.ع`:''}`}));
   programs.filter(x=>!isHiddenRecord(x)).forEach(x=>events.push({date:x.date||'',type:'برنامج',icon:'ب',title:x.name||'برنامج',desc:`برنامج · ${(x.families||[]).length} عائلة`}));
   expenses.filter(x=>!isHiddenRecord(x)).forEach(x=>events.push({date:x.date||'',type:'مصروف',icon:'ص',title:'مصروف',desc:`${x.category||'أخرى'} · ${Number(x.amount||0).toLocaleString('en-US')} د.ع`}));
-  visibleInventory.forEach(x=>events.push({date:x.date||'',type:'مخزن',icon:'م',title:`حركة مخزن: ${x.name||'غير محدد'}`,desc:`${x.move==='in'?'إدخال':'إخراج'} · العدد ${x.qty||0}`}));
+  visibleInventory.forEach(x=>events.push({date:x.date||'',type:'مخزن',icon:'م',title:`حركة مخزن: ${x.name||'غير محدد'}`,desc:`${x.move==='وارد'?'إدخال':'إخراج'} · العدد ${x.qty||0}`}));
   events.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   const box=document.getElementById('homeRecentActivities');
   if(!box)return;
@@ -1777,11 +1935,47 @@ function clearReportDates(){const f=document.getElementById('reportFrom'),t=docu
 function switchReportTab(tab){activeReportTab=tab;document.querySelectorAll('[data-report-tab]').forEach(b=>b.classList.toggle('active',b.dataset.reportTab===tab));document.querySelectorAll('.report-panel').forEach(x=>x.style.display='none');const box=document.getElementById('report'+({general:'General',family:'Family',donor:'Donor',helps:'Helps',donations:'Donations',hidden:'Hidden'}[tab]||'General'));if(box)box.style.display='block';renderActiveReport()}
 function renderActiveReport(){if(activeReportTab==='general')renderGeneralReport();else if(activeReportTab==='family')renderFamilyReport();else if(activeReportTab==='donor')renderDonorReport();else if(activeReportTab==='helps')renderHelpsReport();else if(activeReportTab==='donations')renderDonationsReport();else renderHiddenReport()}
 function reportMoney(n){return (Number(n)||0).toLocaleString('en-US')+' د.ع'}
-function reportCard(title,body){return `<div class="card"><div style="font-weight:900;margin-bottom:8px">${title}</div>${body}</div>`}
+function reportTitleText(title){
+  return String(title||'تقرير مفصل').replace(/^[^\p{L}\p{N}]+/u,'').replace(/\s+—.*$/,'').trim()||'تقرير مفصل';
+}
+function reportCard(title,body){
+  const clean=reportTitleText(title);
+  return `<div class="report-paper">
+    <div class="report-paper-head">
+      <div class="report-paper-logo">و</div>
+      <div class="report-paper-org">جمعية وارث الخيرية في قضاء أبي الخصيب</div>
+      <div class="report-paper-quote">((اعلموا أن حوائج الناس إليكم من نعم الله عليكم فلا تملوا النعم فتتحول إلى غيركم))</div>
+      <div class="report-paper-quote-attrib">الإمام الحسين عليه السلام</div>
+      <div class="report-paper-greeting">تهديكم جمعيتنا أطيب التحيات</div>
+      <div class="report-paper-title">تقرير مفصل عن ${escapeHtml(clean)}</div>
+    </div>
+    ${body}
+    <div class="report-paper-footer">جمعية وارث الخيرية © 2026</div>
+  </div>`;
+}
 function renderGeneralReport(){const ds=donations.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), hs=helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), es=expenses.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), inv=inventoryMovements.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));const fin=ds.filter(x=>x.type==='مالي'), rec=fin.filter(x=>x.paid==='تم التسديد'), un=fin.filter(x=>x.paid!=='تم التسديد');const rows=[['العوائل',families.filter(x=>!isHiddenRecord(x)).length],['التبرعات المالية',reportMoney(fin.reduce((n,x)=>n+Number(x.amount||0),0))],['التبرعات المستلمة',reportMoney(rec.reduce((n,x)=>n+Number(x.amount||0),0))],['التبرعات غير المستلمة',reportMoney(un.reduce((n,x)=>n+Number(x.amount||0),0))],['المساعدات',reportMoney(hs.reduce((n,x)=>n+Number(x.amount||0),0))],['المصروفات',reportMoney(es.reduce((n,x)=>n+Number(x.amount||0),0))],['حركات المخزن',inv.length]];document.getElementById('reportGeneral').innerHTML=reportCard('📊 الملخص العام',`<div class="detail-grid">${rows.map(r=>`<div class="info"><small>${r[0]}</small><b>${r[1]}</b></div>`).join('')}</div>`)}
 function renderFamilyReport(){const box=document.getElementById('reportFamily');const fc=box.dataset.family||'';if(!fc){box.innerHTML=reportCard('👨‍👩‍👧 تقرير عائلة','<label class="fl">اختر العائلة<select class="forminput" id="reportFamilySelect" onchange="document.getElementById(\'reportFamily\').dataset.family=this.value;renderFamilyReport()"><option value="">اختر العائلة</option>'+families.filter(f=>!isHiddenRecord(f)).map(f=>`<option value="${f.c}">#${f.c} · ${escapeHtml(f.head||f.n||'')}</option>`).join('')+'</select></label><div class="empty" style="margin-top:10px">اختر عائلة لعرض تقريرها</div>');return}const f=families.find(x=>Number(x.c)===Number(fc));if(!f){box.dataset.family='';return renderFamilyReport()}const hs=helps.filter(x=>!isHiddenRecord(x)&&Number(x.familyCode)===Number(fc)&&reportDateOk(x.date));const ps=[];programs.filter(p=>!isHiddenRecord(p)).forEach(p=>(p.families||[]).forEach(v=>{if(Number(v.familyCode)===Number(fc)&&v.received&&reportDateOk(p.date))ps.push(p)}));const fas=appeals.filter(a=>!isHiddenRecord(a)&&Number(a.familyCode)===Number(fc)&&reportDateOk(a.date));const ds=donations.filter(d=>!isHiddenRecord(d)&&d.type==='مالي'&&reportDateOk(d.date)&&fas.some(a=>Number(a.id)===Number(d.appealId)));box.innerHTML=reportCard(`👨‍👩‍👧 عائلة #${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'')}`,`<div class="detail-grid"><div class="info"><small>الهاتف</small><b>${escapeHtml(f.phone||'غير مسجل')}</b></div><div class="info"><small>العنوان</small><b>${escapeHtml(f.address||'غير مسجل')}</b></div><div class="info"><small>الأفراد</small><b>${f.m||0}</b></div><div class="info"><small>الحقوق</small><b>${escapeHtml(f.r||'غير محدد')}</b></div></div><hr><b>المناشدات (${fas.length})</b>${fas.map(a=>`<div class="sub" style="padding:5px 0">#${a.id} · ${escapeHtml(a.type)} · ${escapeHtml(a.status)}</div>`).join('')||'<div class="empty">لا توجد</div>'}<hr><b>المساعدات (${hs.length}) — ${reportMoney(hs.reduce((n,x)=>n+Number(x.amount||0),0))}</b>${hs.map(h=>`<div class="sub" style="padding:5px 0">${escapeHtml(h.type||'مساعدة')} · ${reportMoney(h.amount)} · ${escapeHtml(h.date||'')}</div>`).join('')||'<div class="empty">لا توجد</div>'}<hr><b>البرامج المستلمة (${ps.length})</b>${ps.map(p=>`<div class="sub" style="padding:5px 0">${escapeHtml(p.name)} · ${escapeHtml(p.date||'')}</div>`).join('')||'<div class="empty">لا توجد</div>'}<hr><b>التبرعات المرتبطة بالمناشدات — ${reportMoney(ds.reduce((n,x)=>n+Number(x.amount||0),0))}</b>`+(ds.map(d=>`<div class="sub" style="padding:5px 0">${reportMoney(d.amount)} · ${escapeHtml(d.date||'')} · ${escapeHtml(d.paid||'')}</div>`).join('')||'<div class="empty">لا توجد</div>'))}
 function renderDonorReport(){const box=document.getElementById('reportDonor');const id=box.dataset.donor||'';if(!id){box.innerHTML=reportCard('👤 تقرير متبرع','<label class="fl">اختر المتبرع<select class="forminput" onchange="document.getElementById(\'reportDonor\').dataset.donor=this.value;renderDonorReport()"><option value="">اختر المتبرع</option>'+donors.map(d=>`<option value="${d.id}">${escapeHtml(d.name||'')} · ${escapeHtml(d.phone||'')}</option>`).join('')+'</select></label><div class="empty" style="margin-top:10px">اختر متبرع لعرض سجله</div>');return}const dlist=donations.filter(d=>!isHiddenRecord(d)&&String(d.donorId)===String(id)&&reportDateOk(d.date));const d=donors.find(x=>String(x.id)===String(id));box.innerHTML=reportCard(`👤 ${escapeHtml(d?.name||'المتبرع')}`,`<div class="sub">الهاتف: ${escapeHtml(d?.phone||'غير مسجل')}</div><div style="margin-top:8px;font-weight:900">عدد التبرعات: ${dlist.length} · المالي: ${reportMoney(dlist.filter(x=>x.type==='مالي').reduce((n,x)=>n+Number(x.amount||0),0))}</div>${dlist.map(x=>`<div class="donor-alloc-row" style="margin-top:8px"><span>${escapeHtml(x.type)} · ${escapeHtml(x.date||'')} · ${escapeHtml(x.paid||'')}</span><b>${x.type==='مالي'?reportMoney(x.amount):escapeHtml(x.item||'')}</b></div>`).join('')||'<div class="empty">لا توجد تبرعات ضمن الفترة</div>'}`)}
-function renderHelpsReport(){const box=document.getElementById('reportHelps');const list=helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));const rows=list.map(h=>{const f=families.find(x=>Number(x.c)===Number(h.familyCode));return `<div class="donor-alloc-row"><span>${escapeHtml(h.date||'')} · ${escapeHtml(f?.head||'غير محدد')} · ${escapeHtml(h.type||'مساعدة')}</span><b>${reportMoney(h.amount)}</b></div><div class="sub" style="padding:3px 0 7px">${escapeHtml(h.details||'')}</div>`}).join('')||'<div class="empty">لا توجد مساعدات ضمن الفترة</div>';box.innerHTML=reportCard(`🤝 المساعدات المقدمة — ${list.length}`,`<div style="font-weight:900;margin-bottom:8px">الإجمالي: ${reportMoney(list.reduce((n,x)=>n+Number(x.amount||0),0))}</div>${rows}`)}
+function renderHelpsReport(){
+  const box=document.getElementById('reportHelps');
+  const list=helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));
+  const total=list.reduce((n,x)=>n+Number(x.amount||0),0);
+  const dates=list.map(x=>String(x.date||'').slice(0,10)).filter(Boolean).sort();
+  const from=document.getElementById('reportFrom')?.value||dates[0]||'';
+  const to=document.getElementById('reportTo')?.value||dates[dates.length-1]||'';
+  const dateText=from||to?`${from||'—'} إلى ${to||'—'}`:'كل الفترات';
+  const rows=list.map((h,i)=>{
+    const f=families.find(x=>Number(x.c)===Number(h.familyCode));
+    const family=f?`#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'')}`:(h.familyCode?`#${escapeHtml(h.familyCode)}`:'غير محدد');
+    return `<tr><td style="width:6%">${i+1}</td><td style="width:14%">${escapeHtml(h.date||'')}</td><td style="width:22%">${family}</td><td style="width:15%">${escapeHtml(h.type||'مساعدة')}</td><td style="width:13%" class="report-a4-total">${reportMoney(h.amount)}</td><td>${escapeHtml(h.details||'')}</td></tr>`;
+  }).join('');
+  const body=`
+    <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml(dateText)}</b></div>
+    <div class="report-summary-line"><span>عدد المساعدات: ${list.length}</span><span>إجمالي المساعدات: ${reportMoney(total)}</span></div>
+    <div class="report-section-title">تفاصيل المساعدات</div>
+    ${list.length?`<table class="report-a4-table"><thead><tr><th>ت</th><th>التاريخ</th><th>العائلة</th><th>نوع المساعدة</th><th>المبلغ</th><th>التفاصيل</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table>`:`<div class="empty" style="padding:30px;text-align:center">لا توجد مساعدات ضمن الفترة المحددة</div>`}`;
+  box.innerHTML=reportCard('تقرير المساعدات',body);
+}
 function renderDonationsReport(){const box=document.getElementById('reportDonations');const list=donations.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));const fin=list.filter(x=>x.type==='مالي'),rec=fin.filter(x=>x.paid==='تم التسديد'),un=fin.filter(x=>x.paid!=='تم التسديد');const rows=list.map(x=>`<div class="donor-alloc-row" style="margin-top:8px"><span>${escapeHtml(x.donorName||'')} · ${escapeHtml(x.date||'')} · ${escapeHtml(x.type||'')}</span><b>${x.type==='مالي'?reportMoney(x.amount):escapeHtml(x.item||'')}</b></div>`).join('')||'<div class="empty">لا توجد تبرعات ضمن الفترة</div>';box.innerHTML=reportCard(`💝 التبرعات — ${list.length}`,`<div class="detail-grid"><div class="info"><small>إجمالي المالي</small><b>${reportMoney(fin.reduce((n,x)=>n+Number(x.amount||0),0))}</b></div><div class="info"><small>المستلمة</small><b>${reportMoney(rec.reduce((n,x)=>n+Number(x.amount||0),0))}</b></div><div class="info"><small>غير المستلمة</small><b>${reportMoney(un.reduce((n,x)=>n+Number(x.amount||0),0))}</b></div><div class="info"><small>العينية</small><b>${list.filter(x=>x.type!=='مالي').length}</b></div></div>${rows}`)}
 
 function renderHiddenReport(){
