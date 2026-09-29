@@ -383,7 +383,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="section"><b>سجل حركة الأجهزة والمواد</b></div>
 <div class="card" style="padding:0;overflow:hidden">
   <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;min-width:850px">
+    <table style="width:max-content;min-width:100%;border-collapse:collapse">
       <thead>
         <tr>
           <th style="padding:10px;text-align:right">ت</th>
@@ -392,7 +392,8 @@ textarea.forminput{height:80px;resize:vertical}
           <th style="padding:10px;text-align:right">الحالة</th>
           <th style="padding:10px;text-align:right">العدد</th>
           <th style="padding:10px;text-align:right">تاريخ الإدخال / الإخراج</th>
-          <th style="padding:10px;text-align:right">المستفيد</th>
+          <th style="padding:10px;text-align:right;min-width:180px">المستفيد</th>
+          <th style="padding:10px;text-align:right;min-width:240px">الملاحظات</th>
           <th style="padding:10px;text-align:right">إجراءات</th>
         </tr>
       </thead>
@@ -1439,8 +1440,9 @@ function renderInventoryAppealPriority(){
   const list=inventoryDeviceAppeals();
   if(!list.length){box.innerHTML='<div class="empty" style="padding:18px">لا توجد حالياً مناشدات أجهزة / أثاث بانتظار التسليم</div>';return;}
   const priorityLabel=p=>p==='عاجلة'?'🔴 عاجلة':p==='مهمة'?'🟠 مهمة':'🟢 عادية';
-  box.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px"><thead><tr><th style="padding:10px;text-align:right">الأولوية</th><th style="padding:10px;text-align:right">رقم المناشدة</th><th style="padding:10px;text-align:right">المستفيد</th><th style="padding:10px;text-align:right">العائلة</th><th style="padding:10px;text-align:right">الهاتف</th><th style="padding:10px;text-align:right">التاريخ</th><th style="padding:10px;text-align:right">الحالة</th><th style="padding:10px;text-align:right">إجراء</th></tr></thead><tbody>${list.map(a=>`<tr><td style="padding:9px;border-top:1px solid #edf1ef;font-weight:900">${priorityLabel(a.priority)}</td><td style="padding:9px;border-top:1px solid #edf1ef">#${escapeHtml(a.id)}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.ownerName||'غير محدد')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${a.familyCode?'#'+escapeHtml(a.familyCode):'غير مسجلة'}</td><td style="padding:9px;border-top:1px solid #edf1ef">${phoneToolsHtml(a.ownerPhone)}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.date||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.status||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef"><button class="action primary" onclick="openAppealFromInventory(${Number(a.id)})">عرض</button><button class="action" style="margin-inline-start:5px" onclick="openInventoryForAppeal(${Number(a.id)})">إخراج</button></td></tr>`).join('')}</tbody></table></div>`;
+  box.innerHTML=`<div style="overflow-x:auto;width:100%"><table style="width:100%;border-collapse:collapse;min-width:1100px;table-layout:auto"><thead><tr><th style="padding:10px;text-align:right">الأولوية</th><th style="padding:10px;text-align:right">رقم المناشدة</th><th style="padding:10px;text-align:right">المستفيد</th><th style="padding:10px;text-align:right">العائلة</th><th style="padding:10px;text-align:right">الهاتف</th><th style="padding:10px;text-align:right;min-width:280px">الملاحظات / التفاصيل</th><th style="padding:10px;text-align:right">التاريخ</th><th style="padding:10px;text-align:right">الحالة</th><th style="padding:10px;text-align:right;white-space:nowrap">إجراء</th></tr></thead><tbody>${list.map(a=>`<tr><td style="padding:9px;border-top:1px solid #edf1ef;font-weight:900;white-space:nowrap">${priorityLabel(a.priority)}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">#${escapeHtml(a.id)}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">${escapeHtml(a.ownerName||'غير محدد')}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">${a.familyCode?'#'+escapeHtml(a.familyCode):'غير مسجلة'}</td><td style="padding:9px;border-top:1px solid #edf1ef">${phoneToolsHtml(a.ownerPhone)}</td><td style="padding:9px;border-top:1px solid #edf1ef;min-width:280px;white-space:pre-wrap;line-height:1.7">${escapeHtml(a.notes||'—')}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">${escapeHtml(a.date||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">${escapeHtml(a.status||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap"><button class="action primary" onclick="openAppealFromInventory(${Number(a.id)})">عرض</button><button class="action" style="margin-inline-start:5px" onclick="openInventoryForAppeal(${Number(a.id)})">إخراج</button></td></tr>`).join('')}</tbody></table></div>`;
 }
+
 function openAppealFromInventory(id){
   const i=appeals.findIndex(a=>Number(a.id)===Number(id)); if(i<0)return;
   openAppeal(i);
@@ -1489,14 +1491,15 @@ function renderInventory(){
         <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.status||'—')}</td>
         <td style="padding:9px;border-top:1px solid #edf1ef">${Number(m.qty||0)}</td>
         <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.date||'')}</td>
-        <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.beneficiary||'—')}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef;min-width:180px">${escapeHtml(m.beneficiary||'—')}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef;min-width:240px;white-space:pre-wrap">${escapeHtml(m.notes||'—')}</td>
         <td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">
           <button class="action primary" onclick="editInventoryMovement(${originalIndex})">✏️</button>
           <button class="action" onclick="hideRecord('inventoryMovements',${originalIndex},'حركة المخزن')">🚫</button><button class="action" onclick="deleteInventoryMovement(${originalIndex})">🗑</button>
         </td>
       </tr>`;
     }).join('') || `
-      <tr><td colspan="8" style="padding:18px;text-align:center;color:#71857f">
+      <tr><td colspan="9" style="padding:18px;text-align:center;color:#71857f">
         لا توجد حركات للمخزن بعد
       </td></tr>`;
   }
