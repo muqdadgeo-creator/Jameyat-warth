@@ -514,7 +514,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterStudentBtn" class="program-filter-btn" onclick="toggleProgramFilter('student')">الطلبة: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('student')">تطبيق</button></div><div id="programFilterStudentMenu" class="program-filter-menu"></div></div>
 </div>
 <div class="search" style="margin-top:8px"><span>🔎</span><input id="programFamilyQ" placeholder="ابحث برقم العائلة أو اسم رب الأسرة أو المعرف" oninput="renderProgramFamilyPicker()"></div>
-<div id="programFilterActiveNote" class="inline-note" style="margin-top:7px">اختر القيم من أي فلتر، ثم اضغط «تطبيق الفلاتر» لتصفية العوائل.</div>
+<div id="programFilterActiveNote" class="inline-note" style="margin-top:7px">الفلاتر جاهزة — اختر القيم ثم اضغط «تطبيق الفلاتر».</div>
 <div class="program-family-actions"><button type="button" class="action primary" onclick="applyProgramFilters()">تطبيق الفلاتر</button><button type="button" class="action" onclick="selectAllProgramFamilies()">تحديد الكل الظاهر</button><button type="button" class="action" onclick="clearAllProgramFamilies()">إلغاء التحديد</button></div>
 <div class="program-family-actions" style="margin-top:7px"><button type="button" class="action" onclick="exportSelectedProgramFamilies()">📤 تصدير العوائل المختارة</button></div>
 <div class="program-family-list" id="programFamilyList"></div>
@@ -1911,7 +1911,7 @@ function buildProgramFilterMenu(type,values,label){
   const menu=document.getElementById('programFilter'+type.charAt(0).toUpperCase()+type.slice(1)+'Menu');if(!menu)return;
   const st=programFilterPending;
   const safeValues=[...new Set(values.map(normalizeProgramFilterValue))];
-  menu.innerHTML=safeValues.map(v=>`<label class="program-filter-option"><input type="checkbox" data-program-filter="${type}" value="${escapeHtml(v)}" ${st[type].includes(v)?'checked':''} onchange="setProgramFilter('${type}',${JSON.stringify(v)},this.checked)"><span>${escapeHtml(v)}</span></label>`).join('')||'<div class="empty" style="padding:8px">لا توجد قيم</div>';
+  menu.innerHTML=safeValues.map(v=>`<label class="program-filter-option"><input type="checkbox" data-program-filter="${type}" data-program-filter-value="${escapeHtml(v)}" value="${escapeHtml(v)}" ${st[type].includes(v)?'checked':''} onchange="setProgramFilter('${type}',this.dataset.programFilterValue,this.checked)"><span>${escapeHtml(v)}</span></label>`).join('')||'<div class="empty" style="padding:8px">لا توجد قيم</div>';
 }
 function setProgramFilter(type,value,checked){
   value=normalizeProgramFilterValue(value);
