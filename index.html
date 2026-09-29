@@ -961,7 +961,7 @@ function deleteAppeal(){
 
 function getFamily(){return families.find(x=>Number(x.c)===Number(selectedFamilyCode));}
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='families')renderFamilies();if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
-function renderFamilies(){const q=(document.getElementById('q')?.value||'').trim().toLowerCase();const a=families.filter(x=>!isHiddenRecord(x)&&[x.c,x.n,x.i,x.j,x.h,x.r,x.st].join(' ').toLowerCase().includes(q));document.getElementById('count').textContent=a.length+' عائلة';document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button class="more" onclick="event.stopPropagation();hideRecord('families',families.indexOf(x),'العائلة')">🚫</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للبحث</div>'}
+function renderFamilies(){const q=(document.getElementById('q')?.value||'').trim().toLowerCase();const a=families.filter(x=>!isHiddenRecord(x)&&[x.c,x.n,x.i,x.j,x.h,x.r,x.st].join(' ').toLowerCase().includes(q));document.getElementById('count').textContent=a.length+' عائلة';document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button type="button" class="more" onclick="event.preventDefault();event.stopPropagation();hideFamilyByCode(${x.c})">🚫</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للبحث</div>'}
 function openFamily(code){selectedFamilyCode=Number(code);showScreen('family-detail');}
 function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
 function renderFamilyAttachments(){const x=getFamily();if(!x)return;const list=x.attachments||[];const box=document.getElementById('familyAttachments');if(box)box.innerHTML=list.map((a,i)=>`<div class="attachment"><div>📄</div><div class="grow"><div class="fname">${a.name}</div><div class="fmeta">${a.type||'ملف'} · ${formatFileSize(a.size||0)}</div></div><button class="more" onclick="openAttachment(${i})">↗</button><button class="more" onclick="deleteAttachment(${i})">🗑</button></div>`).join('')||'<div class="empty" style="padding:15px">لا توجد مرفقات</div>';}
@@ -1592,6 +1592,25 @@ function deleteActivity(type,i){const arr=type==='help'?helps:type==='program'?p
 
 
 function isHiddenRecord(x){return !!(x&&x.hidden);}
+function hideFamilyByCode(code){
+  const index=families.findIndex(f=>Number(f.c)===Number(code));
+  if(index<0||!families[index]){alert('لم يتم العثور على العائلة.');return;}
+  const x=families[index];
+  const reason=prompt('اكتب سبب حجب العائلة:',x.hiddenReason||'');
+  if(reason===null)return;
+  const clean=String(reason).trim();
+  if(!clean){alert('سبب الحجب مطلوب.');return;}
+  if(!confirm('سيتم إخفاء هذه العائلة من القوائم والتقارير والحسابات، مع بقائها ضمن تقرير المحجوبات. هل تريد المتابعة؟'))return;
+  x.hidden=true;
+  x.hiddenAt=new Date().toISOString();
+  x.hiddenBy='المستخدم الحالي';
+  x.hiddenReason=clean;
+  const data=JSON.stringify(families);
+  localStorage.setItem('warith_families_v2',data);
+  localStorage.setItem('warith_families',data);
+  renderFamilies();
+  renderActiveReport();
+}
 function hideRecord(collectionName,index,label){
   const collections={families,donors,donations,appeals,helps,programs,expenses,inventoryMovements};
   const arr=collections[collectionName];
