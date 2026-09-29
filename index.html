@@ -246,31 +246,74 @@ textarea.forminput{height:80px;resize:vertical}
 
 
 <section id="inventory" class="screen">
-<div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">المخزن</div><div class="count" id="inventoryCount"></div></div>
-<div class="stats">
-<div class="stat">📦 <b id="invItemsCount">0</b><span>الأصناف</span></div>
-<div class="stat">⬆️ <b id="invInCount">0</b><span>الوارد</span></div>
-<div class="stat">⬇️ <b id="invOutCount">0</b><span>الصادر</span></div>
-<div class="stat">📊 <b id="invNetCount">0</b><span>الرصيد</span></div>
+<div class="top">
+  <button class="back" onclick="showScreen('home')">← رجوع</button>
+  <div class="screen-title">المخزن</div>
+  <div class="count" id="inventoryCount"></div>
 </div>
-<div class="actions"><button class="action primary" onclick="openInventoryMovement('in')">＋ إضافة وارد</button><button class="action" onclick="openInventoryMovement('out')">− تسجيل صادر</button></div>
-<div class="search"><span>🔎</span><input id="inventoryQ" placeholder="ابحث باسم الصنف" oninput="renderInventory()"></div>
-<div class="section"><b>الأصناف الحالية</b></div><div id="inventoryItems"></div>
-<div class="section"><b>آخر حركات المخزن</b></div><div id="inventoryMovements"></div>
+
+<div class="actions">
+  <button class="action primary" onclick="openInventoryMovement('in')">＋ إدخال</button>
+  <button class="action" onclick="openInventoryMovement('out')">− إخراج</button>
+</div>
+
+<div class="search">
+  <span>🔎</span>
+  <input id="inventoryQ" placeholder="ابحث باسم الجهاز أو المادة" oninput="renderInventory()">
+</div>
+
+<div class="section"><b>الموقف</b></div>
+<div class="card" style="padding:0;overflow:hidden">
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:420px">
+      <thead>
+        <tr>
+          <th style="padding:10px;text-align:right">اسم الجهاز</th>
+          <th style="padding:10px;text-align:right">الحالة</th>
+          <th style="padding:10px;text-align:right">العدد</th>
+        </tr>
+      </thead>
+      <tbody id="inventoryStatusBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section"><b>سجل حركة الأجهزة والمواد</b></div>
+<div class="card" style="padding:0;overflow:hidden">
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;min-width:850px">
+      <thead>
+        <tr>
+          <th style="padding:10px;text-align:right">ت</th>
+          <th style="padding:10px;text-align:right">إدخال / إخراج</th>
+          <th style="padding:10px;text-align:right">اسم الجهاز</th>
+          <th style="padding:10px;text-align:right">الحالة</th>
+          <th style="padding:10px;text-align:right">العدد</th>
+          <th style="padding:10px;text-align:right">تاريخ الإدخال / الإخراج</th>
+          <th style="padding:10px;text-align:right">المستفيد</th>
+          <th style="padding:10px;text-align:right">إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="inventoryMovementBody"></tbody>
+    </table>
+  </div>
+</div>
 </section>
 
 <section id="add-inventory" class="screen">
-<div class="top"><button class="back" onclick="showScreen('inventory')">← رجوع</button><div class="screen-title" id="inventoryFormTitle">إضافة حركة مخزن</div></div>
-<div class="card">
-<label class="fl">نوع الحركة</label><select id="inv-move-type" class="forminput"><option value="وارد">وارد</option><option value="صادر">صادر</option></select>
-<label class="fl">نوع الصنف</label><select id="inv-item-type" class="forminput"><option value="جهاز">جهاز</option><option value="مواد">مواد</option></select>
-<label class="fl">اسم الصنف</label><input id="inv-name" class="forminput" placeholder="مثلاً: ثلاجة، فريزر، بطانية">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px"><div><label class="fl">الكمية</label><input id="inv-qty" class="forminput" type="number" min="1" value="1"></div><div id="inv-status-wrap"><label class="fl">حالة الجهاز</label><select id="inv-status" class="forminput"><option>شغال</option><option>عاطل</option><option>مستهلك</option></select></div></div>
-<label class="fl">التاريخ</label><input id="inv-date" class="forminput" type="date">
-<label class="fl">المصدر / الجهة</label><input id="inv-source" class="forminput" placeholder="مثلاً: متبرع، شراء، تبرع عيني">
-<label class="fl">ملاحظات</label><textarea id="inv-notes" class="forminput" placeholder="ملاحظات"></textarea>
-<button class="action primary" style="width:100%;margin-top:8px" onclick="saveInventoryMovement()">حفظ الحركة</button>
+<div class="top"><button class="back" onclick="showScreen('inventory')">← رجوع</button><div class="screen-title" id="inventoryFormTitle">إدخال للمخزن</div></div>
+<div class="formgrid">
+<label>إدخال / إخراج<select class="forminput" id="inv-move-type"><option value="وارد">إدخال</option><option value="صادر">إخراج</option></select></label>
+<label>النوع<select class="forminput" id="inv-item-type" onchange="toggleInventoryStatus()"><option value="جهاز">جهاز</option><option value="مواد">مواد</option></select></label>
+<label>اسم الجهاز / المادة<input class="forminput" id="inv-name"></label>
+<label>العدد<input class="forminput" id="inv-qty" type="number" min="1" value="1"></label>
+<div id="inv-status-wrap"><label>الحالة<select class="forminput" id="inv-status"><option>شغال</option><option>عاطل</option><option>مستهلك</option></select></label></div>
+<label>التاريخ<input class="forminput" id="inv-date" type="date"></label>
+<label>المستفيد<input class="forminput" id="inv-beneficiary" placeholder="للاخراج"></label>
+<label>المصدر<input class="forminput" id="inv-source"></label>
+<label>ملاحظات<textarea class="forminput" id="inv-notes"></textarea></label>
 </div>
+<button class="action primary" style="width:100%;margin-top:10px" onclick="saveInventoryMovement()">حفظ الحركة</button>
 </section>
 <section id="appeals" class="screen">
 <div class="top">
@@ -1043,71 +1086,148 @@ function saveFamilyEdit(){
 }
 
 
-let inventoryMovements=(()=>{try{const x=JSON.parse(localStorage.getItem('warith_inventory')||'[]');return Array.isArray(x)?x:[]}catch(e){return []}})();
+
+let inventoryMovements=(()=>{try{
+  const x=JSON.parse(localStorage.getItem('warith_inventory')||'[]');
+  return Array.isArray(x)?x:[];
+}catch(e){return []}})();
 let editingInventoryIndex=null;
-function openInventoryMovement(type){
+
+function openInventoryMovement(move){
   editingInventoryIndex=null;
-  document.getElementById('inventoryFormTitle').textContent=type==='in'?'إضافة وارد':'تسجيل صادر';
-  document.getElementById('inv-move-type').value=type==='in'?'وارد':'صادر';
-  document.getElementById('inv-item-type').value='جهاز';
-  document.getElementById('inv-name').value='';
-  document.getElementById('inv-qty').value='1';
-  document.getElementById('inv-status').value='شغال';
-  document.getElementById('inv-date').value=new Date().toISOString().slice(0,10);
-  document.getElementById('inv-source').value='';
-  document.getElementById('inv-notes').value='';
+  const title=document.getElementById('inventoryFormTitle');
+  if(title) title.textContent=move==='وارد'?'إدخال للمخزن':'إخراج من المخزن';
+  const moveEl=document.getElementById('inv-move-type');
+  if(moveEl) moveEl.value=move;
+  const typeEl=document.getElementById('inv-item-type');
+  if(typeEl) typeEl.value='جهاز';
+  const nameEl=document.getElementById('inv-name');
+  if(nameEl) nameEl.value='';
+  const qtyEl=document.getElementById('inv-qty');
+  if(qtyEl) qtyEl.value='1';
+  const statusEl=document.getElementById('inv-status');
+  if(statusEl) statusEl.value='شغال';
+  const dateEl=document.getElementById('inv-date');
+  if(dateEl) dateEl.value=new Date().toISOString().slice(0,10);
+  const beneficiaryEl=document.getElementById('inv-beneficiary');
+  if(beneficiaryEl) beneficiaryEl.value='';
+  const sourceEl=document.getElementById('inv-source');
+  if(sourceEl) sourceEl.value='';
+  const notesEl=document.getElementById('inv-notes');
+  if(notesEl) notesEl.value='';
   toggleInventoryStatus();
+  const btn=document.querySelector('#add-inventory button.action.primary');
+  if(btn) btn.textContent='حفظ الحركة';
   showScreen('add-inventory');
 }
+
 function toggleInventoryStatus(){
-  const type=document.getElementById('inv-item-type');
   const wrap=document.getElementById('inv-status-wrap');
-  if(wrap)wrap.style.display=type&&type.value==='جهاز'?'block':'none';
+  const type=document.getElementById('inv-item-type');
+  if(wrap) wrap.style.display=(type && type.value==='جهاز')?'block':'none';
 }
+
 function saveInventoryMovement(){
-  const move=document.getElementById('inv-move-type').value;
-  const type=document.getElementById('inv-item-type').value;
-  const name=document.getElementById('inv-name').value.trim();
-  const qty=Number(document.getElementById('inv-qty').value||0);
-  const date=document.getElementById('inv-date').value||new Date().toISOString().slice(0,10);
-  if(!name){alert('أدخل اسم الصنف');return}
-  if(qty<=0){alert('أدخل كمية صحيحة');return}
-  const item={id:editingInventoryIndex!==null?inventoryMovements[editingInventoryIndex].id:Date.now(),move,type,name,qty,status:type==='جهاز'?document.getElementById('inv-status').value:'',date,source:document.getElementById('inv-source').value.trim(),notes:document.getElementById('inv-notes').value.trim()};
-  if(editingInventoryIndex!==null)inventoryMovements[editingInventoryIndex]=item;else inventoryMovements.unshift(item);
+  const move=document.getElementById('inv-move-type')?.value||'وارد';
+  const type=document.getElementById('inv-item-type')?.value||'جهاز';
+  const name=(document.getElementById('inv-name')?.value||'').trim();
+  const qty=Number(document.getElementById('inv-qty')?.value||0);
+  const date=document.getElementById('inv-date')?.value||new Date().toISOString().slice(0,10);
+  const beneficiary=(document.getElementById('inv-beneficiary')?.value||'').trim();
+
+  if(!name){alert('أدخل اسم الجهاز أو المادة');return}
+  if(qty<=0){alert('أدخل عدد صحيح أكبر من صفر');return}
+  if(move==='صادر' && !beneficiary){alert('أدخل اسم المستفيد');return}
+
+  const item={
+    id:editingInventoryIndex!==null?inventoryMovements[editingInventoryIndex].id:Date.now(),
+    move,type,name,qty,
+    status:type==='جهاز'?(document.getElementById('inv-status')?.value||'شغال'):'',
+    date,
+    beneficiary,
+    source:(document.getElementById('inv-source')?.value||'').trim(),
+    notes:(document.getElementById('inv-notes')?.value||'').trim()
+  };
+
+  if(editingInventoryIndex!==null) inventoryMovements[editingInventoryIndex]=item;
+  else inventoryMovements.unshift(item);
+
   localStorage.setItem('warith_inventory',JSON.stringify(inventoryMovements));
-  alert(editingInventoryIndex!==null?'تم تعديل حركة المخزن بنجاح ✓':'تم حفظ حركة المخزن بنجاح ✓');
   editingInventoryIndex=null;
+  alert('تم حفظ حركة المخزن بنجاح ✓');
   showScreen('inventory');
 }
+
 function inventorySummary(){
   const map={};
   inventoryMovements.forEach(m=>{
-    const key=String(m.name||'').trim();
+    const key=(m.name||'').trim();
     if(!key)return;
-    if(!map[key])map[key]={name:key,in:0,out:0,status:''};
-    if(m.move==='وارد')map[key].in+=Number(m.qty||0);
-    if(m.move==='صادر')map[key].out+=Number(m.qty||0);
-    if(m.status)map[key].status=m.status;
+    if(!map[key]) map[key]={name:key,status:m.status||'',qty:0};
+    if(m.move==='وارد') map[key].qty+=Number(m.qty||0);
+    if(m.move==='صادر') map[key].qty-=Number(m.qty||0);
+    if(m.status) map[key].status=m.status;
   });
-  return Object.values(map).map(x=>({...x,net:x.in-x.out}));
+  return Object.values(map).filter(x=>x.qty!==0 || x.status);
 }
+
 function renderInventory(){
   const q=(document.getElementById('inventoryQ')?.value||'').trim().toLowerCase();
-  const all=inventorySummary();
-  const filtered=all.filter(x=>(x.name+' '+x.status).toLowerCase().includes(q));
-  const totalIn=inventoryMovements.filter(x=>x.move==='وارد').reduce((n,x)=>n+Number(x.qty||0),0);
-  const totalOut=inventoryMovements.filter(x=>x.move==='صادر').reduce((n,x)=>n+Number(x.qty||0),0);
-  document.getElementById('inventoryCount').textContent=filtered.length+' صنف';
-  document.getElementById('invItemsCount').textContent=all.length;
-  document.getElementById('invInCount').textContent=totalIn;
-  document.getElementById('invOutCount').textContent=totalOut;
-  document.getElementById('invNetCount').textContent=totalIn-totalOut;
-  document.getElementById('inventoryItems').innerHTML=filtered.map(x=>`<div class="card"><div class="row"><div class="avatar">📦</div><div class="grow"><div class="name">${escapeHtml(x.name)}</div>${x.status?`<div class="sub">الحالة: ${escapeHtml(x.status)}</div>`:''}</div><span class="badge">${x.net} متوفر</span></div><div class="meta"><div>⬆️ وارد: ${x.in}</div><div>⬇️ صادر: ${x.out}</div><div>📊 صافي: ${x.net}</div></div></div>`).join('')||'<div class="empty">لا توجد أصناف في المخزن</div>';
-  const latest=inventoryMovements.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||Number(b.id||0)-Number(a.id||0)).slice(0,5);
-  document.getElementById('inventoryMovements').innerHTML=latest.map(m=>{const i=inventoryMovements.indexOf(m);return `<div class="card"><div class="row"><div class="avatar">${m.move==='وارد'?'⬆️':'⬇️'}</div><div class="grow"><div class="name">${escapeHtml(m.name||'')} · ${Number(m.qty||0)}</div><div class="sub">${escapeHtml(m.move||'')}${m.status?' · الحالة: '+escapeHtml(m.status):''}</div><div class="sub">${escapeHtml(m.date||'')}${m.source?' · '+escapeHtml(m.source):''}</div></div></div><div class="member-actions"><button class="action primary" onclick="editInventoryMovement(${i})">✏️ تعديل</button><button class="action" onclick="deleteInventoryMovement(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد حركات مخزن بعد</div>';
+
+  const summary=inventorySummary().filter(x=>
+    (x.name+' '+(x.status||'')).toLowerCase().includes(q)
+  );
+
+  const body=document.getElementById('inventoryStatusBody');
+  if(body){
+    body.innerHTML=summary.map(x=>`
+      <tr>
+        <td style="padding:10px;border-top:1px solid #edf1ef">${escapeHtml(x.name)}</td>
+        <td style="padding:10px;border-top:1px solid #edf1ef">${escapeHtml(x.status||'—')}</td>
+        <td style="padding:10px;border-top:1px solid #edf1ef;font-weight:bold">${x.qty}</td>
+      </tr>
+    `).join('') || `
+      <tr><td colspan="3" style="padding:18px;text-align:center;color:#71857f">
+        لا توجد أصناف في الموقف حالياً
+      </td></tr>`;
+  }
+
+  const movements=document.getElementById('inventoryMovementBody');
+  if(movements){
+    const latest=inventoryMovements.slice()
+      .sort((a,b)=>Number(b.id||0)-Number(a.id||0));
+
+    movements.innerHTML=latest.map((m,i)=>{
+      const originalIndex=inventoryMovements.indexOf(m);
+      return `
+      <tr>
+        <td style="padding:9px;border-top:1px solid #edf1ef">${i+1}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef">
+          <span class="badge">${escapeHtml(m.move||'')}</span>
+        </td>
+        <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.name||'')}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.status||'—')}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef">${Number(m.qty||0)}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.date||'')}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.beneficiary||'—')}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">
+          <button class="action primary" onclick="editInventoryMovement(${originalIndex})">✏️</button>
+          <button class="action" onclick="deleteInventoryMovement(${originalIndex})">🗑</button>
+        </td>
+      </tr>`;
+    }).join('') || `
+      <tr><td colspan="8" style="padding:18px;text-align:center;color:#71857f">
+        لا توجد حركات للمخزن بعد
+      </td></tr>`;
+  }
+
+  const count=document.getElementById('inventoryCount');
+  if(count) count.textContent=summary.length+' صنف';
 }
+
 function editInventoryMovement(i){
-  const m=inventoryMovements[i];if(!m)return;
+  const m=inventoryMovements[i];
+  if(!m)return;
   editingInventoryIndex=i;
   document.getElementById('inventoryFormTitle').textContent='تعديل حركة المخزن';
   document.getElementById('inv-move-type').value=m.move||'وارد';
@@ -1116,13 +1236,22 @@ function editInventoryMovement(i){
   document.getElementById('inv-qty').value=m.qty||1;
   document.getElementById('inv-status').value=m.status||'شغال';
   document.getElementById('inv-date').value=m.date||'';
+  document.getElementById('inv-beneficiary').value=m.beneficiary||'';
   document.getElementById('inv-source').value=m.source||'';
   document.getElementById('inv-notes').value=m.notes||'';
   toggleInventoryStatus();
+  const btn=document.querySelector('#add-inventory button.action.primary');
+  if(btn) btn.textContent='حفظ التعديل';
   showScreen('add-inventory');
 }
-function deleteInventoryMovement(i){if(!inventoryMovements[i])return;if(!confirm('حذف هذه الحركة؟'))return;inventoryMovements.splice(i,1);localStorage.setItem('warith_inventory',JSON.stringify(inventoryMovements));renderInventory();}
-document.addEventListener('change',e=>{if(e.target&&e.target.id==='inv-item-type')toggleInventoryStatus();});
+
+function deleteInventoryMovement(i){
+  if(!inventoryMovements[i])return;
+  if(!confirm('حذف هذه الحركة؟'))return;
+  inventoryMovements.splice(i,1);
+  localStorage.setItem('warith_inventory',JSON.stringify(inventoryMovements));
+  renderInventory();
+}
 
 function openMenu(){document.getElementById('drawer').classList.add('open')}function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}function coming(x){alert(x+' — قيد البناء في المرحلة التالية')}
 renderFamilies(); renderDonations(); renderAppeals();  updateAppealDashboard(); if(document.getElementById('f-has-salary')) toggleSalarySource();
