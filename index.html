@@ -1484,7 +1484,79 @@ function renderHelps(){const q=(document.getElementById('helpQ')?.value||'').tri
 function renderPrograms(){const q=(document.getElementById('programQ')?.value||'').trim().toLowerCase();const all=programs.filter(x=>(x.name+' '+x.details+' '+x.status).toLowerCase().includes(q));const a=activityExpanded.program?all:all.slice(0,5);const c=document.getElementById('programMoreBtn');if(c)c.textContent=all.length>5?(activityExpanded.program?'عرض آخر 5':'عرض الكل'):'';const b=document.getElementById('programList');if(!b)return;b.innerHTML=a.map(x=>{const i=programs.indexOf(x),fs=normalizeProgramFamilies(x),received=fs.filter(v=>v.received).length;return `<div class="card"><div class="row"><div class="avatar">🎯</div><div class="grow"><div class="name">${escapeHtml(x.name)}</div><div class="sub">${escapeHtml(x.status)} · ${escapeHtml(x.date)}</div><div class="sub">العوائل: ${fs.length} · تم الاستلام: ${received}</div><div class="sub">${escapeHtml(x.details||'بدون وصف')}</div></div></div><div class="member-actions"><button class="action primary" onclick="openProgramDetail(${i})">👁️ العوائل</button><button class="action" onclick="openActivityForm('program',${i})">✏️ تعديل</button><button class="action" onclick="deleteActivity('program',${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد برامج بعد</div>';} 
 function mapUrlForFamily(f){if(!f)return'';if(f.map)return f.map;const q=[f.address,f.landmark,f.head||f.n].filter(Boolean).join('، ');return q?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q):'';}
 function openFamilyMap(f){const u=mapUrlForFamily(f);if(!u){alert('لا يوجد عنوان أو موقع محفوظ لهذه العائلة.');return}window.open(u,'_blank');}
-function openProgramDetail(i){const x=programs[i];if(!x)return;programSelectedFamilies=normalizeProgramFamilies(x);const rows=programSelectedFamilies.map(v=>{const f=families.find(z=>Number(z.c)===Number(v.familyCode));const mu=mapUrlForFamily(f);return `<div class="card"><div class="row"><div class="avatar">👨‍👩‍👧</div><div class="grow"><div class="name">#${escapeHtml(v.familyCode)} · ${escapeHtml(f?.head||f?.n||'عائلة')}</div><div class="sub">${escapeHtml(f?.r||'غير محدد')} · ${escapeHtml(f?.h||'غير محدد')} · ${escapeHtml(f?.m||0)} أفراد</div><div class="program-map-actions"><button type="button" class="program-map-btn" title="فتح العنوان في الخرائط" onclick="openFamilyMap(${JSON.stringify(f||{}).replace(/"/g,'&quot;')})">🏠</button><button type="button" class="program-map-btn" title="فتح الموقع في الخرائط" onclick="openFamilyMap(${JSON.stringify(f||{}).replace(/"/g,'&quot;')})">📍</button><span class="sub" style="align-self:center">${f?.address?'العنوان محفوظ':''}</span></div></div><label class="program-received"><input type="checkbox" ${v.received?'checked':''} onchange="toggleProgramReceived(${v.familyCode},this.checked)"> استلم</label></div></div>`}).join('')||'<div class="empty">لا توجد عوائل مرتبطة بهذا البرنامج</div>';const box=document.createElement('div');box.id='programDetailOverlay';box.style.cssText='position:fixed;inset:0;background:#0006;z-index:30;padding:18px;overflow:auto';box.innerHTML=`<div style="max-width:520px;margin:25px auto;background:#f3f6f5;border-radius:18px;padding:14px"><div class="top"><button class="back" onclick="document.getElementById('programDetailOverlay')?.remove()">← رجوع</button><div class="screen-title">${escapeHtml(x.name)}</div></div><div class="card"><div class="sub">${escapeHtml(x.status)} · ${escapeHtml(x.date)}</div><div class="sub" style="margin-top:5px">${escapeHtml(x.details||'بدون وصف')}</div><div class="program-recipients"><b>العوائل المستفيدة</b><div class="sub">حدد «استلم» بعد تسليم المساعدة للعائلة.</div></div></div>${rows}<button class="action primary" style="width:100%;margin-top:8px" onclick="saveProgramRecipients(${i})">حفظ حالة الاستلام</button></div>`;document.body.appendChild(box)}
+function openProgramPhone(phone){
+  const raw=String(phone||'').trim();
+  if(!raw){alert('رقم الهاتف غير مسجل لهذه العائلة.');return}
+  const wa=raw.replace(/^0/,'964').replace(/\D/g,'');
+  const old=document.getElementById('programPhoneOverlay'); if(old)old.remove();
+  const box=document.createElement('div');
+  box.id='programPhoneOverlay';
+  box.style.cssText='position:fixed;inset:0;background:#0006;z-index:40;display:flex;align-items:center;justify-content:center;padding:18px';
+  box.onclick=e=>{if(e.target===box)box.remove()};
+  box.innerHTML=`<div style="width:min(330px,100%);background:#fff;border-radius:18px;padding:18px;box-shadow:0 10px 35px #0003;text-align:center">
+    <div style="font-size:18px;font-weight:900;margin-bottom:5px">خيارات التواصل</div>
+    <div class="sub" style="margin-bottom:15px">${escapeHtml(raw)}</div>
+    <div style="display:grid;gap:8px">
+      <a class="action primary" href="tel:${escapeHtml(raw)}" style="text-decoration:none">📞 اتصال</a>
+      <a class="action" href="https://wa.me/${escapeHtml(wa)}" target="_blank" style="text-decoration:none">💬 واتساب</a>
+      <button class="action" onclick="document.getElementById('programPhoneOverlay')?.remove()">إلغاء</button>
+    </div>
+  </div>`;
+  document.body.appendChild(box);
+}
+
+function openProgramDetail(i){
+  const x=programs[i]; if(!x)return;
+  programSelectedFamilies=normalizeProgramFamilies(x);
+  const rows=programSelectedFamilies.map(v=>{
+    const f=families.find(z=>Number(z.c)===Number(v.familyCode));
+    const map=mapUrlForFamily(f);
+    return `<tr>
+      <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">#${escapeHtml(v.familyCode)}</td>
+      <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef;font-weight:900">${escapeHtml(f?.head||f?.n||'عائلة')}</td>
+      <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">${escapeHtml(f?.address||'غير مسجل')}</td>
+      <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">${escapeHtml(f?.landmark||'غير مسجل')}</td>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">${escapeHtml(f?.r||'غير محدد')}</td>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">${escapeHtml(f?.m||0)}</td>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">
+        ${f?.phone?`<button type="button" class="program-map-btn" title="خيارات التواصل" onclick="openProgramPhone(${JSON.stringify(String(f.phone)).replace(/"/g,'&quot;')})">📞</button>`:'—'}
+      </td>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef;white-space:nowrap">
+        ${map?`<button type="button" class="program-map-btn" title="فتح الموقع" onclick="openFamilyMap(${JSON.stringify(f||{}).replace(/"/g,'&quot;')})">📍</button>`:'—'}
+      </td>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">
+        <label class="program-received"><input type="checkbox" ${v.received?'checked':''} onchange="toggleProgramReceived(${v.familyCode},this.checked)"> استلم</label>
+      </td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="10" class="empty" style="padding:18px">لا توجد عوائل مرتبطة بهذا البرنامج</td></tr>';
+  const box=document.createElement('div');
+  box.id='programDetailOverlay';
+  box.style.cssText='position:fixed;inset:0;background:#0006;z-index:30;padding:18px;overflow:auto';
+  box.innerHTML=`<div style="max-width:1000px;margin:25px auto;background:#f3f6f5;border-radius:18px;padding:14px">
+    <div class="top"><button class="back" onclick="document.getElementById('programDetailOverlay')?.remove()">← رجوع</button><div class="screen-title">${escapeHtml(x.name)}</div></div>
+    <div class="card"><div class="sub">${escapeHtml(x.status)} · ${escapeHtml(x.date)}</div><div class="sub" style="margin-top:5px">${escapeHtml(x.details||'بدون وصف')}</div></div>
+    <div class="card" style="padding:0;overflow:auto">
+      <div style="padding:12px 12px 4px;font-weight:900">العوائل المشمولة بالبرنامج</div>
+      <div class="sub" style="padding:0 12px 10px">هذه القائمة تعرض العوائل التي تم اختيارها للبرنامج فقط.</div>
+      <table style="width:100%;border-collapse:collapse;min-width:920px;background:#fff">
+        <thead><tr style="background:#f0f5f3">
+          <th style="padding:10px;text-align:right">رقم العائلة</th>
+          <th style="padding:10px;text-align:right">رب الأسرة</th>
+          <th style="padding:10px;text-align:right">عنوان السكن</th>
+          <th style="padding:10px;text-align:right">أقرب نقطة</th>
+          <th style="padding:10px;text-align:center">الحقوق</th>
+          <th style="padding:10px;text-align:center">الأفراد</th>
+          <th style="padding:10px;text-align:center">الهاتف</th>
+          <th style="padding:10px;text-align:center">الموقع</th>
+          <th style="padding:10px;text-align:center">استلم</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <button class="action primary" style="width:100%;margin-top:8px" onclick="saveProgramRecipients(${i})">حفظ حالة الاستلام</button>
+  </div>`;
+  document.body.appendChild(box);
+}
 function renderProgramDetailView(){const overlay=document.getElementById('programDetailOverlay');if(!overlay)return;const i=programs.findIndex(p=>p===programs.find((_,idx)=>idx===editingActivityIndex));}
 function saveProgramRecipients(i){if(!programs[i])return;programs[i].families=programSelectedFamilies.map(v=>({familyCode:Number(v.familyCode),received:!!v.received}));localStorage.setItem('warith_programs',JSON.stringify(programs));document.getElementById('programDetailOverlay')?.remove();renderActivities();alert('تم حفظ حالة الاستلام ✓');}
 
