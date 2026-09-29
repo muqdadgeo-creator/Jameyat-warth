@@ -712,9 +712,20 @@ function setAppealOwnerType(v){
 }
 function populateAppealFamilies(selected){
   const sel=document.getElementById('a-family'); if(!sel)return;
-  const ordered=[...families].sort((a,b)=>Number(a.c)-Number(b.c));
-  sel.innerHTML='<option value="">اختر العائلة</option>'+ordered.map(f=>`<option value="${escapeHtml(f.c)}">#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'عائلة')}</option>`).join('');
-  if(selected!==undefined)sel.value=String(selected||'');
+  // أعد قراءة العوائل من التخزين حتى تظهر العوائل المضافة حديثاً داخل المناشدة
+  try{
+    const raw=localStorage.getItem('warith_families_v2')||localStorage.getItem('warith_families');
+    if(raw){
+      const stored=JSON.parse(raw);
+      if(Array.isArray(stored)) families=stored;
+    }
+  }catch(e){}
+  const ordered=(Array.isArray(families)?families:[])
+    .filter(f=>f && (f.c!==undefined || f.head || f.n))
+    .sort((a,b)=>Number(a.c||0)-Number(b.c||0));
+  sel.innerHTML='<option value="">'+(ordered.length?'اختر العائلة':'لا توجد عوائل مسجلة')+'</option>'+
+    ordered.map(f=>`<option value="${escapeHtml(f.c??'')}">#${escapeHtml(f.c??'')} — ${escapeHtml(f.head||f.n||'عائلة')}</option>`).join('');
+  if(selected!==undefined && selected!==null && selected!=='') sel.value=String(selected);
   showSelectedAppealFamily();
 }
 function showSelectedAppealFamily(){
@@ -1005,7 +1016,7 @@ function renderHomeDashboard(){
   if(!box)return;
   box.innerHTML=events.slice(0,6).map(e=>`<div class="card"><div class="row"><div class="avatar">${escapeHtml(e.icon)}</div><div class="grow"><b>${escapeHtml(e.title)}</b><div class="sub">${escapeHtml(e.desc)}</div></div><span class="badge">${escapeHtml(homeDateLabel(e.date))}</span></div></div>`).join('')||'<div class="empty">لا توجد نشاطات مسجلة حالياً</div>';
 }
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='families')renderFamilies();if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='families')renderFamilies();if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'){if(editingAppealIndex===null)resetAppealForm();else populateAppealFamilies(appeals[editingAppealIndex]?.familyCode||'');}if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
 function phoneToolsHtml(phone){
   const raw=String(phone||'').trim();
   if(!raw)return '<span class=\"sub\">غير مسجل</span>';
