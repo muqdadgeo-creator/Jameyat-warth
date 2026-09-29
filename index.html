@@ -127,8 +127,13 @@ textarea.forminput{height:80px;resize:vertical}
 }
 .report-paper-org{font-size:20px;font-weight:900;color:#0f5c4d}
 .report-paper-title{font-size:17px;font-weight:900;margin-top:6px;color:#253f38}
+.report-paper-subtitle{font-size:13px;font-weight:900;margin-top:4px;color:#0f5c4d}
+.report-paper-greeting{font-size:11px;font-weight:800;margin-top:10px;color:#526760}
 .report-paper-meta{font-size:10px;color:#71857f;margin-top:5px}
-.report-paper-quote{font-size:11px;font-weight:700;margin-top:10px;color:#526760}
+.report-paper-quote{font-size:11px;font-weight:700;margin-top:9px;color:#526760;line-height:1.8}
+.report-period-line{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 10px;background:#f4f7f6;border:1px solid #dfe8e5;border-radius:7px;font-size:10px;margin-bottom:8px}
+.report-period-line span{color:#71857f}
+.report-period-line b{color:#31554b}
 .report-summary-line{
   display:flex;justify-content:flex-start;gap:18px;flex-wrap:wrap;
   padding:7px 0;border-bottom:1px solid #dfe8e5;
@@ -154,7 +159,7 @@ textarea.forminput{height:80px;resize:vertical}
 }
 @media(max-width:900px){
   .report-paper{width:100%;min-height:auto;padding:18px 12px;box-shadow:none}
-  .report-paper-org{font-size:18px}
+  .report-paper-org{font-size:18px}.report-paper-subtitle{font-size:12px}
   .report-a4-table{font-size:9px}
 }
 @media print{
@@ -174,7 +179,7 @@ textarea.forminput{height:80px;resize:vertical}
     box-shadow:none!important;
     border-radius:0!important;
   }
-  .report-paper-head{break-inside:avoid}
+  .report-paper-head{break-inside:avoid}.report-paper-subtitle,.report-paper-greeting,.report-paper-quote{break-inside:avoid}.report-period-line{break-inside:avoid}
   .report-a4-table{font-size:9.5pt}
   .report-a4-table tr{break-inside:avoid}
   .report-paper-footer{break-inside:avoid}
@@ -1919,7 +1924,25 @@ function clearReportDates(){const f=document.getElementById('reportFrom'),t=docu
 function switchReportTab(tab){activeReportTab=tab;document.querySelectorAll('[data-report-tab]').forEach(b=>b.classList.toggle('active',b.dataset.reportTab===tab));document.querySelectorAll('.report-panel').forEach(x=>x.style.display='none');const box=document.getElementById('report'+({general:'General',family:'Family',donor:'Donor',helps:'Helps',donations:'Donations',hidden:'Hidden'}[tab]||'General'));if(box)box.style.display='block';renderActiveReport()}
 function renderActiveReport(){if(activeReportTab==='general')renderGeneralReport();else if(activeReportTab==='family')renderFamilyReport();else if(activeReportTab==='donor')renderDonorReport();else if(activeReportTab==='helps')renderHelpsReport();else if(activeReportTab==='donations')renderDonationsReport();else renderHiddenReport()}
 function reportMoney(n){return (Number(n)||0).toLocaleString('en-US')+' د.ع'}
-function reportCard(title,body){return `<div class="card"><div style="font-weight:900;margin-bottom:8px">${title}</div>${body}</div>`}
+function reportTitleText(title){
+  return String(title||'تقرير مفصل').replace(/^[^\p{L}\p{N}]+/u,'').replace(/\s+—.*$/,'').trim()||'تقرير مفصل';
+}
+function reportCard(title,body){
+  const clean=reportTitleText(title);
+  return `<div class="report-paper">
+    <div class="report-paper-head">
+      <div class="report-paper-logo">و</div>
+      <div class="report-paper-org">جمعية وارث الخيرية في قضاء أبي الخصيب</div>
+      <div class="report-paper-title">تقرير مفصل</div>
+      <div class="report-paper-subtitle">${escapeHtml(clean)}</div>
+      <div class="report-paper-greeting">تهديكم جمعيتنا أطيب التحيات</div>
+      <div class="report-paper-quote">((اعلموا أن حوائج الناس إليكم من نعم الله عليكم فلا تملوا النعم فتتحول إلى غيركم))
+الإمام الحسين عليه السلام</div>
+    </div>
+    ${body}
+    <div class="report-paper-footer">جمعية وارث الخيرية © 2026</div>
+  </div>`;
+}
 function renderGeneralReport(){const ds=donations.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), hs=helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), es=expenses.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), inv=inventoryMovements.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));const fin=ds.filter(x=>x.type==='مالي'), rec=fin.filter(x=>x.paid==='تم التسديد'), un=fin.filter(x=>x.paid!=='تم التسديد');const rows=[['العوائل',families.filter(x=>!isHiddenRecord(x)).length],['التبرعات المالية',reportMoney(fin.reduce((n,x)=>n+Number(x.amount||0),0))],['التبرعات المستلمة',reportMoney(rec.reduce((n,x)=>n+Number(x.amount||0),0))],['التبرعات غير المستلمة',reportMoney(un.reduce((n,x)=>n+Number(x.amount||0),0))],['المساعدات',reportMoney(hs.reduce((n,x)=>n+Number(x.amount||0),0))],['المصروفات',reportMoney(es.reduce((n,x)=>n+Number(x.amount||0),0))],['حركات المخزن',inv.length]];document.getElementById('reportGeneral').innerHTML=reportCard('📊 الملخص العام',`<div class="detail-grid">${rows.map(r=>`<div class="info"><small>${r[0]}</small><b>${r[1]}</b></div>`).join('')}</div>`)}
 function renderFamilyReport(){const box=document.getElementById('reportFamily');const fc=box.dataset.family||'';if(!fc){box.innerHTML=reportCard('👨‍👩‍👧 تقرير عائلة','<label class="fl">اختر العائلة<select class="forminput" id="reportFamilySelect" onchange="document.getElementById(\'reportFamily\').dataset.family=this.value;renderFamilyReport()"><option value="">اختر العائلة</option>'+families.filter(f=>!isHiddenRecord(f)).map(f=>`<option value="${f.c}">#${f.c} · ${escapeHtml(f.head||f.n||'')}</option>`).join('')+'</select></label><div class="empty" style="margin-top:10px">اختر عائلة لعرض تقريرها</div>');return}const f=families.find(x=>Number(x.c)===Number(fc));if(!f){box.dataset.family='';return renderFamilyReport()}const hs=helps.filter(x=>!isHiddenRecord(x)&&Number(x.familyCode)===Number(fc)&&reportDateOk(x.date));const ps=[];programs.filter(p=>!isHiddenRecord(p)).forEach(p=>(p.families||[]).forEach(v=>{if(Number(v.familyCode)===Number(fc)&&v.received&&reportDateOk(p.date))ps.push(p)}));const fas=appeals.filter(a=>!isHiddenRecord(a)&&Number(a.familyCode)===Number(fc)&&reportDateOk(a.date));const ds=donations.filter(d=>!isHiddenRecord(d)&&d.type==='مالي'&&reportDateOk(d.date)&&fas.some(a=>Number(a.id)===Number(d.appealId)));box.innerHTML=reportCard(`👨‍👩‍👧 عائلة #${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'')}`,`<div class="detail-grid"><div class="info"><small>الهاتف</small><b>${escapeHtml(f.phone||'غير مسجل')}</b></div><div class="info"><small>العنوان</small><b>${escapeHtml(f.address||'غير مسجل')}</b></div><div class="info"><small>الأفراد</small><b>${f.m||0}</b></div><div class="info"><small>الحقوق</small><b>${escapeHtml(f.r||'غير محدد')}</b></div></div><hr><b>المناشدات (${fas.length})</b>${fas.map(a=>`<div class="sub" style="padding:5px 0">#${a.id} · ${escapeHtml(a.type)} · ${escapeHtml(a.status)}</div>`).join('')||'<div class="empty">لا توجد</div>'}<hr><b>المساعدات (${hs.length}) — ${reportMoney(hs.reduce((n,x)=>n+Number(x.amount||0),0))}</b>${hs.map(h=>`<div class="sub" style="padding:5px 0">${escapeHtml(h.type||'مساعدة')} · ${reportMoney(h.amount)} · ${escapeHtml(h.date||'')}</div>`).join('')||'<div class="empty">لا توجد</div>'}<hr><b>البرامج المستلمة (${ps.length})</b>${ps.map(p=>`<div class="sub" style="padding:5px 0">${escapeHtml(p.name)} · ${escapeHtml(p.date||'')}</div>`).join('')||'<div class="empty">لا توجد</div>'}<hr><b>التبرعات المرتبطة بالمناشدات — ${reportMoney(ds.reduce((n,x)=>n+Number(x.amount||0),0))}</b>`+(ds.map(d=>`<div class="sub" style="padding:5px 0">${reportMoney(d.amount)} · ${escapeHtml(d.date||'')} · ${escapeHtml(d.paid||'')}</div>`).join('')||'<div class="empty">لا توجد</div>'))}
 function renderDonorReport(){const box=document.getElementById('reportDonor');const id=box.dataset.donor||'';if(!id){box.innerHTML=reportCard('👤 تقرير متبرع','<label class="fl">اختر المتبرع<select class="forminput" onchange="document.getElementById(\'reportDonor\').dataset.donor=this.value;renderDonorReport()"><option value="">اختر المتبرع</option>'+donors.map(d=>`<option value="${d.id}">${escapeHtml(d.name||'')} · ${escapeHtml(d.phone||'')}</option>`).join('')+'</select></label><div class="empty" style="margin-top:10px">اختر متبرع لعرض سجله</div>');return}const dlist=donations.filter(d=>!isHiddenRecord(d)&&String(d.donorId)===String(id)&&reportDateOk(d.date));const d=donors.find(x=>String(x.id)===String(id));box.innerHTML=reportCard(`👤 ${escapeHtml(d?.name||'المتبرع')}`,`<div class="sub">الهاتف: ${escapeHtml(d?.phone||'غير مسجل')}</div><div style="margin-top:8px;font-weight:900">عدد التبرعات: ${dlist.length} · المالي: ${reportMoney(dlist.filter(x=>x.type==='مالي').reduce((n,x)=>n+Number(x.amount||0),0))}</div>${dlist.map(x=>`<div class="donor-alloc-row" style="margin-top:8px"><span>${escapeHtml(x.type)} · ${escapeHtml(x.date||'')} · ${escapeHtml(x.paid||'')}</span><b>${x.type==='مالي'?reportMoney(x.amount):escapeHtml(x.item||'')}</b></div>`).join('')||'<div class="empty">لا توجد تبرعات ضمن الفترة</div>'}`)}
@@ -1934,42 +1957,15 @@ function renderHelpsReport(){
   const rows=list.map((h,i)=>{
     const f=families.find(x=>Number(x.c)===Number(h.familyCode));
     const family=f?`#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'')}`:(h.familyCode?`#${escapeHtml(h.familyCode)}`:'غير محدد');
-    return `<tr>
-      <td style="width:6%">${i+1}</td>
-      <td style="width:14%">${escapeHtml(h.date||'')}</td>
-      <td style="width:22%">${family}</td>
-      <td style="width:15%">${escapeHtml(h.type||'مساعدة')}</td>
-      <td style="width:13%" class="report-a4-total">${reportMoney(h.amount)}</td>
-      <td>${escapeHtml(h.details||'')}</td>
-    </tr>`;
+    return `<tr><td style="width:6%">${i+1}</td><td style="width:14%">${escapeHtml(h.date||'')}</td><td style="width:22%">${family}</td><td style="width:15%">${escapeHtml(h.type||'مساعدة')}</td><td style="width:13%" class="report-a4-total">${reportMoney(h.amount)}</td><td>${escapeHtml(h.details||'')}</td></tr>`;
   }).join('');
-  box.innerHTML=`<div class="report-paper">
-    <div class="report-paper-head">
-      <div class="report-paper-logo">و</div>
-      <div class="report-paper-org">جمعية وارث الخيرية</div>
-      <div class="report-paper-title">تقرير المساعدات</div>
-      <div class="report-paper-meta">فترة التقرير: ${escapeHtml(dateText)} &nbsp; | &nbsp; عدد المساعدات: ${list.length}</div>
-      <div class="report-paper-quote">﴿وَمَنْ نِعْمَةٍ أَنْعَمَ اللَّهُ عَلَيْكُمْ فَلَا تَمَلُّوا النِّعَمَ﴾</div>
-    </div>
-    <div class="report-summary-line">
-      <span>عدد المساعدات: ${list.length}</span>
-      <span>إجمالي المساعدات: ${reportMoney(total)}</span>
-    </div>
+  const body=`
+    <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml(dateText)}</b></div>
+    <div class="report-summary-line"><span>عدد المساعدات: ${list.length}</span><span>إجمالي المساعدات: ${reportMoney(total)}</span></div>
     <div class="report-section-title">تفاصيل المساعدات</div>
-    ${list.length?`<table class="report-a4-table">
-      <thead><tr>
-        <th>ت</th><th>التاريخ</th><th>العائلة</th><th>نوع المساعدة</th><th>المبلغ</th><th>التفاصيل</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr>
-        <td colspan="4" style="font-weight:900">الإجمالي</td>
-        <td class="report-a4-total">${reportMoney(total)}</td><td></td>
-      </tr></tfoot>
-    </table>`:`<div class="empty" style="padding:30px;text-align:center">لا توجد مساعدات ضمن الفترة المحددة</div>`}
-    <div class="report-paper-footer">جمعية وارث الخيرية © 2026</div>
-  </div>`;
+    ${list.length?`<table class="report-a4-table"><thead><tr><th>ت</th><th>التاريخ</th><th>العائلة</th><th>نوع المساعدة</th><th>المبلغ</th><th>التفاصيل</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table>`:`<div class="empty" style="padding:30px;text-align:center">لا توجد مساعدات ضمن الفترة المحددة</div>`}`;
+  box.innerHTML=reportCard('تقرير المساعدات',body);
 }
-
 function renderDonationsReport(){const box=document.getElementById('reportDonations');const list=donations.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));const fin=list.filter(x=>x.type==='مالي'),rec=fin.filter(x=>x.paid==='تم التسديد'),un=fin.filter(x=>x.paid!=='تم التسديد');const rows=list.map(x=>`<div class="donor-alloc-row" style="margin-top:8px"><span>${escapeHtml(x.donorName||'')} · ${escapeHtml(x.date||'')} · ${escapeHtml(x.type||'')}</span><b>${x.type==='مالي'?reportMoney(x.amount):escapeHtml(x.item||'')}</b></div>`).join('')||'<div class="empty">لا توجد تبرعات ضمن الفترة</div>';box.innerHTML=reportCard(`💝 التبرعات — ${list.length}`,`<div class="detail-grid"><div class="info"><small>إجمالي المالي</small><b>${reportMoney(fin.reduce((n,x)=>n+Number(x.amount||0),0))}</b></div><div class="info"><small>المستلمة</small><b>${reportMoney(rec.reduce((n,x)=>n+Number(x.amount||0),0))}</b></div><div class="info"><small>غير المستلمة</small><b>${reportMoney(un.reduce((n,x)=>n+Number(x.amount||0),0))}</b></div><div class="info"><small>العينية</small><b>${list.filter(x=>x.type!=='مالي').length}</b></div></div>${rows}`)}
 
 function renderHiddenReport(){
