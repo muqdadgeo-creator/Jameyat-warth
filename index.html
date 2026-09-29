@@ -97,21 +97,20 @@ textarea.forminput{height:80px;resize:vertical}
 <section id="home" class="screen active">
 <div class="hello">السلام عليكم</div><div class="title">لوحة التحكم</div>
 <div class="stats">
-<div class="stat">👨‍👩‍👧‍👦 <b>400</b><span>العوائل</span></div><div class="stat">💰 <b>12</b><span>تبرعات اليوم</span></div>
-<div class="stat">📋 <b id="openAppealsStat">0</b><span>مناشدات مفتوحة</span></div><div class="stat">📦 <b>24</b><span>حركات المخزن</span></div>
+<div class="stat">👨‍👩‍👧‍👦 <b id="homeFamiliesStat">0</b><span>العوائل</span></div><div class="stat">💰 <b id="homeTodayDonationsStat">0</b><span>تبرعات اليوم</span></div>
+<div class="stat">📋 <b id="openAppealsStat">0</b><span>مناشدات مفتوحة</span></div><div class="stat">📦 <b id="homeInventoryMovesStat">0</b><span>حركات المخزن</span></div>
 </div>
 <div class="grid">
 <button class="tile" onclick="showScreen('families')"><span class="ico">👨‍👩‍👧</span><small>العوائل</small></button>
 <button class="tile" onclick="showScreen('donations')"><span class="ico">💝</span><small>التبرعات</small></button>
 <button class="tile" onclick="showScreen('appeals')"><span class="ico">📋</span><small>المناشدات</small></button>
-<button class="tile" onclick="showScreen('activities')"><span class="ico">🎯</span><small>النشاطات</small></button>
+<button class="tile" onclick="showScreen('activities')"><span class="ico">🤝</span><small>النشاطات</small></button>
 <button class="tile" onclick="showScreen('inventory')"><span class="ico">📦</span><small>المخزن</small></button>
 <button class="tile" onclick="showScreen('reports')"><span class="ico">📊</span><small>التقارير</small></button>
 <button class="tile" onclick="coming('الإعدادات')"><span class="ico">⚙️</span><small>الإعدادات</small></button>
 </div>
-<div class="section"><b>آخر النشاطات</b><span class="link">عرض الكل</span></div>
-<div class="card"><div class="row"><div class="avatar">ت</div><div class="grow"><b>تبرع جديد</b><div class="sub">تم تسجيل تبرع مالي</div></div><span class="badge">اليوم</span></div></div>
-<div class="card"><div class="row"><div class="avatar">م</div><div class="grow"><b>مناشدة جديدة</b><div class="sub">تمت إضافة مناشدة لعائلة</div></div><span class="badge">اليوم</span></div></div>
+<div class="section"><b>آخر النشاطات</b><span class="link" onclick="showScreen('activities')">عرض الكل</span></div>
+<div id="homeRecentActivities"><div class="empty">لا توجد نشاطات مسجلة حالياً</div></div>
 </section>
 
 <section id="families" class="screen">
@@ -960,7 +959,40 @@ function deleteAppeal(){
 }
 
 function getFamily(){return families.find(x=>Number(x.c)===Number(selectedFamilyCode));}
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='families')renderFamilies();if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
+function homeDateLabel(v){
+  if(!v)return '';
+  const today=new Date().toISOString().slice(0,10);
+  if(String(v).slice(0,10)===today)return 'اليوم';
+  return String(v).slice(0,10);
+}
+function renderHomeDashboard(){
+  const visibleFamilies=families.filter(x=>!isHiddenRecord(x));
+  const visibleDonations=donations.filter(x=>!isHiddenRecord(x));
+  const visibleAppeals=appeals.filter(x=>!isHiddenRecord(x));
+  const visibleInventory=inventoryMovements.filter(x=>!isHiddenRecord(x));
+  const today=new Date().toISOString().slice(0,10);
+  const famEl=document.getElementById('homeFamiliesStat');
+  const todayDonEl=document.getElementById('homeTodayDonationsStat');
+  const openEl=document.getElementById('openAppealsStat');
+  const invEl=document.getElementById('homeInventoryMovesStat');
+  if(famEl)famEl.textContent=visibleFamilies.length.toLocaleString('en-US');
+  if(todayDonEl)todayDonEl.textContent=visibleDonations.filter(x=>String(x.date||'').slice(0,10)===today).length.toLocaleString('en-US');
+  if(openEl)openEl.textContent=visibleAppeals.filter(x=>x.status==='مفتوحة').length.toLocaleString('en-US');
+  if(invEl)invEl.textContent=visibleInventory.length.toLocaleString('en-US');
+
+  const events=[];
+  visibleDonations.forEach(x=>events.push({date:x.date||'',type:'تبرع',icon:'ت',title:x.donorName||'تبرع جديد',desc:x.type==='مالي'?`تبرع مالي ${Number(x.amount||0).toLocaleString('en-US')} د.ع`:'تبرع عيني'}));
+  visibleAppeals.forEach(x=>events.push({date:x.date||'',type:'مناشدة',icon:'م',title:x.familyCode?`مناشدة للعائلة #${x.familyCode}`:'مناشدة جديدة',desc:`${x.type||'مناشدة'} · ${x.status||''}`}));
+  helps.filter(x=>!isHiddenRecord(x)).forEach(x=>events.push({date:x.date||'',type:'مساعدة',icon:'م',title:'مساعدة مقدمة',desc:`${x.type||'مساعدة'}${x.amount?` · ${Number(x.amount).toLocaleString('en-US')} د.ع`:''}`}));
+  programs.filter(x=>!isHiddenRecord(x)).forEach(x=>events.push({date:x.date||'',type:'برنامج',icon:'ب',title:x.name||'برنامج',desc:`برنامج · ${(x.families||[]).length} عائلة`}));
+  expenses.filter(x=>!isHiddenRecord(x)).forEach(x=>events.push({date:x.date||'',type:'مصروف',icon:'ص',title:'مصروف',desc:`${x.category||'أخرى'} · ${Number(x.amount||0).toLocaleString('en-US')} د.ع`}));
+  visibleInventory.forEach(x=>events.push({date:x.date||'',type:'مخزن',icon:'م',title:`حركة مخزن: ${x.name||'غير محدد'}`,desc:`${x.move==='in'?'إدخال':'إخراج'} · العدد ${x.qty||0}`}));
+  events.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const box=document.getElementById('homeRecentActivities');
+  if(!box)return;
+  box.innerHTML=events.slice(0,6).map(e=>`<div class="card"><div class="row"><div class="avatar">${escapeHtml(e.icon)}</div><div class="grow"><b>${escapeHtml(e.title)}</b><div class="sub">${escapeHtml(e.desc)}</div></div><span class="badge">${escapeHtml(homeDateLabel(e.date))}</span></div></div>`).join('')||'<div class="empty">لا توجد نشاطات مسجلة حالياً</div>';
+}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='families')renderFamilies();if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
 function renderFamilies(){const q=(document.getElementById('q')?.value||'').trim().toLowerCase();const a=families.filter(x=>!isHiddenRecord(x)&&[x.c,x.n,x.i,x.j,x.h,x.r,x.st].join(' ').toLowerCase().includes(q));document.getElementById('count').textContent=a.length+' عائلة';document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button type="button" class="more" onclick="event.preventDefault();event.stopPropagation();hideFamilyByCode(${x.c})">🚫</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للبحث</div>'}
 function openFamily(code){selectedFamilyCode=Number(code);showScreen('family-detail');}
 function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
@@ -1651,7 +1683,7 @@ function deleteHiddenRecord(collectionName,index){
   refreshAllViews();
   alert('تم الحذف النهائي ✓');
 }
-function refreshAllViews(){renderFamilies();renderDonors();renderDonations();renderAppeals();renderInventory();renderActivities();renderActiveReport();}
+function refreshAllViews(){renderFamilies();renderDonors();renderDonations();renderAppeals();renderInventory();renderActivities();renderActiveReport();renderHomeDashboard();}
 
 let activeReportTab='general';
 function reportDateOk(v){if(!v)return true;const from=document.getElementById('reportFrom')?.value||'';const to=document.getElementById('reportTo')?.value||'';return (!from||v>=from)&&(!to||v<=to)}
@@ -1679,6 +1711,8 @@ function renderHiddenReport(){
 
 function openMenu(){document.getElementById('drawer').classList.add('open')}function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}function coming(x){alert(x+' — قيد البناء في المرحلة التالية')}
 renderFamilies(); renderDonations(); renderAppeals(); renderActivities(); updateAppealDashboard(); if(document.getElementById('f-has-salary')) toggleSalarySource();
+
+try{renderHomeDashboard();}catch(e){}
 </script>
 </body>
 </html>
