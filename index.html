@@ -64,6 +64,8 @@ main{padding:12px 12px 65px}.screen{display:none!important}.screen.active{displa
 textarea.forminput{height:80px;resize:vertical}
 
 .activity-tabs{display:flex;gap:7px;margin-bottom:12px}.activity-tab{flex:1;border:0;background:#fff;border-radius:13px;padding:11px;color:#41635b;font:inherit;font-size:11px;font-weight:bold}.activity-tab.active{background:#0f5c4d;color:#fff}.activity-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}.mini-stat{background:#fff;border-radius:14px;padding:10px;box-shadow:0 2px 10px #0000000b}.mini-stat span{display:block;color:#71857f;font-size:9px}.mini-stat b{display:block;font-size:16px;margin-top:4px}.category-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.category-box{background:#f4f7f6;border-radius:10px;padding:9px;font-size:10px;display:flex;justify-content:space-between}.category-box b{color:#0f5c4d}.
+
+.financial-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:9px}.financial-summary .fs{background:#f4f7f6;border-radius:11px;padding:10px}.financial-summary .fs small{display:block;color:#71857f;font-size:9px}.financial-summary .fs b{display:block;margin-top:4px;font-size:13px;color:#0f5c4d}.financial-summary .fs.remaining b{color:#8a6517}.financial-summary .fs.covered b{color:#2f6f4e}
 </style>
 </head>
 <body>
@@ -461,7 +463,7 @@ textarea.forminput{height:80px;resize:vertical}
     <button type="button" class="appeal-type" data-type="أخرى" onclick="setAppealType('أخرى')">📋 أخرى</button>
   </div>
   <div>
-    <label class="fl">المبلغ المطلوب</label>
+    <label class="fl">المطلوب</label>
     <input id="a-amount" class="forminput" type="number" min="0" inputmode="numeric" placeholder="بالدينار العراقي">
   </div>
   <div class="choice-row">
@@ -756,7 +758,7 @@ function appealStatusClass(s){
 }
 function appealCard(a,i){
   const familyText=a.familyCode?`العائلة #${escapeHtml(a.familyCode)}`:'حالة جديدة';
-  const amount=a.type==='مالية'?` · ${(a.amount||0).toLocaleString('en-US')} د.ع`:'';
+  const fx=appealFinancialSummary(a); const amount=` · المطلوب ${(fx.required||0).toLocaleString('en-US')} د.ع · متبقي ${fx.remaining.toLocaleString('en-US')} د.ع`;
   return `<div class="card" onclick="openAppeal(${i})">
     <div class="appeal-detail-head">
       <div class="avatar">${a.type==='مالية'?'💰':a.type==='طبية'?'🏥':a.type==='مواد غذائية'?'🛒':a.type==='أجهزة / أثاث'?'🏠':a.type==='سكن'?'🏘️':'📋'}</div>
@@ -795,18 +797,34 @@ function showAllAppeals(){
   const wrap=document.getElementById('appealAllWrap');
   if(wrap){wrap.innerHTML='<button class="action" style="width:100%;margin-top:3px" onclick="renderAppeals()">عرض آخر 5 فقط</button>';wrap.style.display='block';}
 }
+function appealFinancialSummary(a){
+  const linkedDonations=donations.filter(d=>d.type==='مالي'&&Number(d.appealId)===Number(a.id));
+  const receivedDonations=linkedDonations.filter(d=>!d.paid||d.paid==='تم التسديد');
+  const pledgedDonations=linkedDonations.filter(d=>d.paid==='لا');
+  const donationTotal=linkedDonations.reduce((n,d)=>n+Number(d.amount||0),0);
+  const receivedTotal=receivedDonations.reduce((n,d)=>n+Number(d.amount||0),0);
+  const pledgedTotal=pledgedDonations.reduce((n,d)=>n+Number(d.amount||0),0);
+  const linkedHelps=helps.filter(h=>Number(h.appealId)===Number(a.id));
+  const helpTotal=linkedHelps.reduce((n,h)=>n+Number(h.amount||0),0);
+  const required=Number(a.amount||0);
+  const covered=donationTotal+helpTotal;
+  const remaining=Math.max(required-covered,0);
+  return {required,donationTotal,receivedTotal,helpTotal,covered,remaining,pledgedTotal,linkedDonations,linkedHelps};
+}
+function renderAppealFinancialSummary(a){
+  const box=document.getElementById('appealFinancialBox'); if(!box)return;
+  const x=appealFinancialSummary(a);
+  box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">💰 الموقف المالي للمناشدة</div><div class="financial-summary"><div class="fs"><small>المطلوب</small><b>${x.required.toLocaleString('en-US')} د.ع</b></div><div class="fs"><small>إجمالي التبرعات</small><b>${x.donationTotal.toLocaleString('en-US')} د.ع</b></div><div class="fs"><small>التبرعات المستلمة</small><b>${x.receivedTotal.toLocaleString('en-US')} د.ع</b></div><div class="fs"><small>المساعدات</small><b>${x.helpTotal.toLocaleString('en-US')} د.ع</b></div><div class="fs remaining"><small>المتبقي</small><b>${x.remaining.toLocaleString('en-US')} د.ع</b></div></div>${x.pledgedTotal?`<div class="sub" style="margin-top:8px">⏳ التبرعات غير المستلمة: <b>${x.pledgedTotal.toLocaleString('en-US')} د.ع</b></div>`:''}<div class="sub" style="margin-top:6px">المغطى فعلياً: <b>${x.covered.toLocaleString('en-US')} د.ع</b></div></div>`;
+}
 function renderAppealDonations(a){
-  const box=document.getElementById('appealDonationsBox');
-  if(!box)return;
-  const linked=donations.filter(d=>d.type==='مالي'&&Number(d.appealId)===Number(a.id));
-  const total=linked.reduce((n,d)=>n+Number(d.amount||0),0);
-  box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">💰 التبرعات المالية المرتبطة بالمناشدة</div><div class="sub" style="margin-bottom:8px">المجموع: <b>${total.toLocaleString('en-US')} د.ع</b> · عدد التبرعات: ${linked.length}</div>${linked.map(d=>`<div class="donor-alloc-row" style="border-top:1px solid #edf2f0;padding:8px 0"><span>${escapeHtml(d.donorName||'غير محدد')} · ${escapeHtml(d.date||'')}</span><b>${Number(d.amount||0).toLocaleString('en-US')} د.ع</b></div>`).join('')||'<div class="empty" style="padding:10px">لا توجد تبرعات مالية مرتبطة بهذه المناشدة</div>'}<button class="action primary" style="width:100%;margin-top:8px" onclick="addDonationForAppeal(${Number(a.id)})">＋ تسجيل تبرع مالي لهذه المناشدة</button></div>`;
+  const box=document.getElementById('appealDonationsBox'); if(!box)return;
+  const x=appealFinancialSummary(a);
+  box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">💝 التبرعات المالية المرتبطة بالمناشدة</div><div class="sub" style="margin-bottom:8px">إجمالي التبرعات: <b>${x.donationTotal.toLocaleString('en-US')} د.ع</b> · المستلمة: <b>${x.receivedTotal.toLocaleString('en-US')} د.ع</b> · غير المستلمة: <b>${x.pledgedTotal.toLocaleString('en-US')} د.ع</b> · العدد: ${x.linkedDonations.length}</div>${x.linkedDonations.map(d=>`<div class="donor-alloc-row"><span>${escapeHtml(d.donorName||'غير محدد')} · ${escapeHtml(d.date||'')} · ${escapeHtml(d.paid||'')}</span><b>${Number(d.amount||0).toLocaleString('en-US')} د.ع</b></div>`).join('')||'<div class="empty" style="padding:10px">لا توجد تبرعات مالية مرتبطة بهذه المناشدة</div>'}<button class="action primary" style="width:100%;margin-top:8px" onclick="addDonationForAppeal(${Number(a.id)})">＋ تسجيل تبرع مالي لهذه المناشدة</button></div>`;
 }
 function renderAppealHelps(a){
   const box=document.getElementById('appealHelpsBox'); if(!box)return;
-  const linked=helps.filter(h=>Number(h.appealId)===Number(a.id)).sort((x,y)=>String(y.date||'').localeCompare(String(x.date||''))||Number(y.id)-Number(x.id));
-  const total=linked.reduce((n,h)=>n+Number(h.amount||0),0);
-  box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">🤝 المساعدات المرتبطة بالمناشدة</div><div class="sub" style="margin-bottom:8px">المجموع المالي للمساعدات: <b>${total.toLocaleString('en-US')} د.ع</b> · العدد: ${linked.length}</div>${linked.map(h=>`<div class="donor-alloc-row"><span>${escapeHtml(h.type||'مساعدة')} · ${escapeHtml(h.date||'')}</span><b>${Number(h.amount||0).toLocaleString('en-US')} د.ع</b></div><div class="sub" style="padding:4px 0 6px">${escapeHtml(h.details||'')}</div>`).join('')||'<div class="empty" style="padding:10px">لا توجد مساعدات مرتبطة بهذه المناشدة</div>'}</div>`;
+  const x=appealFinancialSummary(a);
+  box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">🤝 المساعدات المرتبطة بالمناشدة</div><div class="sub" style="margin-bottom:8px">المجموع المالي للمساعدات: <b>${x.helpTotal.toLocaleString('en-US')} د.ع</b> · العدد: ${x.linkedHelps.length}</div>${x.linkedHelps.map(h=>`<div class="donor-alloc-row"><span>${escapeHtml(h.type||'مساعدة')} · ${escapeHtml(h.date||'')}</span><b>${Number(h.amount||0).toLocaleString('en-US')} د.ع</b></div><div class="sub" style="padding:4px 0 6px">${escapeHtml(h.details||'')}</div>`).join('')||'<div class="empty" style="padding:10px">لا توجد مساعدات مرتبطة بهذه المناشدة</div>'}</div>`;
 }
 
 function openAppeal(i){
@@ -833,10 +851,12 @@ function openAppeal(i){
   </div>
   <div class="card" style="margin-top:9px"><div class="detail-label">العنوان</div><div class="detail-value">${escapeHtml(a.ownerAddress||family?.address||'غير مسجل')}</div></div>
   <div class="card"><div class="detail-label">الملاحظات</div><div class="detail-value">${escapeHtml(a.notes||'—')}</div></div>
+  <div id="appealFinancialBox"></div>
   <div id="appealDonationsBox"></div>
   <div id="appealHelpsBox"></div>
   <div class="card"><div style="font-size:12px;font-weight:900;margin-bottom:8px">📎 المرفقات</div>${(a.attachments||[]).map((f,j)=>`<div class="attachment"><div>📎</div><div class="grow"><div class="fname">${escapeHtml(f.name)}</div><div class="fmeta">${Math.ceil((f.size||0)/1024)} KB</div></div><button class="action" style="flex:0 0 auto" onclick="openAppealAttachment(${i},${j})">فتح</button></div>`).join('')||'<div class="empty" style="padding:12px">لا توجد مرفقات</div>'}</div>`;
   showScreen('appeal-detail');
+  renderAppealFinancialSummary(a);
   renderAppealDonations(a);
   renderAppealHelps(a);
 }
