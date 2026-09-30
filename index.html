@@ -227,6 +227,13 @@ textarea.forminput{height:80px;resize:vertical}
 /* المستخدمون والصلاحيات */
 .users-perm-table{width:100%;border-collapse:collapse;font-size:12px}.users-perm-table th,.users-perm-table td{padding:9px 7px;border-bottom:1px solid #e5ece9;text-align:right}.users-perm-table th{background:#f3f7f5;font-weight:900}.perm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.perm-item{display:flex;align-items:center;gap:7px;background:#f7faf9;border:1px solid #e1ebe7;border-radius:10px;padding:8px}.user-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e9f3ef;font-size:10px;font-weight:800}.user-off{background:#f5e8e8;color:#8a3333}.login-backdrop{position:fixed;inset:0;background:#0008;z-index:12000;display:flex;align-items:center;justify-content:center;padding:18px}.login-card{width:min(430px,94vw);background:#fff;border-radius:18px;padding:20px;box-shadow:0 15px 50px #0005}.login-logo{width:58px;height:58px;border-radius:16px;background:#0f5c4d;color:#fff;display:grid;place-items:center;font-size:28px;font-weight:900;margin:0 auto 10px}.login-card h2{text-align:center;margin:4px 0 4px}.login-card .sub{text-align:center;margin-bottom:15px}.user-action-row{display:flex;gap:7px;flex-wrap:wrap}.user-action-row button{flex:1;min-width:120px}
 
+
+.export-modal-backdrop{position:fixed;inset:0;background:rgba(15,30,28,.45);display:none;align-items:center;justify-content:center;z-index:9999;padding:18px}
+.export-modal{background:#fff;border-radius:18px;width:min(680px,96vw);max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.22);padding:18px;direction:rtl}
+.export-modal h3{margin:0 0 6px;font-size:20px}.export-modal .sub{margin-bottom:12px}.export-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.export-col{display:flex;align-items:center;gap:8px;border:1px solid #dce7e4;border-radius:10px;padding:10px;background:#fafcfb}.export-col input{width:18px;height:18px}.export-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.export-actions .action{flex:1;min-width:130px}
+@media(max-width:520px){.export-cols{grid-template-columns:1fr}}
+@media print{body>*:not(#exportPrintArea){display:none!important}#exportPrintArea{display:block!important}}
+#exportPrintArea{display:none}
 </style>
 </head>
 <body>
@@ -334,7 +341,7 @@ textarea.forminput{height:80px;resize:vertical}
 </div>
 <div style="display:flex;gap:8px;margin-top:9px"><button type="button" class="action primary" style="flex:1" onclick="resetFamilyFilters()">إعادة ضبط الفلاتر</button><button type="button" class="action" style="flex:1" onclick="toggleFamilyFilters()">إخفاء</button></div>
 </div>
-<div class="actions"><button class="action primary" onclick="showScreen('add-family')">＋ إضافة عائلة</button><button class="action" type="button" onclick="toggleFamilySort()">↕ ترتيب</button><button class="action" type="button" onclick="exportFamiliesList()">📤 تصدير السجل</button></div>
+<div class="actions"><button class="action primary" onclick="showScreen('add-family')">＋ إضافة عائلة</button><button class="action" type="button" onclick="toggleFamilySort()">↕ ترتيب</button><button class="action" type="button" onclick="openExportModal('families')">📤 تصدير السجل</button></div>
 <div id="familySortPanel" class="card" style="display:none;margin-top:8px;padding:10px">
 <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
 <select id="familySortField" class="forminput" onchange="applyFamilySort()">
@@ -563,7 +570,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="search" style="margin-top:8px"><span>🔎</span><input id="programFamilyQ" placeholder="ابحث برقم العائلة أو اسم رب الأسرة أو المعرف" oninput="renderProgramFamilyPicker()"></div>
 <div id="programFilterActiveNote" class="inline-note" style="margin-top:7px">الفلاتر جاهزة — اختر القيم ثم اضغط «تطبيق الفلاتر».</div>
 <div class="program-family-actions"><button type="button" class="action primary" onclick="applyProgramFilters()">تطبيق الفلاتر</button><button type="button" class="action" onclick="selectAllProgramFamilies()">تحديد الكل الظاهر</button><button type="button" class="action" onclick="clearAllProgramFamilies()">إلغاء التحديد</button></div>
-<div class="program-family-actions" style="margin-top:7px"><button type="button" class="action" onclick="exportSelectedProgramFamilies()">📤 تصدير العوائل المختارة</button></div>
+<div class="program-family-actions" style="margin-top:7px"><button type="button" class="action" onclick="openExportModal('program')">📤 تصدير العوائل المختارة</button></div>
 <div class="program-family-list" id="programFamilyList"></div>
 </div>
 <div id="expenseFormFields" style="display:none">
@@ -1536,20 +1543,80 @@ function sortFamiliesList(arr){
     return String(av??'').localeCompare(String(bv??''),'ar',{numeric:true,sensitivity:'base'})*dir;
   });
 }
-function exportFamiliesList(){
+let activeExportType=null;
+let activeExportRows=[];
+let activeExportColumns=[];
+const FAMILY_EXPORT_COLUMNS=[
+  ['c','رقم العائلة'],['n','الاسم الثلاثي'],['head','رب الأسرة'],['phone','الهاتف'],['address','عنوان السكن'],['landmark','أقرب نقطة'],['map','الموقع'],['addressCode','رمز العنوان'],['st','الحالة'],['m','عدد أفراد الأسرة'],['h','نوع السكن'],['j','عمل المعيل'],['s','مقدار الراتب'],['hasSalary','هل لديه راتب'],['salarySource','الجهة المانحة'],['r','الموقف من الحقوق'],['i','اسم المعرف']
+];
+const PROGRAM_EXPORT_COLUMNS=[
+  ['familyCode','رقم العائلة'],['head','رب الأسرة'],['phone','الهاتف'],['address','عنوان السكن'],['landmark','أقرب نقطة'],['received','استلم'],['addressCode','رمز العنوان']
+];
+function getFamilyExportRows(){
   const q=(document.getElementById('q')?.value||'').trim().toLowerCase();
-  const filtered=families.filter(x=>{
+  return sortFamiliesList(families.filter(x=>{
     if(isHiddenRecord(x)||!familyMatchesFilters(x))return false;
     return [x.c,x.n,x.i,x.j,x.h,x.r,x.st,x.head,x.phone,x.address,x.landmark,x.addressCode].join(' ').toLowerCase().includes(q);
+  }).slice());
+}
+function openExportModal(type){
+  activeExportType=type;
+  activeExportRows=type==='families'?getFamilyExportRows():getProgramExportRows();
+  const cols=type==='families'?FAMILY_EXPORT_COLUMNS:PROGRAM_EXPORT_COLUMNS;
+  activeExportColumns=cols.map(x=>x[0]);
+  document.getElementById('exportModalTitle').textContent=type==='families'?'تصدير سجل العوائل':'تصدير سجل البرنامج';
+  document.getElementById('exportModalSub').textContent=`تم تجهيز ${activeExportRows.length} سجل. اختر الأعمدة المطلوبة ثم اختر Excel أو الطباعة أو PDF.`;
+  document.getElementById('exportColumns').innerHTML=cols.map(([key,label])=>`<label class="export-col"><input type="checkbox" data-export-col="${key}" checked><span>${escapeHtml(label)}</span></label>`).join('');
+  document.getElementById('exportModalBackdrop').style.display='flex';
+}
+function closeExportModal(){document.getElementById('exportModalBackdrop').style.display='none';activeExportType=null;activeExportRows=[];activeExportColumns=[]}
+function selectAllExportColumns(v){document.querySelectorAll('#exportColumns input[data-export-col]').forEach(cb=>cb.checked=v)}
+function getSelectedExportColumns(){
+  const cols=(activeExportType==='families'?FAMILY_EXPORT_COLUMNS:PROGRAM_EXPORT_COLUMNS);
+  return cols.filter(([key])=>document.querySelector(`#exportColumns input[data-export-col="${CSS.escape(key)}"]`)?.checked);
+}
+function familyExportValue(f,key){
+  const v=key==='n'?f.n:key==='map'?(f.map?'الموقع محفوظ':'—'):f[key];
+  return v??'';
+}
+function getProgramExportRows(){
+  return [...programSelectedFamilies].sort((a,b)=>{
+    const fa=families.find(z=>Number(z.c)===Number(a.familyCode)), fb=families.find(z=>Number(z.c)===Number(b.familyCode));
+    const acA=Number(String(fa?.addressCode??'').replace(/[^0-9.]/g,''));
+    const acB=Number(String(fb?.addressCode??'').replace(/[^0-9.]/g,''));
+    return (acA||999999)-(acB||999999) || Number(a.familyCode)-Number(b.familyCode);
+  }).map(v=>{
+    const f=families.find(z=>Number(z.c)===Number(v.familyCode))||{};
+    return {familyCode:f.c??v.familyCode,head:f.head||f.n||'',phone:f.phone||'',address:f.address||'',landmark:f.landmark||'',received:v.received?'نعم':'لا',addressCode:f.addressCode||''};
   });
-  const rows=sortFamiliesList(filtered.slice()).map((f,idx)=>[idx+1,f.c,f.head||f.n||'',f.phone||'',f.address||'',f.landmark||'',f.addressCode||'']);
-  const headers=['ت','رقم العائلة','رب الأسرة','الهاتف','عنوان السكن','أقرب نقطة','رمز العنوان'];
+}
+function exportCellValue(row,key){return activeExportType==='families'?familyExportValue(row,key):(row[key]??'')}
+function doExportCSV(){
+  const cols=getSelectedExportColumns(); if(!cols.length){alert('اختر عموداً واحداً على الأقل.');return}
+  const headers=['ت',...cols.map(x=>x[1])];
   const csvRow=arr=>arr.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',');
-  const csv='\ufeff'+csvRow(headers)+'\r\n'+rows.map(csvRow).join('\r\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='سجل_العوائل.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-  alert('تم تصدير '+rows.length+' عائلة حسب الفلاتر الحالية ✓');
+  const csv='\ufeff'+csvRow(headers)+'\r\n'+activeExportRows.map((r,i)=>csvRow([i+1,...cols.map(([k])=>exportCellValue(r,k))])).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  const name=activeExportType==='families'?'سجل_العوائل':'سجل_البرنامج_'+((document.getElementById('a-program-name')?.value||'برنامج').trim().replace(/[\\/:*?"<>|]+/g,'_'));
+  a.href=url;a.download=name+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);alert('تم التصدير بنجاح ✓');
+}
+function buildExportTable(){
+  const cols=getSelectedExportColumns(); if(!cols.length){alert('اختر عموداً واحداً على الأقل.');return null}
+  const title=activeExportType==='families'?'سجل العوائل':'سجل البرنامج';
+  const programName=activeExportType==='program'?(document.getElementById('a-program-name')?.value||''):'';
+  const head=programName?`${title}: ${escapeHtml(programName)}`:title;
+  const th=['ت',...cols.map(x=>x[1])].map(x=>`<th>${escapeHtml(x)}</th>`).join('');
+  const tr=activeExportRows.map((r,i)=>`<tr><td>${i+1}</td>${cols.map(([k])=>`<td>${escapeHtml(exportCellValue(r,k))}</td>`).join('')}</tr>`).join('');
+  return `<div dir="rtl" style="font-family:Arial,sans-serif;padding:20px"><h2 style="text-align:center;margin:0 0 6px">جمعية وارث الخيرية</h2><h3 style="text-align:center;margin:0 0 16px">${head}</h3><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table><div style="margin-top:12px;font-size:11px">عدد السجلات: ${activeExportRows.length}</div></div>`;
+}
+function doExportPrint(){
+  const html=buildExportTable();if(!html)return;
+  const w=window.open('','_blank'); if(!w){alert('يرجى السماح بفتح نافذة الطباعة.');return}
+  w.document.write(`<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>تقرير</title><style>body{margin:0;background:#fff}table,th,td{border:1px solid #777}th{background:#eee;padding:7px}td{padding:6px;text-align:right}thead{display:table-header-group}tr{page-break-inside:avoid}@page{size:A4 landscape;margin:10mm}</style></head><body>${html}</body></html>`);w.document.close();w.focus();setTimeout(()=>w.print(),300);
+}
+function doExportPDF(){
+  // يعتمد على محرك الطباعة في المتصفح: اختر "Save as PDF" من نافذة الطباعة.
+  doExportPrint();
 }
 
 function renderFamilies(){
@@ -2553,5 +2620,24 @@ try{renderHomeDashboard();}catch(e){}
     <div id="fileViewerBody" class="file-viewer-body"></div>
   </div>
 </div>
+
+<div id="exportModalBackdrop" class="export-modal-backdrop" onclick="if(event.target===this)closeExportModal()">
+  <div class="export-modal">
+    <h3 id="exportModalTitle">تصدير السجل</h3>
+    <div class="sub" id="exportModalSub">اختر الأعمدة التي تريد تضمينها في الملف.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="action" onclick="selectAllExportColumns(true)">تحديد الكل</button>
+      <button type="button" class="action" onclick="selectAllExportColumns(false)">إلغاء الكل</button>
+    </div>
+    <div id="exportColumns" class="export-cols"></div>
+    <div class="export-actions">
+      <button type="button" class="action primary" onclick="doExportCSV()">📊 Excel / CSV</button>
+      <button type="button" class="action" onclick="doExportPrint()">🖨️ طباعة</button>
+      <button type="button" class="action" onclick="doExportPDF()">📄 PDF</button>
+      <button type="button" class="action" onclick="closeExportModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+<div id="exportPrintArea"></div>
 </body>
 </html>
