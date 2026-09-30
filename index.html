@@ -334,7 +334,7 @@ textarea.forminput{height:80px;resize:vertical}
 </div>
 <div style="display:flex;gap:8px;margin-top:9px"><button type="button" class="action primary" style="flex:1" onclick="resetFamilyFilters()">إعادة ضبط الفلاتر</button><button type="button" class="action" style="flex:1" onclick="toggleFamilyFilters()">إخفاء</button></div>
 </div>
-<div class="actions"><button class="action primary" onclick="showScreen('add-family')">＋ إضافة عائلة</button><button class="action" type="button" onclick="toggleFamilySort()">↕ ترتيب</button></div>
+<div class="actions"><button class="action primary" onclick="showScreen('add-family')">＋ إضافة عائلة</button><button class="action" type="button" onclick="toggleFamilySort()">↕ ترتيب</button><button class="action" type="button" onclick="exportFamiliesList()">📤 تصدير السجل</button></div>
 <div id="familySortPanel" class="card" style="display:none;margin-top:8px;padding:10px">
 <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
 <select id="familySortField" class="forminput" onchange="applyFamilySort()">
@@ -552,6 +552,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="inline-note">حدد العوائل المشمولة بالبرنامج. يمكن استخدام الفلاتر لتحديد الفئات المطلوبة، ثم اختيار العوائل.</div>
 <div class="program-family-filters">
 <div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterRightsBtn" class="program-filter-btn" onclick="toggleProgramFilter('rights')">الحقوق: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('rights')">تطبيق</button></div><div id="programFilterRightsMenu" class="program-filter-menu"></div></div>
+<div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterMembersBtn" class="program-filter-btn" onclick="toggleProgramFilter('members')">عدد الأفراد: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('members')">تطبيق</button></div><div id="programFilterMembersMenu" class="program-filter-menu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterHousingBtn" class="program-filter-btn" onclick="toggleProgramFilter('housing')">السكن: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('housing')">تطبيق</button></div><div id="programFilterHousingMenu" class="program-filter-menu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterStatusBtn" class="program-filter-btn" onclick="toggleProgramFilter('status')">الحالة: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('status')">تطبيق</button></div><div id="programFilterStatusMenu" class="program-filter-menu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button type="button" id="programFilterSalaryBtn" class="program-filter-btn" onclick="toggleProgramFilter('salary')">الراتب: الكل</button><button type="button" class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('salary')">تطبيق</button></div><div id="programFilterSalaryMenu" class="program-filter-menu"></div></div>
@@ -1413,7 +1414,7 @@ function openUserEditor(i=null){if(!hasPermission('users-settings'))return;const
 function closeUserEditor(){document.getElementById('userEditorBackdrop').style.display='none'}
 function renderEditorPermissions(selected){const box=document.getElementById('ue-perms');box.innerHTML=Object.entries(PERM_LABELS).map(([k,v])=>`<label class="perm-item"><input type="checkbox" value="${k}" ${selected.includes(k)?'checked':''}>${escapeHtml(v)}</label>`).join('')}
 function applyRolePermissionsToEditor(){renderEditorPermissions(ROLE_PERMISSIONS[document.getElementById('ue-role').value]||[])}
-function saveUserEditor(){const users=getUsers(),idx=document.getElementById('ue-index').value===''?null:Number(document.getElementById('ue-index').value),name=document.getElementById('ue-name').value.trim(),role=document.getElementById('ue-role').value,password=document.getElementById('ue-password').value.trim();if(!name||!password){alert('أدخل اسم المستخدم والرمز');return}let permissions=[...document.querySelectorAll('#ue-perms input[type=checkbox]:checked')].map(x=>x.value);if(role==='المالك'||idx===0)permissions=Object.keys(PERM_LABELS);const actions=ROLE_ACTIONS[role]||{add:[],edit:[],delete:[]};const obj={name,role,password,permissions,actions,active:true};if(idx===null){users.push(obj)}else{obj.active=users[idx].active!==false;users[idx]={...users[idx],...obj};if(idx===0){users[idx].role='المالك';users[idx].permissions=Object.keys(PERM_LABELS);users[idx].actions=ROLE_ACTIONS['المالك']}}saveUsers(users);closeUserEditor();renderUsers();renderUserOptions();const cu=currentUser();if(cu&&idx!==null&&cu.name===users[idx].name)localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(users[idx]));applyPermissionUI()}
+function saveUserEditor(){const users=getUsers(),idx=document.getElementById('ue-index').value===''?null:Number(document.getElementById('ue-index').value),name=document.getElementById('ue-name').value.trim(),role=document.getElementById('ue-role').value,password=document.getElementById('ue-password').value.trim();if(!name||!password){alert('أدخل اسم المستخدم والرمز');return}const permissions=ROLE_PERMISSIONS[role]||[];const actions=ROLE_ACTIONS[role]||{add:[],edit:[],delete:[]};const obj={name,role,password,permissions,actions,active:true};if(idx===null){users.push(obj)}else{obj.active=users[idx].active!==false;users[idx]={...users[idx],...obj};if(idx===0){users[idx].role='المالك';users[idx].permissions=ROLE_PERMISSIONS['المالك'];users[idx].actions=ROLE_ACTIONS['المالك']}}saveUsers(users);closeUserEditor();renderUsers();renderUserOptions();const cu=currentUser();if(cu&&idx!==null&&cu.name===users[idx].name)localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(users[idx]));applyPermissionUI()}
 function toggleUser(i){const users=getUsers();if(i===0){alert('لا يمكن إيقاف المالك');return}users[i].active=users[i].active===false;saveUsers(users);renderUsers();renderUserOptions()}
 function deleteUser(i){const users=getUsers();if(i===0){alert('لا يمكن حذف المالك');return}if(!confirm('حذف هذا المستخدم؟'))return;users.splice(i,1);saveUsers(users);renderUsers();renderUserOptions()}
 function migrateUsersPermissions(){
@@ -1535,6 +1536,22 @@ function sortFamiliesList(arr){
     return String(av??'').localeCompare(String(bv??''),'ar',{numeric:true,sensitivity:'base'})*dir;
   });
 }
+function exportFamiliesList(){
+  const q=(document.getElementById('q')?.value||'').trim().toLowerCase();
+  const filtered=families.filter(x=>{
+    if(isHiddenRecord(x)||!familyMatchesFilters(x))return false;
+    return [x.c,x.n,x.i,x.j,x.h,x.r,x.st,x.head,x.phone,x.address,x.landmark,x.addressCode].join(' ').toLowerCase().includes(q);
+  });
+  const rows=sortFamiliesList(filtered.slice()).map((f,idx)=>[idx+1,f.c,f.head||f.n||'',f.phone||'',f.address||'',f.landmark||'',f.addressCode||'']);
+  const headers=['ت','رقم العائلة','رب الأسرة','الهاتف','عنوان السكن','أقرب نقطة','رمز العنوان'];
+  const csvRow=arr=>arr.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',');
+  const csv='\ufeff'+csvRow(headers)+'\r\n'+rows.map(csvRow).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='سجل_العوائل.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  alert('تم تصدير '+rows.length+' عائلة حسب الفلاتر الحالية ✓');
+}
+
 function renderFamilies(){
   populateFamilyFilterOptions();
   const q=(document.getElementById('q')?.value||'').trim().toLowerCase();
@@ -2149,8 +2166,8 @@ function normalizeProgramFamilies(x){
   const raw=Array.isArray(x?.families)?x.families:(Array.isArray(x?.familyCodes)?x.familyCodes.map(c=>({familyCode:c,received:false})):[]);
   return raw.map(v=>typeof v==='object'?{familyCode:Number(v.familyCode),received:!!v.received}:{familyCode:Number(v),received:false}).filter(v=>v.familyCode);
 }
-let programFilterCommitted={rights:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
-let programFilterPending={rights:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
+let programFilterCommitted={rights:[],members:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
+let programFilterPending={rights:[],members:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
 function programFilterState(){return programFilterPending;}
 function toggleProgramFilter(type){
   const menu=document.getElementById('programFilter'+type.charAt(0).toUpperCase()+type.slice(1)+'Menu');
@@ -2163,6 +2180,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('.program-filter-box'
 function prepareProgramFamilyFilters(){
   const vals={
     rights:[...new Set(families.map(f=>normalizeProgramFilterValue(f.r)))].sort(),
+    members:[...new Set(families.map(f=>String(Number(f.m)||0)))].sort((a,b)=>Number(a)-Number(b)),
     housing:[...new Set(families.map(f=>normalizeProgramFilterValue(f.h)))].sort(),
     status:[...new Set(families.map(f=>normalizeProgramFilterValue(f.st)))].sort(),
     salary:[...new Set(families.map(f=>normalizeProgramFilterValue(f.hasSalary)))].sort(),
@@ -2170,8 +2188,8 @@ function prepareProgramFamilyFilters(){
     social:[...new Set(families.map(f=>normalizeProgramFilterValue(f.social)))].sort(),
     student:['نعم','لا']
   };
-  programFilterCommitted={rights:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
-  programFilterPending={rights:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
+  programFilterCommitted={rights:[],members:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
+  programFilterPending={rights:[],members:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
   Object.keys(vals).forEach(k=>buildProgramFilterMenu(k,vals[k],k));
   renderProgramFilterLabels();
   const q=document.getElementById('programFamilyQ');if(q)q.value='';
@@ -2217,36 +2235,27 @@ function exportSelectedProgramFamilies(){
   if(!programSelectedFamilies.length){alert('حدد عائلة واحدة على الأقل قبل التصدير.');return;}
   const exportFamilies=[...programSelectedFamilies].sort((a,b)=>{
     const fa=families.find(z=>Number(z.c)===Number(a.familyCode)), fb=families.find(z=>Number(z.c)===Number(b.familyCode));
-    return (Number(fa?.addressCode)||999999)-(Number(fb?.addressCode)||999999) || Number(a.familyCode)-Number(b.familyCode);
+    const acA=Number(String(fa?.addressCode??'').replace(/[^0-9.]/g,''));
+    const acB=Number(String(fb?.addressCode??'').replace(/[^0-9.]/g,''));
+    return (acA||999999)-(acB||999999) || Number(a.familyCode)-Number(b.familyCode);
   });
   const rows=exportFamilies.map((v,idx)=>{
     const f=families.find(z=>Number(z.c)===Number(v.familyCode));
-    return {
-      no:idx+1,
-      addressCode:f?.addressCode??'',
-      code:f?.c??v.familyCode,
-      head:f?.head||f?.n||'',
-      address:f?.address||'',
-      landmark:f?.landmark||'',
-      rights:f?.r||'',
-      members:f?.m||0,
-      phone:f?.phone||'',
-      location:f?.map||'',
-      received:v.received?'نعم':'لا'
-    };
+    return [idx+1,f?.c??v.familyCode,f?.head||f?.n||'',f?.phone||'',f?.address||'',f?.landmark||'',v.received?'نعم':'لا'];
   });
-  const headers=['ت','رمز العنوان','رقم العائلة','رب الأسرة','عنوان السكن','أقرب نقطة','الحقوق','عدد الأفراد','الهاتف','الموقع','استلم'];
+  const headers=['ت','رقم العائلة','رب الأسرة','الهاتف','عنوان السكن','أقرب نقطة','استلم'];
   const csvRow=arr=>arr.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',');
-  const csv='\ufeff'+csvRow(headers)+'\r\n'+rows.map(r=>csvRow([r.no,r.addressCode,r.code,r.head,r.address,r.landmark,r.rights,r.members,r.phone,r.location,r.received])).join('\r\n');
+  const csv='\ufeff'+csvRow(headers)+'\r\n'+rows.map(csvRow).join('\r\n');
   const name=(document.getElementById('a-program-name')?.value||'برنامج').trim().replace(/[\\/:*?"<>|]+/g,'_');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='عوائل_'+name+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-  alert('تم تصدير '+rows.length+' عائلة إلى ملف Excel/CSV ✓');
+  const a=document.createElement('a');a.href=url;a.download='سجل_برنامج_'+name+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  alert('تم تصدير '+rows.length+' عائلة مرتبة حسب رمز العنوان ✓');
 }
 function renderProgramFilterMenus(){
   const vals={
     rights:[...new Set(families.map(f=>normalizeProgramFilterValue(f.r)))].sort(),
+    members:[...new Set(families.map(f=>String(Number(f.m)||0)))].sort((a,b)=>Number(a)-Number(b)),
     housing:[...new Set(families.map(f=>normalizeProgramFilterValue(f.h)))].sort(),
     status:[...new Set(families.map(f=>normalizeProgramFilterValue(f.st)))].sort(),
     salary:[...new Set(families.map(f=>normalizeProgramFilterValue(f.hasSalary)))].sort(),
@@ -2258,7 +2267,7 @@ function renderProgramFilterMenus(){
 }
 function renderProgramFilterLabels(){
   const st=programFilterCommitted;
-  const labels={rights:'الحقوق',housing:'السكن',status:'الحالة',salary:'الراتب',job:'المهنة',social:'الحالة الاجتماعية',student:'الطلبة'};
+  const labels={rights:'الحقوق',members:'عدد الأفراد',housing:'السكن',status:'الحالة',salary:'الراتب',job:'المهنة',social:'الحالة الاجتماعية',student:'الطلبة'};
   Object.keys(labels).forEach(k=>{const b=document.getElementById('programFilter'+k.charAt(0).toUpperCase()+k.slice(1)+'Btn');if(b)b.textContent=labels[k]+': '+(st[k]?.length?st[k].join('، '):'الكل')});
   const note=document.getElementById('programFilterActiveNote');
   if(note){const active=Object.keys(st).filter(k=>st[k]?.length);note.textContent=active.length?'الفلاتر المطبقة: '+active.map(k=>labels[k]+': '+st[k].join('، ')).join('  ·  '):'الفلاتر غير مفعّلة حالياً';}
@@ -2279,7 +2288,7 @@ function getProgramFilteredFamilies(){
   return families.filter(f=>{
     const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();
     const student=familyIsStudent(f)?'نعم':'لا';
-    return (!q||text.includes(q))&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))&&(!st.job.length||st.job.includes(normalizeProgramFilterValue(f.j)))&&(!st.social.length||st.social.includes(normalizeProgramFilterValue(f.social)))&&(!st.student.length||st.student.includes(student));
+    return (!q||text.includes(q))&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.members.length||st.members.includes(String(Number(f.m)||0)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))&&(!st.job.length||st.job.includes(normalizeProgramFilterValue(f.j)))&&(!st.social.length||st.social.includes(normalizeProgramFilterValue(f.social)))&&(!st.student.length||st.student.includes(student));
   }).sort((a,b)=>{
     const ac=Number(a.addressCode)||999999, bc=Number(b.addressCode)||999999;
     return ac-bc || Number(a.c)-Number(b.c);
@@ -2329,28 +2338,18 @@ function openProgramDetail(i){
     const fa=families.find(z=>Number(z.c)===Number(a.familyCode)), fb=families.find(z=>Number(z.c)===Number(b.familyCode));
     return (Number(fa?.addressCode)||999999)-(Number(fb?.addressCode)||999999) || Number(a.familyCode)-Number(b.familyCode);
   });
-  const rows=sortedProgramFamilies.map(v=>{
+  const rows=sortedProgramFamilies.map((v,idx)=>{
     const f=families.find(z=>Number(z.c)===Number(v.familyCode));
-    const map=mapUrlForFamily(f);
     return `<tr>
-      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef;font-weight:900">${escapeHtml(f?.addressCode??'—')}</td>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef;font-weight:900">${idx+1}</td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">#${escapeHtml(v.familyCode)}</td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef;font-weight:900">${escapeHtml(f?.head||f?.n||'عائلة')}</td>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">${f?.phone?`<button type="button" class="program-map-btn" title="خيارات التواصل" onclick="openProgramPhone(${JSON.stringify(String(f.phone)).replace(/"/g,'&quot;')})">📞</button>`:'—'}</td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">${escapeHtml(f?.address||'غير مسجل')}</td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">${escapeHtml(f?.landmark||'غير مسجل')}</td>
-      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">${escapeHtml(f?.r||'غير محدد')}</td>
-      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">${escapeHtml(f?.m||0)}</td>
-      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">
-        ${f?.phone?`<button type="button" class="program-map-btn" title="خيارات التواصل" onclick="openProgramPhone(${JSON.stringify(String(f.phone)).replace(/"/g,'&quot;')})">📞</button>`:'—'}
-      </td>
-      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef;white-space:nowrap">
-        ${map?`<button type="button" class="program-map-btn" title="فتح الموقع" onclick="openFamilyMap(${JSON.stringify(f||{}).replace(/"/g,'&quot;')})">📍</button>`:'—'}
-      </td>
-      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">
-        <label class="program-received"><input type="checkbox" ${v.received?'checked':''} onchange="toggleProgramReceived(${v.familyCode},this.checked)"> استلم</label>
-      </td>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef"><label class="program-received"><input type="checkbox" ${v.received?'checked':''} onchange="toggleProgramReceived(${v.familyCode},this.checked)"> استلم</label></td>
     </tr>`;
-  }).join('')||'<tr><td colspan="10" class="empty" style="padding:18px">لا توجد عوائل مرتبطة بهذا البرنامج</td></tr>';
+  }).join('')||'<tr><td colspan="7" class="empty" style="padding:18px">لا توجد عوائل مرتبطة بهذا البرنامج</td></tr>';
   const box=document.createElement('div');
   box.id='programDetailOverlay';
   box.style.cssText='position:fixed;inset:0;background:#0006;z-index:30;padding:18px;overflow:auto';
@@ -2360,17 +2359,14 @@ function openProgramDetail(i){
     <div class="card" style="padding:0;overflow:auto">
       <div style="padding:12px 12px 4px;font-weight:900">العوائل المشمولة بالبرنامج</div>
       <div class="sub" style="padding:0 12px 10px">هذه القائمة تعرض العوائل التي تم اختيارها للبرنامج فقط.</div>
-      <table style="width:100%;border-collapse:collapse;min-width:920px;background:#fff">
+      <table style="width:100%;border-collapse:collapse;min-width:760px;background:#fff">
         <thead><tr style="background:#f0f5f3">
-          <th style="padding:10px;text-align:center">رمز العنوان</th>
+          <th style="padding:10px;text-align:center">ت</th>
           <th style="padding:10px;text-align:right">رقم العائلة</th>
           <th style="padding:10px;text-align:right">رب الأسرة</th>
+          <th style="padding:10px;text-align:center">الهاتف</th>
           <th style="padding:10px;text-align:right">عنوان السكن</th>
           <th style="padding:10px;text-align:right">أقرب نقطة</th>
-          <th style="padding:10px;text-align:center">الحقوق</th>
-          <th style="padding:10px;text-align:center">الأفراد</th>
-          <th style="padding:10px;text-align:center">الهاتف</th>
-          <th style="padding:10px;text-align:center">الموقع</th>
           <th style="padding:10px;text-align:center">استلم</th>
         </tr></thead>
         <tbody>${rows}</tbody>
