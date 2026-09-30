@@ -289,7 +289,7 @@ textarea.forminput{height:80px;resize:vertical}
 </div>
 <div class="card">
   <b>الأدوار المعتمدة</b>
-  <div class="sub" style="margin-top:5px">المالك: صلاحية كاملة. مسؤول الكشف: العوائل والمناشدات والنشاطات والتقارير والملفات. مسؤول المخزن: المخزن والنشاطات والتقارير والملفات.</div>
+  <div class="sub" style="margin-top:5px">الأدوار المعتمدة: مدير الجمعية، مسؤول المالية والتبرعات، مسؤول العوائل والكشوفات، مسؤول المخزن، إدخال البيانات، مشاهد/قارئ.</div>
 </div>
 </section>
 
@@ -1370,15 +1370,19 @@ const CURRENT_USER_KEY='warith_current_user';
 const PERM_LABELS={home:'الرئيسية',families:'العوائل',donations:'التبرعات',appeals:'المناشدات','files-center':'الملفات والتوثيق',activities:'النشاطات',inventory:'المخزن',reports:'التقارير','users-settings':'المستخدمون والصلاحيات'};
 const ROLE_PERMISSIONS={
   'المالك':Object.keys(PERM_LABELS),
-  'مسؤول الكشف':['home','families','appeals','files-center','activities','reports'],
-  'مسؤول المخزن':['home','inventory','files-center','activities','reports']
+  'مدير الجمعية':Object.keys(PERM_LABELS),
+  'مسؤول المالية والتبرعات':['home','donations','files-center','activities','reports'],
+  'مسؤول العوائل والكشوفات':['home','families','appeals','files-center','activities','reports'],
+  'مسؤول المخزن':['home','inventory','files-center','activities','reports'],
+  'إدخال البيانات':['home','families','appeals','donations','inventory','activities'],
+  'مشاهد/قارئ':Object.keys(PERM_LABELS).filter(x=>x!=='users-settings')
 };
 const DEFAULT_USERS=[
   {name:'مقداد عباس',role:'المالك',password:'31372',active:true},
-  {name:'حسن فالح',role:'مسؤول الكشف',password:'31372',active:true},
-  {name:'حيدر ماجد',role:'مسؤول الكشف',password:'31372',active:true},
-  {name:'حيدر هادي',role:'مسؤول الكشف',password:'31372',active:true},
-  {name:'علي صالح',role:'مسؤول الكشف',password:'31372',active:true},
+  {name:'حسن فالح',role:'مسؤول العوائل والكشوفات',password:'31372',active:true},
+  {name:'حيدر ماجد',role:'مسؤول العوائل والكشوفات',password:'31372',active:true},
+  {name:'حيدر هادي',role:'مسؤول العوائل والكشوفات',password:'31372',active:true},
+  {name:'علي صالح',role:'مسؤول العوائل والكشوفات',password:'31372',active:true},
   {name:'عباس قاسم',role:'مسؤول المخزن',password:'31372',active:true}
 ];
 function getUsers(){try{const x=JSON.parse(localStorage.getItem(USER_KEY)||'null');if(Array.isArray(x)&&x.length)return x}catch(e){}localStorage.setItem(USER_KEY,JSON.stringify(DEFAULT_USERS));return JSON.parse(JSON.stringify(DEFAULT_USERS))}
@@ -1386,7 +1390,7 @@ function saveUsers(x){localStorage.setItem(USER_KEY,JSON.stringify(x))}
 function currentUser(){try{return JSON.parse(localStorage.getItem(CURRENT_USER_KEY)||'null')}catch(e){return null}}
 function currentRole(){return currentUser()?.role||''}
 function hasPermission(p){const u=currentUser();return !!(u&&u.active!==false&&((u.permissions||ROLE_PERMISSIONS[u.role]||[]).includes(p)))}
-function canAccessScreen(id){if(id==='login')return true;return hasPermission(id)||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities');}
+function canAccessScreen(id){if(id==='login')return true;if(id==='settings')return hasPermission('users-settings');return hasPermission(id)||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities');}
 function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');}
 function renderUserOptions(){const sel=document.getElementById('loginUser');if(!sel)return;const users=getUsers().filter(u=>u.active!==false);sel.innerHTML=users.map((u,i)=>`<option value="${i}">${escapeHtml(u.name)} — ${escapeHtml(u.role)}</option>`).join('')}
 function loginUser(){const users=getUsers().filter(u=>u.active!==false),idx=Number(document.getElementById('loginUser')?.value||0),pass=String(document.getElementById('loginPassword')?.value||''),u=users[idx];if(!u)return;if(pass!==String(u.password)){document.getElementById('loginError').textContent='الرمز غير صحيح';return}localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(u));document.getElementById('loginError').textContent='';document.getElementById('loginBackdrop').style.display='none';applyPermissionUI();updateCurrentUserBadge();showScreen('home')}
@@ -1394,14 +1398,23 @@ function updateCurrentUserBadge(){const u=currentUser();document.querySelectorAl
 function switchUser(){document.getElementById('loginPassword').value='';document.getElementById('loginError').textContent='';renderUserOptions();document.getElementById('loginBackdrop').style.display='flex'}
 function openSettings(){if(!hasPermission('users-settings')){alert('ليس لديك صلاحية إدارة المستخدمين والصلاحيات.');return}showScreen('settings');renderUsers()}
 function renderUsers(){const users=getUsers(),box=document.getElementById('usersTable');if(!box)return;document.getElementById('usersCount').textContent=users.length+' مستخدم';box.innerHTML=`<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>${users.map((u,i)=>{const perms=u.permissions||ROLE_PERMISSIONS[u.role]||[];return `<tr><td><b>${escapeHtml(u.name)}</b></td><td><span class="user-badge">${escapeHtml(u.role)}</span></td><td><span class="user-badge ${u.active===false?'user-off':''}">${u.active===false?'موقوف':'فعال'}</span></td><td>${perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')}</td><td><button class="more" onclick="openUserEditor(${i})">✏️</button> <button class="more" onclick="toggleUser(${i})">${u.active===false?'▶️':'⏸️'}</button>${i!==0?` <button class="more" onclick="deleteUser(${i})">🗑</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`}
-function openUserEditor(i=null){if(!hasPermission('users-settings'))return;const users=getUsers();document.getElementById('userEditorBackdrop').style.display='flex';document.getElementById('ue-index').value=i===null?'':i;document.getElementById('userEditorTitle').textContent=i===null?'إضافة مستخدم':'تعديل مستخدم';document.getElementById('ue-name').value=i===null?'':users[i].name;document.getElementById('ue-role').value=i===null?'مسؤول الكشف':users[i].role;document.getElementById('ue-password').value=i===null?'':users[i].password;renderEditorPermissions(i===null?ROLE_PERMISSIONS[document.getElementById('ue-role').value]:users[i].permissions||ROLE_PERMISSIONS[users[i].role]||[])}
+function openUserEditor(i=null){if(!hasPermission('users-settings'))return;const users=getUsers();document.getElementById('userEditorBackdrop').style.display='flex';document.getElementById('ue-index').value=i===null?'':i;document.getElementById('userEditorTitle').textContent=i===null?'إضافة مستخدم':'تعديل مستخدم';document.getElementById('ue-name').value=i===null?'':users[i].name;document.getElementById('ue-role').value=i===null?'مسؤول العوائل والكشوفات':users[i].role;document.getElementById('ue-password').value=i===null?'':users[i].password;renderEditorPermissions(i===null?ROLE_PERMISSIONS[document.getElementById('ue-role').value]:users[i].permissions||ROLE_PERMISSIONS[users[i].role]||[])}
 function closeUserEditor(){document.getElementById('userEditorBackdrop').style.display='none'}
 function renderEditorPermissions(selected){const box=document.getElementById('ue-perms');box.innerHTML=Object.entries(PERM_LABELS).map(([k,v])=>`<label class="perm-item"><input type="checkbox" value="${k}" ${selected.includes(k)?'checked':''}>${escapeHtml(v)}</label>`).join('')}
 function applyRolePermissionsToEditor(){renderEditorPermissions(ROLE_PERMISSIONS[document.getElementById('ue-role').value]||[])}
 function saveUserEditor(){const users=getUsers(),idx=document.getElementById('ue-index').value===''?null:Number(document.getElementById('ue-index').value),name=document.getElementById('ue-name').value.trim(),role=document.getElementById('ue-role').value,password=document.getElementById('ue-password').value.trim();if(!name||!password){alert('أدخل اسم المستخدم والرمز');return}const permissions=[...document.querySelectorAll('#ue-perms input:checked')].map(x=>x.value);if(!permissions.length){alert('حدد صلاحية واحدة على الأقل');return}const obj={name,role,password,permissions,active:true};if(idx===null){users.push(obj)}else{obj.active=users[idx].active!==false;users[idx]={...users[idx],...obj};if(idx===0){users[idx].role='المالك';users[idx].permissions=ROLE_PERMISSIONS['المالك']}}saveUsers(users);closeUserEditor();renderUsers();renderUserOptions();const cu=currentUser();if(cu&&idx!==null&&cu.name===users[idx].name)localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(users[idx]));applyPermissionUI()}
 function toggleUser(i){const users=getUsers();if(i===0){alert('لا يمكن إيقاف المالك');return}users[i].active=users[i].active===false;saveUsers(users);renderUsers();renderUserOptions()}
 function deleteUser(i){const users=getUsers();if(i===0){alert('لا يمكن حذف المالك');return}if(!confirm('حذف هذا المستخدم؟'))return;users.splice(i,1);saveUsers(users);renderUsers();renderUserOptions()}
-function initUsersPermissions(){renderUserOptions();applyPermissionUI();const login=document.getElementById('loginBackdrop');if(!currentUser()){login.style.display='flex'}else{login.style.display='none';updateCurrentUserBadge()}}
+function migrateUsersPermissions(){
+  const users=getUsers(); let changed=false;
+  users.forEach((u,i)=>{
+    if(u.role==='مسؤول الكشف'){u.role='مسؤول العوائل والكشوفات';changed=true}
+    if(i===0 || u.name==='مقداد عباس'){u.role='المالك';u.permissions=ROLE_PERMISSIONS['المالك'];changed=true}
+    else if(!Array.isArray(u.permissions)){u.permissions=ROLE_PERMISSIONS[u.role]||[];changed=true}
+  });
+  if(changed)saveUsers(users);
+}
+function initUsersPermissions(){migrateUsersPermissions();renderUserOptions();applyPermissionUI();const login=document.getElementById('loginBackdrop');if(!currentUser()){login.style.display='flex'}else{login.style.display='none';updateCurrentUserBadge()}}
 
 let filesCategory='الكل';
 function canAccessFiles(){return hasPermission('files-center')}
@@ -2511,7 +2524,7 @@ try{renderHomeDashboard();}catch(e){}
     <h2 id="userEditorTitle">إضافة مستخدم</h2>
     <input type="hidden" id="ue-index">
     <label class="fl">اسم المستخدم</label><input id="ue-name" class="forminput" placeholder="الاسم الثلاثي">
-    <label class="fl">الدور</label><select id="ue-role" class="forminput" onchange="applyRolePermissionsToEditor()"><option>المالك</option><option>مسؤول الكشف</option><option>مسؤول المخزن</option></select>
+    <label class="fl">الدور</label><select id="ue-role" class="forminput" onchange="applyRolePermissionsToEditor()"><option>المالك</option><option>مدير الجمعية</option><option>مسؤول المالية والتبرعات</option><option>مسؤول العوائل والكشوفات</option><option>مسؤول المخزن</option><option>إدخال البيانات</option><option>مشاهد/قارئ</option></select>
     <label class="fl">الرمز</label><input id="ue-password" class="forminput" type="password" inputmode="numeric" placeholder="الرمز">
     <label class="fl">الصلاحيات</label>
     <div id="ue-perms" class="perm-grid"></div>
