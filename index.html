@@ -1550,7 +1550,7 @@ const FAMILY_EXPORT_COLUMNS=[
   ['c','رقم العائلة'],['n','الاسم الثلاثي'],['head','رب الأسرة'],['phone','الهاتف'],['address','عنوان السكن'],['landmark','أقرب نقطة'],['map','الموقع'],['addressCode','رمز العنوان'],['st','الحالة'],['m','عدد أفراد الأسرة'],['h','نوع السكن'],['j','عمل المعيل'],['s','مقدار الراتب'],['hasSalary','هل لديه راتب'],['salarySource','الجهة المانحة'],['r','الموقف من الحقوق'],['i','اسم المعرف']
 ];
 const PROGRAM_EXPORT_COLUMNS=[
-  ['familyCode','رقم العائلة'],['head','رب الأسرة'],['phone','الهاتف'],['address','عنوان السكن'],['landmark','أقرب نقطة'],['received','استلم'],['addressCode','رمز العنوان']
+  ['familyCode','رقم العائلة'],['head','رب الأسرة'],['phone','الهاتف'],['address','عنوان السكن'],['landmark','أقرب نقطة'],['received','استلم']
 ];
 function getFamilyExportRows(){
   const q=(document.getElementById('q')?.value||'').trim().toLowerCase();
@@ -1603,19 +1603,31 @@ function doExportCSV(){
 function buildExportTable(){
   const cols=getSelectedExportColumns(); if(!cols.length){alert('اختر عموداً واحداً على الأقل.');return null}
   const title=activeExportType==='families'?'سجل العوائل':'سجل البرنامج';
-  const programName=activeExportType==='program'?(document.getElementById('a-program-name')?.value||''):'';
+  const programName=activeExportType==='program'?(document.getElementById('a-program-name')?.value||'').trim():'';
+  const now=new Date();
+  const dateText=now.toLocaleDateString('ar-IQ');
   const head=programName?`${title}: ${escapeHtml(programName)}`:title;
   const th=['ت',...cols.map(x=>x[1])].map(x=>`<th>${escapeHtml(x)}</th>`).join('');
-  const tr=activeExportRows.map((r,i)=>`<tr><td>${i+1}</td>${cols.map(([k])=>`<td>${escapeHtml(exportCellValue(r,k))}</td>`).join('')}</tr>`).join('');
-  return `<div dir="rtl" style="font-family:Arial,sans-serif;padding:20px"><h2 style="text-align:center;margin:0 0 6px">جمعية وارث الخيرية</h2><h3 style="text-align:center;margin:0 0 16px">${head}</h3><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table><div style="margin-top:12px;font-size:11px">عدد السجلات: ${activeExportRows.length}</div></div>`;
+  const tr=activeExportRows.map((r,i)=>`<tr><td class="num">${i+1}</td>${cols.map(([k])=>`<td>${escapeHtml(exportCellValue(r,k))}</td>`).join('')}</tr>`).join('');
+  return `<div class="export-paper" dir="rtl">
+    <div class="export-head">
+      <div class="export-logo">و</div>
+      <div class="export-org">جمعية وارث الخيرية</div>
+      <div class="export-title">${head}</div>
+      <div class="export-meta">تاريخ الإصدار: ${escapeHtml(dateText)} &nbsp; | &nbsp; عدد السجلات: ${activeExportRows.length}</div>
+    </div>
+    <table class="export-table"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>
+    <div class="export-foot"><span>عدد السجلات: ${activeExportRows.length}</span><span>جمعية وارث الخيرية © 2026</span></div>
+  </div>`;
 }
 function doExportPrint(){
   const html=buildExportTable();if(!html)return;
   const w=window.open('','_blank'); if(!w){alert('يرجى السماح بفتح نافذة الطباعة.');return}
-  w.document.write(`<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>تقرير</title><style>body{margin:0;background:#fff}table,th,td{border:1px solid #777}th{background:#eee;padding:7px}td{padding:6px;text-align:right}thead{display:table-header-group}tr{page-break-inside:avoid}@page{size:A4 landscape;margin:10mm}</style></head><body>${html}</body></html>`);w.document.close();w.focus();setTimeout(()=>w.print(),300);
+  w.document.write(`<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>تقرير - جمعية وارث الخيرية</title><style>
+  *{box-sizing:border-box}body{margin:0;background:#fff;color:#1e2d29;font-family:Arial,"Tahoma",sans-serif} .export-paper{padding:6mm 8mm 8mm;direction:rtl}.export-head{text-align:center;margin-bottom:7mm}.export-logo{width:42px;height:42px;border-radius:50%;background:#0f5c4d;color:#fff;display:inline-grid;place-items:center;font-weight:900;font-size:22px;margin-bottom:5px}.export-org{font-size:20px;font-weight:900;color:#0f5c4d}.export-title{font-size:17px;font-weight:900;margin-top:4px}.export-meta{font-size:10px;color:#667772;margin-top:5px}.export-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:10px}.export-table th,.export-table td{border:1px solid #8e9b97;padding:5px 4px;vertical-align:middle;text-align:right;line-height:1.45}.export-table th{background:#edf3f1;color:#173b33;font-weight:900;white-space:nowrap}.export-table .num{text-align:center;width:28px}.export-table tbody tr:nth-child(even){background:#fafcfb}.export-table thead{display:table-header-group}.export-table tr{page-break-inside:avoid}.export-foot{display:flex;justify-content:space-between;gap:10px;margin-top:5mm;padding-top:3mm;border-top:1px solid #cbd6d2;font-size:9px;color:#667772}@page{size:A4 landscape;margin:7mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>${html}</body></html>`);w.document.close();w.focus();setTimeout(()=>w.print(),450);
 }
 function doExportPDF(){
-  // يعتمد على محرك الطباعة في المتصفح: اختر "Save as PDF" من نافذة الطباعة.
   doExportPrint();
 }
 
