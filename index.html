@@ -421,7 +421,9 @@ textarea.forminput{height:80px;resize:vertical}
 <label class="fl">عنوان السكن</label><input id="f-address" class="forminput" placeholder="المحافظة، المنطقة، الشارع، رقم الدار">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
 <div><label class="fl">أقرب نقطة</label><input id="f-landmark" class="forminput" placeholder="نقطة دالة"></div>
-<div><label class="fl">الموقع</label>
+<div><label class="fl">رمز العنوان</label><input id="f-address-code" class="forminput" type="number" min="0" placeholder="سيُحدد تلقائياً مستقبلاً"></div>
+</div>
+<div style="margin-top:7px"><label class="fl">الموقع</label>
 <div style="display:flex;gap:7px">
 <input id="f-map" class="forminput" type="url" placeholder="سيظهر رابط الموقع هنا" readonly style="flex:1">
 <button type="button" class="action primary" style="flex:0 0 auto;padding:0 12px" onclick="pickLocation()">📍 إضافة موقع</button>
@@ -783,7 +785,9 @@ textarea.forminput{height:80px;resize:vertical}
 <label class="fl">عنوان السكن</label><input id="e-address" class="forminput">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
 <div><label class="fl">أقرب نقطة</label><input id="e-landmark" class="forminput"></div>
-<div><label class="fl">الموقع</label><div style="display:flex;gap:7px"><input id="e-map" class="forminput" type="url" readonly style="flex:1"><button type="button" class="action primary" style="flex:0 0 auto;padding:0 12px" onclick="pickEditLocation()">📍 تحديث</button></div><div id="edit-location-status" class="sub" style="margin-top:5px"></div></div>
+<div><label class="fl">رمز العنوان</label><input id="e-address-code" class="forminput" type="number" min="0" placeholder="سيُحدد تلقائياً مستقبلاً"></div>
+</div>
+<div style="margin-top:7px"><label class="fl">الموقع</label><div style="display:flex;gap:7px"><input id="e-map" class="forminput" type="url" readonly style="flex:1"><button type="button" class="action primary" style="flex:0 0 auto;padding:0 12px" onclick="pickEditLocation()">📍 تحديث</button></div><div id="edit-location-status" class="sub" style="margin-top:5px"></div></div>
 </div>
 </div>
 
@@ -908,22 +912,9 @@ function setAppealOwnerType(v){
   document.getElementById('newOwnerFields').style.display=v==='new'?'block':'none';
   document.getElementById('newFamilySaveChoice').style.display=v==='new'?'block':'none';
 }
-function getStoredFamilies(){
-  try{
-    const raw=localStorage.getItem('warith_families_v2')||localStorage.getItem('warith_families');
-    const parsed=raw?JSON.parse(raw):[];
-    return Array.isArray(parsed)?parsed:[];
-  }catch(e){return Array.isArray(families)?families:[];}
-}
-function syncFamiliesFromStorage(){
-  const latest=getStoredFamilies();
-  if(latest.length) families=latest;
-  return families;
-}
 function populateAppealFamilies(selected){
   const sel=document.getElementById('a-family'); if(!sel)return;
-  const source=syncFamiliesFromStorage();
-  const ordered=[...source].filter(f=>f&&!f.hidden).sort((a,b)=>Number(a.c)-Number(b.c));
+  const ordered=[...families].sort((a,b)=>Number(a.c)-Number(b.c));
   sel.innerHTML='<option value="">اختر العائلة</option>'+ordered.map(f=>`<option value="${escapeHtml(f.c)}">#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'عائلة')}</option>`).join('');
   if(selected!==undefined)sel.value=String(selected||'');
   showSelectedAppealFamily();
@@ -931,8 +922,7 @@ function populateAppealFamilies(selected){
 function showSelectedAppealFamily(){
   const box=document.getElementById('selectedAppealFamily'); if(!box)return;
   const code=document.getElementById('a-family')?.value;
-  const source=syncFamiliesFromStorage();
-  const f=source.find(x=>String(x.c)===String(code));
+  const f=families.find(x=>String(x.c)===String(code));
   if(!f){box.textContent='';return}
   box.innerHTML=`العائلة: <b>${escapeHtml(f.head||f.n||'')}</b> · الهاتف: ${escapeHtml(f.phone||'غير مسجل')} · العنوان: ${escapeHtml(f.address||'غير مسجل')}`;
 }
@@ -1521,6 +1511,7 @@ const phone=document.getElementById('f-phone').value.trim();
 const identifier=document.getElementById('f-id').value.trim();
 const social=document.getElementById('f-social').value;
 const address=document.getElementById('f-address').value.trim();
+const addressCode=document.getElementById('f-address-code').value.trim();
 const job=document.getElementById('f-job').value.trim();
 const salary=document.getElementById('f-salary').value.trim();
 const hasSalary=document.getElementById('f-has-salary').value;
@@ -1531,7 +1522,7 @@ const status=document.getElementById('f-status').value;
 if(!code||!members||!head||!phone||!identifier||!social||!hasSalary){alert('يرجى إدخال اسم رب الأسرة والهاتف ورقم العائلة وعدد الأفراد والمعرف والحالة الاجتماعية وتحديد هل لديه راتب');return}
 if(hasSalary==='نعم'&&!salarySource){alert('يرجى إدخال الجهة المانحة للراتب');return}
 if(families.some(x=>Number(x.c)===code)){alert('رقم العائلة مستخدم مسبقاً');return}
-const item={c:code,n:'عائلة '+head,head:head,phone:phone,createdAt:Date.now(),updatedAt:Date.now(),social:social,hasSalary:hasSalary,salarySource:salarySource,address:address,landmark:document.getElementById('f-landmark').value.trim(),map:document.getElementById('f-map').value.trim(),i:identifier,m:members,j:job||'غير محدد',s:(salary||'0')+' د.ع',h:housing||'غير محدد',r:rights||'غير محدد',st:status};
+const item={c:code,n:'عائلة '+head,head:head,phone:phone,createdAt:Date.now(),updatedAt:Date.now(),social:social,hasSalary:hasSalary,salarySource:salarySource,address:address,addressCode:addressCode?Number(addressCode):'',landmark:document.getElementById('f-landmark').value.trim(),map:document.getElementById('f-map').value.trim(),i:identifier,m:members,j:job||'غير محدد',s:(salary||'0')+' د.ع',h:housing||'غير محدد',r:rights||'غير محدد',st:status};
 families.unshift(item);
 try{
   const data=JSON.stringify(families);
@@ -1546,7 +1537,7 @@ try{
 }
 renderFamilies();
 alert('تم حفظ العائلة بنجاح ✓');
-['f-head','f-phone','f-code','f-members','f-id','f-job','f-salary','f-salary-source','f-landmark','f-address','f-map'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
+['f-head','f-phone','f-code','f-members','f-id','f-job','f-salary','f-salary-source','f-landmark','f-address','f-address-code','f-map'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
 document.getElementById('f-social').value='';
 document.getElementById('f-has-salary').value='';
 document.getElementById('f-salary-source').value='';
@@ -1573,6 +1564,7 @@ function editFamily(){
   document.getElementById('e-id').value=x.i||'';
   document.getElementById('e-housing').value=x.h||'';
   document.getElementById('e-address').value=x.address||'';
+  document.getElementById('e-address-code').value=x.addressCode??'';
   document.getElementById('e-landmark').value=x.landmark||'';
   document.getElementById('e-map').value=x.map||'';
   document.getElementById('e-status').value=x.st||'مستمر';
@@ -1623,6 +1615,8 @@ function saveFamilyEdit(){
   x.i=document.getElementById('e-id').value.trim();
   x.h=document.getElementById('e-housing').value||'غير محدد';
   x.address=document.getElementById('e-address').value.trim();
+  const addressCode=document.getElementById('e-address-code').value.trim();
+  x.addressCode=addressCode?Number(addressCode):'';
   x.landmark=document.getElementById('e-landmark').value.trim();
   x.map=document.getElementById('e-map').value.trim();
   x.st=document.getElementById('e-status').value;
@@ -1958,10 +1952,15 @@ function clearProgramFilter(type){
 }
 function exportSelectedProgramFamilies(){
   if(!programSelectedFamilies.length){alert('حدد عائلة واحدة على الأقل قبل التصدير.');return;}
-  const rows=programSelectedFamilies.map((v,idx)=>{
+  const exportFamilies=[...programSelectedFamilies].sort((a,b)=>{
+    const fa=families.find(z=>Number(z.c)===Number(a.familyCode)), fb=families.find(z=>Number(z.c)===Number(b.familyCode));
+    return (Number(fa?.addressCode)||999999)-(Number(fb?.addressCode)||999999) || Number(a.familyCode)-Number(b.familyCode);
+  });
+  const rows=exportFamilies.map((v,idx)=>{
     const f=families.find(z=>Number(z.c)===Number(v.familyCode));
     return {
       no:idx+1,
+      addressCode:f?.addressCode??'',
       code:f?.c??v.familyCode,
       head:f?.head||f?.n||'',
       address:f?.address||'',
@@ -1973,9 +1972,9 @@ function exportSelectedProgramFamilies(){
       received:v.received?'نعم':'لا'
     };
   });
-  const headers=['ت','رقم العائلة','رب الأسرة','عنوان السكن','أقرب نقطة','الحقوق','عدد الأفراد','الهاتف','الموقع','استلم'];
+  const headers=['ت','رمز العنوان','رقم العائلة','رب الأسرة','عنوان السكن','أقرب نقطة','الحقوق','عدد الأفراد','الهاتف','الموقع','استلم'];
   const csvRow=arr=>arr.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',');
-  const csv='\ufeff'+csvRow(headers)+'\r\n'+rows.map(r=>csvRow([r.no,r.code,r.head,r.address,r.landmark,r.rights,r.members,r.phone,r.location,r.received])).join('\r\n');
+  const csv='\ufeff'+csvRow(headers)+'\r\n'+rows.map(r=>csvRow([r.no,r.addressCode,r.code,r.head,r.address,r.landmark,r.rights,r.members,r.phone,r.location,r.received])).join('\r\n');
   const name=(document.getElementById('a-program-name')?.value||'برنامج').trim().replace(/[\\/:*?"<>|]+/g,'_');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
@@ -2008,7 +2007,7 @@ function renderProgramFamilyPicker(){
   const list=getProgramFilteredFamilies();
   box.innerHTML=list.map(f=>{
     const code=Number(f.c), item=programSelectedFamilies.find(v=>v.familyCode===code), checked=!!item;
-    return `<label class="program-family-row"><input type="checkbox" ${checked?'checked':''} onchange="toggleProgramFamily(${code},this.checked)"><div class="pf-main"><div class="pf-name">#${escapeHtml(code)} · ${escapeHtml(f.head||f.n||'عائلة')}</div><div class="pf-meta">${escapeHtml(f.r||'غير محدد')} · ${escapeHtml(f.h||'غير محدد')} · ${escapeHtml(f.m||0)} أفراد</div></div></label>`;
+    return `<label class="program-family-row"><input type="checkbox" ${checked?'checked':''} onchange="toggleProgramFamily(${code},this.checked)"><div class="pf-main"><div class="pf-name">رمز ${escapeHtml(f.addressCode??'غير محدد')} · #${escapeHtml(code)} · ${escapeHtml(f.head||f.n||'عائلة')}</div><div class="pf-meta">${escapeHtml(f.r||'غير محدد')} · ${escapeHtml(f.h||'غير محدد')} · ${escapeHtml(f.m||0)} أفراد</div></div></label>`;
   }).join('')||'<div class="empty">لا توجد عوائل مطابقة للفلاتر</div>';
   const c=document.getElementById('programSelectedCount'); if(c)c.textContent=`${programSelectedFamilies.length} محددة`;
 }
@@ -2018,6 +2017,9 @@ function getProgramFilteredFamilies(){
     const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();
     const student=familyIsStudent(f)?'نعم':'لا';
     return (!q||text.includes(q))&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))&&(!st.job.length||st.job.includes(normalizeProgramFilterValue(f.j)))&&(!st.social.length||st.social.includes(normalizeProgramFilterValue(f.social)))&&(!st.student.length||st.student.includes(student));
+  }).sort((a,b)=>{
+    const ac=Number(a.addressCode)||999999, bc=Number(b.addressCode)||999999;
+    return ac-bc || Number(a.c)-Number(b.c);
   });
 }
 function selectAllProgramFamilies(){getProgramFilteredFamilies().forEach(f=>{if(!programSelectedFamilies.some(v=>v.familyCode===Number(f.c)))programSelectedFamilies.push({familyCode:Number(f.c),received:false})});renderProgramFamilyPicker();}
@@ -2060,10 +2062,15 @@ function openProgramPhone(phone){
 function openProgramDetail(i){
   const x=programs[i]; if(!x)return;
   programSelectedFamilies=normalizeProgramFamilies(x);
-  const rows=programSelectedFamilies.map(v=>{
+  const sortedProgramFamilies=[...programSelectedFamilies].sort((a,b)=>{
+    const fa=families.find(z=>Number(z.c)===Number(a.familyCode)), fb=families.find(z=>Number(z.c)===Number(b.familyCode));
+    return (Number(fa?.addressCode)||999999)-(Number(fb?.addressCode)||999999) || Number(a.familyCode)-Number(b.familyCode);
+  });
+  const rows=sortedProgramFamilies.map(v=>{
     const f=families.find(z=>Number(z.c)===Number(v.familyCode));
     const map=mapUrlForFamily(f);
     return `<tr>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef;font-weight:900">${escapeHtml(f?.addressCode??'—')}</td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">#${escapeHtml(v.familyCode)}</td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef;font-weight:900">${escapeHtml(f?.head||f?.n||'عائلة')}</td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">${escapeHtml(f?.address||'غير مسجل')}</td>
@@ -2092,6 +2099,7 @@ function openProgramDetail(i){
       <div class="sub" style="padding:0 12px 10px">هذه القائمة تعرض العوائل التي تم اختيارها للبرنامج فقط.</div>
       <table style="width:100%;border-collapse:collapse;min-width:920px;background:#fff">
         <thead><tr style="background:#f0f5f3">
+          <th style="padding:10px;text-align:center">رمز العنوان</th>
           <th style="padding:10px;text-align:right">رقم العائلة</th>
           <th style="padding:10px;text-align:right">رب الأسرة</th>
           <th style="padding:10px;text-align:right">عنوان السكن</th>
