@@ -908,9 +908,22 @@ function setAppealOwnerType(v){
   document.getElementById('newOwnerFields').style.display=v==='new'?'block':'none';
   document.getElementById('newFamilySaveChoice').style.display=v==='new'?'block':'none';
 }
+function getStoredFamilies(){
+  try{
+    const raw=localStorage.getItem('warith_families_v2')||localStorage.getItem('warith_families');
+    const parsed=raw?JSON.parse(raw):[];
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return Array.isArray(families)?families:[];}
+}
+function syncFamiliesFromStorage(){
+  const latest=getStoredFamilies();
+  if(latest.length) families=latest;
+  return families;
+}
 function populateAppealFamilies(selected){
   const sel=document.getElementById('a-family'); if(!sel)return;
-  const ordered=[...families].sort((a,b)=>Number(a.c)-Number(b.c));
+  const source=syncFamiliesFromStorage();
+  const ordered=[...source].filter(f=>f&&!f.hidden).sort((a,b)=>Number(a.c)-Number(b.c));
   sel.innerHTML='<option value="">اختر العائلة</option>'+ordered.map(f=>`<option value="${escapeHtml(f.c)}">#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'عائلة')}</option>`).join('');
   if(selected!==undefined)sel.value=String(selected||'');
   showSelectedAppealFamily();
@@ -918,7 +931,8 @@ function populateAppealFamilies(selected){
 function showSelectedAppealFamily(){
   const box=document.getElementById('selectedAppealFamily'); if(!box)return;
   const code=document.getElementById('a-family')?.value;
-  const f=families.find(x=>String(x.c)===String(code));
+  const source=syncFamiliesFromStorage();
+  const f=source.find(x=>String(x.c)===String(code));
   if(!f){box.textContent='';return}
   box.innerHTML=`العائلة: <b>${escapeHtml(f.head||f.n||'')}</b> · الهاتف: ${escapeHtml(f.phone||'غير مسجل')} · العنوان: ${escapeHtml(f.address||'غير مسجل')}`;
 }
