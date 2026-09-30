@@ -223,6 +223,8 @@ textarea.forminput{height:80px;resize:vertical}
 .files-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}.files-toolbar .chip{cursor:pointer}.files-toolbar .chip.active{background:#0f5c4d;color:#fff}
 .file-card{background:#fff;border-radius:14px;padding:10px;margin-bottom:8px;box-shadow:0 2px 10px #0000000b}.file-row{display:flex;align-items:center;gap:9px}.file-icon{width:42px;height:42px;border-radius:11px;background:#eef5f2;display:grid;place-items:center;font-size:21px}.file-meta{font-size:10px;color:#71857f;margin-top:3px}.file-actions{display:flex;gap:5px;align-items:center}.file-actions button{border:0;background:#eef5f2;border-radius:9px;padding:7px 9px;cursor:pointer}.files-note{background:#fff8e7;border:1px solid #ead9a2;border-radius:12px;padding:9px;font-size:11px;color:#6d5720;margin-bottom:10px}
 
+
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.settings-tile{min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}.settings-tile small{opacity:.72;font-weight:700}.user-card{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.08)}.user-card:last-child{border-bottom:0}.user-actions{margin-inline-start:auto;display:flex;gap:5px;flex-wrap:wrap}@media(max-width:650px){.settings-grid{grid-template-columns:1fr}.user-card{align-items:flex-start;flex-wrap:wrap}.user-actions{width:100%;margin-inline-start:0}}
 </style>
 </head>
 <body>
@@ -271,7 +273,7 @@ textarea.forminput{height:80px;resize:vertical}
 <button class="tile" onclick="showScreen('inventory')"><span class="ico">📦</span><small>المخزن</small></button>
 <button class="tile" onclick="showScreen('reports')"><span class="ico">📊</span><small>التقارير</small></button>
 <button class="tile" onclick="openFilesCenter()"><span class="ico">📁</span><small>الملفات والتوثيق</small></button>
-<button class="tile" onclick="coming('الإعدادات')"><span class="ico">⚙️</span><small>الإعدادات</small></button>
+<button class="tile manager-only" id="homeSettingsTile" onclick="openSettings()"><span class="ico">⚙️</span><small>الإعدادات</small></button>
 </div>
 <div class="section"><b>آخر النشاطات</b><span class="link" onclick="showScreen('activities')">عرض الكل</span></div>
 <div id="homeRecentActivities"><div class="empty">لا توجد نشاطات مسجلة حالياً</div></div>
@@ -693,7 +695,7 @@ textarea.forminput{height:80px;resize:vertical}
 
   <div id="registeredOwnerFields" style="margin-top:8px">
     <label class="fl">اختيار العائلة</label>
-    <select id="a-appeal-family" class="forminput" onchange="showSelectedAppealFamily()">
+    <select id="a-family" class="forminput" onchange="showSelectedAppealFamily()">
       <option value="">اختر العائلة</option>
     </select>
     <div id="selectedAppealFamily" class="inline-note"></div>
@@ -850,6 +852,35 @@ textarea.forminput{height:80px;resize:vertical}
 
 
 
+<section id="settings" class="screen">
+<div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">الإعدادات</div></div>
+<div class="card" style="margin-bottom:10px">
+  <div class="home-card-title">⚙️ <b>إعدادات الجمعية</b></div>
+  <div class="sub" style="margin-top:5px">هذا القسم مخصص للمدير فقط.</div>
+</div>
+<div class="settings-grid">
+  <button class="tile settings-tile" onclick="openUserSettings()"><span class="ico">👥</span><b>المستخدمون والصلاحيات</b><small>إضافة وتعديل وتعطيل المستخدمين</small></button>
+  <button class="tile settings-tile" onclick="coming('بيانات الجمعية')"><span class="ico">🏢</span><b>بيانات الجمعية</b><small>اسم الجمعية والشعار وبيانات الاتصال</small></button>
+  <button class="tile settings-tile" onclick="coming('إعدادات النظام')"><span class="ico">⚙️</span><b>إعدادات النظام</b><small>الترقيم والخيارات العامة</small></button>
+  <button class="tile settings-tile" onclick="coming('النسخ الاحتياطي')"><span class="ico">💾</span><b>النسخ الاحتياطي</b><small>نسخ واستعادة بيانات النظام</small></button>
+</div>
+<div id="userSettingsPanel" class="card" style="display:none;margin-top:10px">
+  <div class="section" style="margin-top:0"><b>👥 المستخدمون</b><button class="action primary" onclick="openUserForm()">＋ إضافة مستخدم</button></div>
+  <div id="usersList"></div>
+</div>
+<div id="userFormPanel" class="card" style="display:none;margin-top:10px">
+  <div class="section" style="margin-top:0"><b id="userFormTitle">إضافة مستخدم</b></div>
+  <input type="hidden" id="userEditId">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <label class="fl">اسم المستخدم<input id="userName" class="forminput" placeholder="الاسم الثلاثي"></label>
+    <label class="fl">الهاتف<input id="userPhone" class="forminput" inputmode="tel" placeholder="07xxxxxxxxx"></label>
+    <label class="fl">الوظيفة<select id="userRole" class="forminput"><option>مدير</option><option>مدخل بيانات</option><option>كشف</option><option>مخزن</option><option>مالية</option><option>توزيع</option><option>المالك</option></select></label>
+    <label class="fl">رمز المرور<input id="userPassword" class="forminput" type="password" inputmode="numeric" placeholder="رمز المرور"></label>
+  </div>
+  <div class="actions" style="margin-top:9px"><button class="action primary" onclick="saveUser()">حفظ</button><button class="action" onclick="closeUserForm()">إلغاء</button></div>
+</div>
+</section>
+
 <section id="reports" class="screen">
 <div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">التقارير</div></div>
 <div class="donation-tabs" style="margin-bottom:10px;overflow-x:auto">
@@ -891,6 +922,7 @@ textarea.forminput{height:80px;resize:vertical}
 <button onclick="showScreen('activities');closeMenu()">🎯 النشاطات</button>
 <button onclick="showScreen('inventory');closeMenu()">📦 المخزن</button>
 <button onclick="showScreen('reports');closeMenu()">📊 التقارير</button>
+<button class="manager-only" id="menuSettingsBtn" onclick="openSettings();closeMenu()">⚙️ الإعدادات</button>
 </div></div>
 
 <script>
@@ -1015,7 +1047,7 @@ function setAppealOwnerType(v){
   document.getElementById('newFamilySaveChoice').style.display=v==='new'?'block':'none';
 }
 function populateAppealFamilies(selected){
-  const sel=document.getElementById('a-appeal-family'); if(!sel)return;
+  const sel=document.getElementById('a-family'); if(!sel)return;
   const ordered=[...families].sort((a,b)=>Number(a.c)-Number(b.c));
   sel.innerHTML='<option value="">اختر العائلة</option>'+ordered.map(f=>`<option value="${escapeHtml(f.c)}">#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'عائلة')}</option>`).join('');
   if(selected!==undefined)sel.value=String(selected||'');
@@ -1023,7 +1055,7 @@ function populateAppealFamilies(selected){
 }
 function showSelectedAppealFamily(){
   const box=document.getElementById('selectedAppealFamily'); if(!box)return;
-  const code=document.getElementById('a-appeal-family')?.value;
+  const code=document.getElementById('a-family')?.value;
   const f=families.find(x=>String(x.c)===String(code));
   if(!f){box.textContent='';return}
   box.innerHTML=`العائلة: <b>${escapeHtml(f.head||f.n||'')}</b> · الهاتف: ${escapeHtml(f.phone||'غير مسجل')} · العنوان: ${escapeHtml(f.address||'غير مسجل')}`;
@@ -1073,13 +1105,13 @@ function renderAppealAttachments(){
 function removeAppealAttachment(i){appealAttachments.splice(i,1);renderAppealAttachments();}
 function saveAppeal(){
   const date=document.getElementById('a-date').value||new Date().toISOString().slice(0,10);
-  if(appealOwnerType==='registered'&&!document.getElementById('a-appeal-family').value){alert('اختر العائلة أولاً');return}
+  if(appealOwnerType==='registered'&&!document.getElementById('a-family').value){alert('اختر العائلة أولاً');return}
   if(appealOwnerType==='new'&&!document.getElementById('a-name').value.trim()){alert('أدخل اسم صاحب الحالة');return}
   if(!document.getElementById('a-amount').value){alert('أدخل المبلغ المطلوب');return}
 
   let familyCode=null, ownerName='', ownerPhone='', ownerAddress='', newFamilyAdded=false;
   if(appealOwnerType==='registered'){
-    familyCode=Number(document.getElementById('a-appeal-family').value);
+    familyCode=Number(document.getElementById('a-family').value);
     const f=families.find(x=>Number(x.c)===familyCode);
     ownerName=f?.head||f?.n||''; ownerPhone=f?.phone||''; ownerAddress=f?.address||'';
   }else{
@@ -1386,7 +1418,67 @@ function renderFilesCenter(){
 function openCentralFile(i){const f=window._visibleFiles?.[i];openFileViewer(f);}
 function deleteCentralFile(i){const f=window._visibleFiles?.[i];if(!f)return;if(!confirm('حذف هذا المرفق نهائياً من السجل؟'))return;const arr=window[f.source];if(!Array.isArray(arr)||!arr[f.recordIndex]){const rec=arr?.find(x=>String(x.id)===String(f.recordKey)||String(x.c)===String(f.recordKey));if(!rec?.attachments?.[f.index])return;rec.attachments.splice(f.index,1);}else{arr[f.recordIndex].attachments.splice(f.index,1);}localStorage.setItem({families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'}[f.source],JSON.stringify(arr));if(f.source==='families')localStorage.setItem('warith_families',JSON.stringify(arr));renderFilesCenter();}
 
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
+
+const WARITH_DEFAULT_USERS=[
+ {id:'u1',name:'مقداد عباس',role:'المالك',phone:'07714987502',password:'31372',active:true},
+ {id:'u2',name:'حسن فالح',role:'كشف',phone:'07712528592',password:'31372',active:true},
+ {id:'u3',name:'حيدر ماجد',role:'كشف',phone:'07705790022',password:'31372',active:true},
+ {id:'u4',name:'حيدر هادي',role:'كشف',phone:'07703206393',password:'31372',active:true},
+ {id:'u5',name:'علي صالح',role:'كشف',phone:'07705663163',password:'31372',active:true},
+ {id:'u6',name:'عباس قاسم',role:'مخزن',phone:'07717542421',password:'31372',active:true}
+];
+function getUsers(){
+  try{const raw=JSON.parse(localStorage.getItem('warith_users')||'null');if(Array.isArray(raw)&&raw.length)return raw}catch(e){}
+  localStorage.setItem('warith_users',JSON.stringify(WARITH_DEFAULT_USERS)); return WARITH_DEFAULT_USERS.slice();
+}
+function saveUsers(arr){localStorage.setItem('warith_users',JSON.stringify(arr));}
+function currentUserRole(){
+  const role=localStorage.getItem('warith_current_role');
+  return role==='مدير الجمعية'?'مدير':(role||'مدير');
+}
+function isOwner(){return currentUserRole()==='المالك';}
+function isManager(){return currentUserRole()==='مدير'||isOwner();}
+function guardManager(){if(!isManager()){alert('هذا القسم مخصص للمدير فقط.');return false}return true;}
+function openSettings(){if(!guardManager())return;showScreen('settings');document.getElementById('userSettingsPanel').style.display='none';document.getElementById('userFormPanel').style.display='none';}
+function openUserSettings(){if(!guardManager())return;document.getElementById('userSettingsPanel').style.display='block';document.getElementById('userFormPanel').style.display='none';renderUsers();}
+function renderUsers(){
+  const box=document.getElementById('usersList');if(!box)return;
+  const users=getUsers();
+  box.innerHTML=users.map(u=>{const protectedOwner=u.role==='المالك';const actions=protectedOwner&&!isOwner()?'':`<button class="action" onclick="editUser('${u.id}')">✏️ تعديل</button><button class="action" onclick="toggleUser('${u.id}')">${u.active?'⏸ تعطيل':'▶️ تفعيل'}</button>`;return `<div class="user-card"><div class="avatar">${protectedOwner?'👑':'👤'}</div><div class="grow"><b>${escapeHtml(u.name)}</b><div class="sub">${escapeHtml(u.role)}${protectedOwner?' · كل الصلاحيات':''} · ${escapeHtml(u.phone||'بدون هاتف')} · ${u.active?'فعال':'معطل'}</div></div><div class="user-actions">${actions}</div></div>`}).join('')||'<div class="empty">لا يوجد مستخدمون</div>';
+}
+function openUserForm(id=''){
+  if(!guardManager())return;
+  document.getElementById('userFormPanel').style.display='block';
+  document.getElementById('userEditId').value=id;
+  if(id){const u=getUsers().find(x=>x.id===id);if(!u)return;document.getElementById('userFormTitle').textContent='تعديل مستخدم';document.getElementById('userName').value=u.name||'';document.getElementById('userPhone').value=u.phone||'';document.getElementById('userRole').value=u.role||'مدخل بيانات';document.getElementById('userPassword').value=u.password||'';}
+  else{document.getElementById('userFormTitle').textContent='إضافة مستخدم';['userName','userPhone','userPassword'].forEach(id=>document.getElementById(id).value='');document.getElementById('userRole').value='مدخل بيانات';}
+}
+function closeUserForm(){document.getElementById('userFormPanel').style.display='none';}
+function saveUser(){
+  if(!guardManager())return;
+  const id=document.getElementById('userEditId').value||'u'+Date.now();
+  const name=document.getElementById('userName').value.trim(), phone=document.getElementById('userPhone').value.trim(), role=document.getElementById('userRole').value, password=document.getElementById('userPassword').value.trim();
+  if(!name||!password){alert('يرجى إدخال الاسم ورمز المرور.');return;}
+  const users=getUsers(); const idx=users.findIndex(x=>x.id===id);
+  const old=idx>=0?users[idx]:null;
+  if(old?.role==='المالك'&&!isOwner()){alert('لا يمكن تعديل حساب المالك إلا من قبل المالك نفسه.');return;}
+  if(role==='المالك'&&!isOwner()&&old?.role!=='المالك'){alert('تعيين وظيفة المالك متاح للمالك نفسه فقط.');return;}
+  if(old?.role==='المالك'&&isOwner()&&role!=='المالك'){
+    if(!confirm('أنت على وشك تغيير وظيفة حساب المالك. هل تريد المتابعة؟'))return;
+  }
+  const item={id,name,phone,role,password,active:idx>=0?old.active:true};
+  if(idx>=0)users[idx]=item;else users.push(item); saveUsers(users); closeUserForm(); renderUsers(); alert('تم حفظ المستخدم.');
+}
+function editUser(id){openUserForm(id);}
+function toggleUser(id){
+  if(!guardManager())return;
+  const users=getUsers(),u=users.find(x=>x.id===id);if(!u)return;
+  if(u.role==='المالك'&&!isOwner()){alert('لا يمكن تعطيل حساب المالك إلا من قبل المالك نفسه.');return;}
+  if(u.role==='مدير'&&u.active&&users.filter(x=>x.role==='مدير'&&x.active).length===1){alert('لا يمكن تعطيل المدير الوحيد.');return;}
+  u.active=!u.active;saveUsers(users);renderUsers();
+}
+
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor')resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}if(id==='settings'&&isManager()){getUsers();}}
 let familyQuickFilter='all';
 function toggleFamilyFilters(){const el=document.getElementById('familyAdvancedFilters');if(!el)return;const show=el.style.display==='none'||!el.style.display;el.style.display=show?'block':'none';if(show)populateFamilyFilterOptions();}
 function familyFilterValue(id){return document.getElementById(id)?.value||'الكل';}
@@ -2432,7 +2524,7 @@ function renderHiddenReport(){
 }
 
 function openMenu(){document.getElementById('drawer').classList.add('open')}function closeMenu(e){if(!e||e.target.id==='drawer')document.getElementById('drawer').classList.remove('open')}function coming(x){alert(x+' — قيد البناء في المرحلة التالية')}
-renderFamilies(); renderDonations(); renderAppeals(); renderActivities(); updateAppealDashboard(); if(document.getElementById('f-has-salary')) toggleSalarySource();
+getUsers(); document.querySelectorAll('.manager-only').forEach(el=>{el.style.display=isManager()?'':'none'}); renderFamilies(); renderDonations(); renderAppeals(); renderActivities(); updateAppealDashboard(); if(document.getElementById('f-has-salary')) toggleSalarySource();
 
 try{renderHomeDashboard();}catch(e){}
 </script>
