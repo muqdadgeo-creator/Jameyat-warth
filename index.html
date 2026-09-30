@@ -318,14 +318,7 @@ textarea.forminput{height:80px;resize:vertical}
 </div>
 <div style="display:flex;gap:8px;margin-top:9px"><button type="button" class="action primary" style="flex:1" onclick="resetFamilyFilters()">إعادة ضبط الفلاتر</button><button type="button" class="action" style="flex:1" onclick="toggleFamilyFilters()">إخفاء</button></div>
 </div>
-<div class="actions"><button class="action primary" onclick="showScreen('add-family')">＋ إضافة عائلة</button><button class="action" type="button" onclick="toggleFamilySort()">↕ ترتيب</button></div>
-<div id="familySortPanel" class="card" style="display:none;margin-top:8px;padding:10px">
-<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
-<select id="familySortField" class="forminput" onchange="applyFamilySort()">
-<option value="c">رقم العائلة</option><option value="n">اسم</option><option value="addressCode">رمز العنوان</option><option value="m">عدد الأفراد</option><option value="s">الراتب</option>
-</select>
-<button id="familySortDir" type="button" class="action" onclick="toggleFamilySortDirection()">↑ تصاعدي</button>
-</div></div>
+<div class="actions"><button class="action primary" onclick="showScreen('add-family')">＋ إضافة عائلة</button><button class="action" onclick="coming('ترتيب العوائل')">↕ ترتيب</button></div>
 <div id="familyList"></div>
 </section>
 
@@ -1016,6 +1009,10 @@ function setAppealOwnerType(v){
 }
 function populateAppealFamilies(selected){
   const sel=document.getElementById('a-family'); if(!sel)return;
+  // Always read the latest saved families so the selector is never stale.
+  let latest=[];
+  try{ latest=JSON.parse(localStorage.getItem('warith_families_v2') || localStorage.getItem('warith_families') || '[]'); }catch(e){ latest=[]; }
+  if(Array.isArray(latest) && latest.length){ families=latest; }
   const ordered=[...families].sort((a,b)=>Number(a.c)-Number(b.c));
   sel.innerHTML='<option value="">اختر العائلة</option>'+ordered.map(f=>`<option value="${escapeHtml(f.c)}">#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'عائلة')}</option>`).join('');
   if(selected!==undefined)sel.value=String(selected||'');
@@ -1425,36 +1422,10 @@ function familyMatchesFilters(x){
   if(identifier!=='الكل'&&x.i!==identifier)return false;
   return true;
 }
-let familySortField='c';
-let familySortDirection='asc';
-function toggleFamilySort(){
-  const p=document.getElementById('familySortPanel'); if(!p)return;
-  p.style.display=p.style.display==='none'?'block':'none';
-}
-function toggleFamilySortDirection(){
-  familySortDirection=familySortDirection==='asc'?'desc':'asc';
-  const b=document.getElementById('familySortDir'); if(b)b.textContent=familySortDirection==='asc'?'↑ تصاعدي':'↓ تنازلي';
-  renderFamilies();
-}
-function applyFamilySort(){
-  const el=document.getElementById('familySortField'); if(el)familySortField=el.value;
-  renderFamilies();
-}
-function sortFamiliesList(arr){
-  const dir=familySortDirection==='asc'?1:-1;
-  return arr.sort((a,b)=>{
-    let av=a[familySortField],bv=b[familySortField];
-    if(familySortField==='s'||familySortField==='m'||familySortField==='c'||familySortField==='addressCode'){
-      av=Number(String(av??'').replace(/[^0-9.]/g,''))||0; bv=Number(String(bv??'').replace(/[^0-9.]/g,''))||0;
-      return (av-bv)*dir;
-    }
-    return String(av??'').localeCompare(String(bv??''),'ar',{numeric:true,sensitivity:'base'})*dir;
-  });
-}
 function renderFamilies(){
   populateFamilyFilterOptions();
   const q=(document.getElementById('q')?.value||'').trim().toLowerCase();
-  const a=sortFamiliesList(families.filter(x=>{if(isHiddenRecord(x)||!familyMatchesFilters(x))return false;return [x.c,x.n,x.i,x.j,x.h,x.r,x.st,x.head,x.phone,x.address,x.landmark,x.addressCode].join(' ').toLowerCase().includes(q);}));
+  const a=families.filter(x=>{if(isHiddenRecord(x)||!familyMatchesFilters(x))return false;return [x.c,x.n,x.i,x.j,x.h,x.r,x.st,x.head,x.phone,x.address,x.landmark,x.addressCode].join(' ').toLowerCase().includes(q);});
   document.getElementById('count').textContent=a.length+' عائلة';
   document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button type="button" class="more" onclick="event.preventDefault();event.stopPropagation();hideFamilyByCode(${x.c})">🚫</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>🔢 رمز العنوان: ${x.addressCode||"—"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للفلاتر أو البحث</div>'}
 
