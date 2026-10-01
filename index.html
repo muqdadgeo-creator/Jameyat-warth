@@ -1246,6 +1246,22 @@ function renderAppealHelps(a){
   box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">🤝 المساعدات المرتبطة بالمناشدة</div><div class="sub" style="margin-bottom:8px">المجموع المالي للمساعدات: <b>${x.helpTotal.toLocaleString('en-US')} د.ع</b> · العدد: ${x.linkedHelps.length}</div>${x.linkedHelps.map(h=>`<div class="donor-alloc-row"><span>${escapeHtml(h.type||'مساعدة')} · ${escapeHtml(h.date||'')}</span><b>${Number(h.amount||0).toLocaleString('en-US')} د.ع</b></div><div class="sub" style="padding:4px 0 6px">${escapeHtml(h.details||'')}</div>`).join('')||'<div class="empty" style="padding:10px">لا توجد مساعدات مرتبطة بهذه المناشدة</div>'}</div>`;
 }
 
+function normalizeIraqPhone(v){
+  let s=String(v||'').trim().replace(/[^0-9+]/g,'');
+  if(!s)return '';
+  if(s.startsWith('+964'))return s;
+  if(s.startsWith('00964'))return '+'+s.slice(2);
+  if(s.startsWith('964'))return '+'+s;
+  if(s.startsWith('0'))return '+964'+s.slice(1);
+  return s.startsWith('+')?s:'+964'+s;
+}
+function appealPhoneActions(phone){
+  const raw=String(phone||'').trim();
+  if(!raw)return '<span class="sub">غير مسجل</span>';
+  const intl=normalizeIraqPhone(raw);
+  const digits=intl.replace(/[^0-9]/g,'');
+  return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b>${escapeHtml(raw)}</b><a class="action" href="tel:${escapeHtml(intl)}" onclick="event.stopPropagation()">📞 اتصال</a><a class="action" href="https://wa.me/${digits}" target="_blank" rel="noopener" onclick="event.stopPropagation()">💬 واتساب</a></div>`;
+}
 function openAppeal(i){
   const a=appeals[i]; if(!a)return;
   selectedAppealIndex=i;
@@ -1262,7 +1278,7 @@ function openAppeal(i){
   <div class="detail-grid">
     <div class="info"><small>صاحب الحالة</small><b>${a.familyCode?'عائلة مسجلة':'حالة جديدة'}</b></div>
     <div class="info"><small>رقم العائلة</small><b>${a.familyCode?'#'+escapeHtml(a.familyCode):'غير مضافة'}</b></div>
-    <div class="info"><small>رقم الهاتف</small><b>${escapeHtml(a.ownerPhone||'غير مسجل')}</b></div>
+    <div class="info"><small>رقم الهاتف</small>${appealPhoneActions(a.ownerPhone)}</div>
     <div class="info"><small>التاريخ</small><b>${escapeHtml(a.date||'')}</b></div>
     <div class="info"><small>الأولوية</small><b>${escapeHtml(a.priority||'')}</b></div>
     <div class="info"><small>المبلغ المطلوب</small><b>${(a.amount||0).toLocaleString('en-US')} د.ع</b></div>
@@ -1655,7 +1671,8 @@ function doExportPrint(){
   const w=window.open('','_blank'); if(!w){alert('يرجى السماح بفتح نافذة الطباعة.');return}
   w.document.write(`<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>تقرير - جمعية وارث الخيرية</title><style>
   *{box-sizing:border-box}body{margin:0;background:#fff;color:#1e2d29;font-family:Arial,"Tahoma",sans-serif} .export-paper{padding:6mm 8mm 8mm;direction:rtl}.export-head{text-align:center;margin-bottom:7mm}.export-logo{width:54px;height:76px;border-radius:0;background:transparent;color:inherit;display:inline-grid;place-items:center;font-weight:900;font-size:22px;margin-bottom:5px}.export-org{font-size:20px;font-weight:900;color:#0f5c4d}.export-title{font-size:17px;font-weight:900;margin-top:4px}.export-meta{font-size:10px;color:#667772;margin-top:5px}.export-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:10px}.export-table th,.export-table td{border:1px solid #8e9b97;padding:5px 4px;vertical-align:middle;text-align:right;line-height:1.45}.export-table th{background:#edf3f1;color:#173b33;font-weight:900;white-space:nowrap}.export-table .num{text-align:center;width:28px}.export-table tbody tr:nth-child(even){background:#fafcfb}.export-table thead{display:table-header-group}.export-table tr{page-break-inside:avoid}.export-foot{display:flex;justify-content:space-between;gap:10px;margin-top:5mm;padding-top:3mm;border-top:1px solid #cbd6d2;font-size:9px;color:#667772}@page{size:A4 landscape;margin:7mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-  </style></head><body>${html}</body></html>`);w.document.close();w.focus();setTimeout(()=>w.print(),450);
+  </style></head><body>${html}</body>
+</html>`);w.document.close();w.focus();setTimeout(()=>w.print(),450);
 }
 function doExportPDF(){
   doExportPrint();
@@ -2707,5 +2724,37 @@ try{renderHomeDashboard();}catch(e){}
   </div>
 </div>
 <div id="exportPrintArea"></div>
+
+<script>
+/* استرجاع حالتي المساعدات المحذوفتين */
+(function(){
+  const rows=[
+    {id:"hist-help-1",familyCode:187,familyName:"يوسف احمد حسين",appealId:null,type:"طبية",amount:600,date:"2021-07-11",details:"عملية لبنته رند",attachments:[],historical:true,source:"المساعدات المالية.PDF"},
+    {id:"hist-help-2",familyCode:199,familyName:"مهند عبد الرزاق لطيف",appealId:null,type:"زواج",amount:990,date:"2021-07-16",details:"غرفة اخشاب وملحقاتها",attachments:[],historical:true,source:"المساعدات المالية.PDF"}
+  ];
+  try{
+    let a=JSON.parse(localStorage.getItem('warith_help')||'[]');
+    let changed=false;
+    rows.forEach(r=>{if(!a.some(x=>String(x.id)===String(r.id))){a.push(r);changed=true;}});
+    if(changed){localStorage.setItem('warith_help',JSON.stringify(a));if(typeof renderActivities==='function')renderActivities();}
+  }catch(e){console.error('Restore deleted historical helps failed',e);}
+})();
+</script>
 </body>
+
+<script>
+/* استرجاع حالتي المساعدات المحذوفتين */
+(function(){
+  const rows=[
+    {id:"hist-help-1",familyCode:187,familyName:"يوسف احمد حسين",appealId:null,type:"طبية",amount:600,date:"2021-07-11",details:"عملية لبنته رند",attachments:[],historical:true,source:"المساعدات المالية.PDF"},
+    {id:"hist-help-2",familyCode:199,familyName:"مهند عبد الرزاق لطيف",appealId:null,type:"زواج",amount:990,date:"2021-07-16",details:"غرفة اخشاب وملحقاتها",attachments:[],historical:true,source:"المساعدات المالية.PDF"}
+  ];
+  try{
+    let a=JSON.parse(localStorage.getItem('warith_help')||'[]');
+    let changed=false;
+    rows.forEach(r=>{if(!a.some(x=>String(x.id)===String(r.id))){a.push(r);changed=true;}});
+    if(changed){localStorage.setItem('warith_help',JSON.stringify(a));if(typeof renderActivities==='function')renderActivities();}
+  }catch(e){console.error('Restore deleted historical helps failed',e);}
+})();
+</script>
 </html>
