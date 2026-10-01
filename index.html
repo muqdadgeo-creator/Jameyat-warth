@@ -1113,7 +1113,7 @@ function renderAppealAttachments(){
   box.innerHTML=appealAttachments.map((f,i)=>`<div class="attachment"><div>📎</div><div class="grow"><div class="fname">${escapeHtml(f.name)}</div><div class="fmeta">${Math.ceil((f.size||0)/1024)} KB</div></div><button class="more" onclick="removeAppealAttachment(${i})">×</button></div>`).join('')||'<div class="empty" style="padding:12px">لا توجد مرفقات</div>';
 }
 function removeAppealAttachment(i){appealAttachments.splice(i,1);renderAppealAttachments();}
-function saveAppeal(){const _edit=editingAppealId!==null; if(!hasAction(_edit?'edit':'add','appeals')){alert('ليس لديك صلاحية هذه العملية.');return}
+function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction(_edit?'edit':'add','appeals')){alert('ليس لديك صلاحية هذه العملية.');return}
   const date=document.getElementById('a-date').value||new Date().toISOString().slice(0,10);
   if(appealOwnerType==='registered'&&!document.getElementById('a-appeal-family').value){alert('اختر العائلة أولاً');return}
   if(appealOwnerType==='new'&&!document.getElementById('a-name').value.trim()){alert('أدخل اسم صاحب الحالة');return}
@@ -2738,6 +2738,58 @@ try{renderHomeDashboard();}catch(e){}
     rows.forEach(r=>{if(!a.some(x=>String(x.id)===String(r.id))){a.push(r);changed=true;}});
     if(changed){localStorage.setItem('warith_help',JSON.stringify(a));if(typeof renderActivities==='function')renderActivities();}
   }catch(e){console.error('Restore deleted historical helps failed',e);}
+})();
+</script>
+<script>
+/* إصلاح أسماء عبد الله في سجل المساعدات + توافق زر حفظ المناشدات */
+(function(){
+  const KEY='warith_abdullah_help_fix_v3';
+  if(localStorage.getItem(KEY)==='1') return;
+  try{
+    const arr=JSON.parse(localStorage.getItem('warith_help')||'[]');
+    if(!Array.isArray(arr)) return;
+    let changed=false;
+    const fams=Array.isArray(families)?families:[];
+    const norm=v=>String(v||'').replace(/\s+/g,' ').trim();
+    const familyByCode=code=>fams.find(f=>Number(f.c)===Number(code));
+    for(const h of arr){
+      if(!h||!h.historical) continue;
+      const f=familyByCode(h.familyCode);
+      /* إذا كان الاسم قد تشوّه إلى عبد اللهل... وكان لدينا سجل عائلة موثوق، نعيد اسم العائلة فقط. */
+      if(f && f.head){
+        const hn=norm(f.head), old=norm(h.familyName);
+        if(old.includes('عبد اللهل') && !hn.includes('عبد الله')){
+          h.familyName=hn; changed=true;
+        }else if(old.includes('عبد ا') && hn.includes('عبد الله')){
+          h.familyName=hn; changed=true;
+        }
+      }
+      if(fams.length && (!h.familyCode || !f)){
+        const oldName=norm(h.familyName), det=norm(h.details);
+        for(const ff of fams){
+          const hn=norm(ff.head);
+          if(!hn.includes('عبد الله')) continue;
+          const parts=hn.split(' ');
+          if(parts.length<2) continue;
+          const tail=parts[parts.length-1];
+          const prefix=parts.slice(0,-1).join(' ');
+          if(oldName===tail && (det===prefix || det.startsWith(prefix+' '))){
+            h.familyName=hn;
+            h.details=det===prefix?'':det.slice(prefix.length).trim();
+            changed=true;
+            break;
+          }
+          const candidate=oldName.replace(/عبد اللهل/g,'عبد الله ');
+          if(candidate!==oldName && candidate===hn){
+            h.familyName=hn; changed=true; break;
+          }
+        }
+      }
+    }
+    if(changed) localStorage.setItem('warith_help',JSON.stringify(arr));
+    localStorage.setItem(KEY,'1');
+    if(typeof renderActivities==='function') renderActivities();
+  }catch(e){console.error('Abdullah help-name migration failed',e);}
 })();
 </script>
 </body>
