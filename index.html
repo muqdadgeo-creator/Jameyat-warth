@@ -199,7 +199,7 @@ textarea.forminput{height:80px;resize:vertical}
   @page{size:A4 portrait;margin:0}
   html,body{background:#fff!important;width:100%!important;min-height:100%!important;margin:0!important;padding:0!important}
   body{color:#1e2d29!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  body.printing-report>.app{display:block!important}
+  body.printing-report>.app{display:block!important;visibility:visible!important}
   body.printing-report .screen{display:none!important}
   body.printing-report #reports{display:block!important;position:static!important;width:100%!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;visibility:visible!important}
   body.printing-report #reports>.top,
@@ -247,7 +247,7 @@ textarea.forminput{height:80px;resize:vertical}
 .export-modal{background:#fff;border-radius:18px;width:min(680px,96vw);max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.22);padding:18px;direction:rtl}
 .export-modal h3{margin:0 0 6px;font-size:20px}.export-modal .sub{margin-bottom:12px}.export-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}.export-col{display:flex;align-items:center;gap:8px;border:1px solid #dce7e4;border-radius:10px;padding:10px;background:#fafcfb}.export-col input{width:18px;height:18px}.export-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.export-actions .action{flex:1;min-width:130px}
 @media(max-width:520px){.export-cols{grid-template-columns:1fr}}
-@media print{body>*:not(#exportPrintArea){display:none!important}#exportPrintArea{display:block!important}}
+@media print{body:not(.printing-report)>*:not(#exportPrintArea){display:none!important}body:not(.printing-report) #exportPrintArea{display:block!important}}
 #exportPrintArea{display:none}
 </style>
 </head>
