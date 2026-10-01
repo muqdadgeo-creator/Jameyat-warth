@@ -194,16 +194,18 @@ textarea.forminput{height:80px;resize:vertical}
   .report-paper-org{font-size:18px}.report-paper-title{font-size:16px;min-width:0}.report-paper-quote{font-size:11.5px;white-space:normal}.report-paper-quote-attrib{font-size:11px}
   .report-a4-table{font-size:9px}
 }
-@media print{.screen::before{opacity:.075}}
+@media print{.screen::before{opacity:0}}
 @media print{
   @page{size:A4 portrait;margin:0}
-  body{background:#fff!important}
-  body *{visibility:hidden!important}
-  #reports,#reports *{visibility:visible!important}
-  #reports{position:static!important;width:auto!important;margin:0!important;padding:0!important;background:#fff!important}
+  html,body{background:#fff!important;width:100%!important;min-height:100%!important;margin:0!important;padding:0!important}
+  body{color:#1e2d29!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body *{visibility:visible!important}
+  body>.screen:not(#reports){display:none!important}
+  #reports{display:block!important;position:static!important;width:100%!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;visibility:visible!important}
   #reports>.top,#reports>.donation-tabs,#reports>.card{display:none!important}
-  .report-panel{display:none!important}
-  .report-panel[style*="display: block"]{display:block!important}
+  #reports>.report-panel{display:none!important}
+  #reports>.report-panel[style*="display: block"]{display:block!important;visibility:visible!important}
+  #reports .report-panel[style*="display: block"] *{visibility:visible!important}
   .report-paper{
     width:210mm!important;
     min-height:297mm!important;
