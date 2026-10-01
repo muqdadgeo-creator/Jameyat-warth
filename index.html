@@ -199,13 +199,15 @@ textarea.forminput{height:80px;resize:vertical}
   @page{size:A4 portrait;margin:0}
   html,body{background:#fff!important;width:100%!important;min-height:100%!important;margin:0!important;padding:0!important}
   body{color:#1e2d29!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  body *{visibility:visible!important}
-  body>.screen:not(#reports){display:none!important}
-  #reports{display:block!important;position:static!important;width:100%!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;visibility:visible!important}
-  #reports>.top,#reports>.donation-tabs,#reports>.card{display:none!important}
-  #reports>.report-panel{display:none!important}
-  #reports>.report-panel[style*="display: block"]{display:block!important;visibility:visible!important}
-  #reports .report-panel[style*="display: block"] *{visibility:visible!important}
+  body.printing-report>.app{display:block!important}
+  body.printing-report .screen{display:none!important}
+  body.printing-report #reports{display:block!important;position:static!important;width:100%!important;min-height:0!important;margin:0!important;padding:0!important;background:#fff!important;visibility:visible!important}
+  body.printing-report #reports>.top,
+  body.printing-report #reports>.donation-tabs,
+  body.printing-report #reports>.card{display:none!important}
+  body.printing-report #reports>.report-panel{display:none!important;visibility:hidden!important}
+  body.printing-report #reports>.report-panel.print-target{display:block!important;visibility:visible!important}
+  body.printing-report #reports>.report-panel.print-target *{visibility:visible!important}
   .report-paper{
     width:210mm!important;
     min-height:297mm!important;
@@ -214,6 +216,7 @@ textarea.forminput{height:80px;resize:vertical}
     box-shadow:none!important;
     border:0.45mm solid #b9a77f!important;
     border-radius:2mm!important;
+    overflow:visible!important;
   }
   .report-paper-head{background:#f3e8cf!important;border:0.35mm solid #d5c39b!important;}
   .report-paper-footer{display:flex!important;}
@@ -902,7 +905,7 @@ textarea.forminput{height:80px;resize:vertical}
 <label class="fl">من تاريخ<input id="reportFrom" class="forminput" type="date" onchange="renderActiveReport()"></label>
 <label class="fl">إلى تاريخ<input id="reportTo" class="forminput" type="date" onchange="renderActiveReport()"></label>
 </div>
-<div class="actions" style="margin-top:8px"><button class="action" onclick="clearReportDates()">مسح الفترة</button><button class="action primary" onclick="window.print()">🖨️ طباعة</button></div>
+<div class="actions" style="margin-top:8px"><button class="action" onclick="clearReportDates()">مسح الفترة</button><button class="action primary" onclick="printActiveReport()">🖨️ طباعة</button></div>
 </div>
 <div id="reportGeneral" class="report-panel"></div>
 <div id="reportFamily" class="report-panel" style="display:none"></div>
@@ -2598,6 +2601,25 @@ function reportDateOk(v){if(!v)return true;const from=document.getElementById('r
 function setDefaultReportDates(){const f=document.getElementById('reportFrom'),t=document.getElementById('reportTo');if(f?.value||t?.value)return;const now=new Date();const y=now.getFullYear(),m=String(now.getMonth()+1).padStart(2,'0'),d=String(now.getDate()).padStart(2,'0');if(f)f.value=`${y}-01-01`;if(t)t.value=`${y}-${m}-${d}`;}
 function clearReportDates(){const f=document.getElementById('reportFrom'),t=document.getElementById('reportTo');if(f)f.value='';if(t)t.value='';renderActiveReport()}
 function switchReportTab(tab){activeReportTab=tab;document.querySelectorAll('[data-report-tab]').forEach(b=>b.classList.toggle('active',b.dataset.reportTab===tab));document.querySelectorAll('.report-panel').forEach(x=>x.style.display='none');const box=document.getElementById('report'+({general:'General',family:'Family',donor:'Donor',helps:'Helps',donations:'Donations',hidden:'Hidden'}[tab]||'General'));if(box)box.style.display='block';renderActiveReport()}
+function printActiveReport(){
+  const reports=document.querySelectorAll('#reports>.report-panel');
+  const active=Array.from(reports).find(x=>{
+    const cs=getComputedStyle(x);
+    return cs.display!=='none';
+  });
+  if(!active){alert('لا يوجد تقرير ظاهر للطباعة.');return}
+  reports.forEach(x=>x.classList.remove('print-target'));
+  active.classList.add('print-target');
+  document.body.classList.add('printing-report');
+  const cleanup=()=>{
+    document.body.classList.remove('printing-report');
+    active.classList.remove('print-target');
+    window.removeEventListener('afterprint',cleanup);
+  };
+  window.addEventListener('afterprint',cleanup);
+  setTimeout(()=>window.print(),50);
+}
+
 function renderActiveReport(){if(activeReportTab==='general')renderGeneralReport();else if(activeReportTab==='family')renderFamilyReport();else if(activeReportTab==='donor')renderDonorReport();else if(activeReportTab==='helps')renderHelpsReport();else if(activeReportTab==='donations')renderDonationsReport();else renderHiddenReport()}
 function reportMoney(n){return (Number(n)||0).toLocaleString('en-US')+' د.ع'}
 function reportTitleText(title){
