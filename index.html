@@ -1671,46 +1671,7 @@ function doExportPrint(){
   const w=window.open('','_blank'); if(!w){alert('يرجى السماح بفتح نافذة الطباعة.');return}
   w.document.write(`<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>تقرير - جمعية وارث الخيرية</title><style>
   *{box-sizing:border-box}body{margin:0;background:#fff;color:#1e2d29;font-family:Arial,"Tahoma",sans-serif} .export-paper{padding:6mm 8mm 8mm;direction:rtl}.export-head{text-align:center;margin-bottom:7mm}.export-logo{width:54px;height:76px;border-radius:0;background:transparent;color:inherit;display:inline-grid;place-items:center;font-weight:900;font-size:22px;margin-bottom:5px}.export-org{font-size:20px;font-weight:900;color:#0f5c4d}.export-title{font-size:17px;font-weight:900;margin-top:4px}.export-meta{font-size:10px;color:#667772;margin-top:5px}.export-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:10px}.export-table th,.export-table td{border:1px solid #8e9b97;padding:5px 4px;vertical-align:middle;text-align:right;line-height:1.45}.export-table th{background:#edf3f1;color:#173b33;font-weight:900;white-space:nowrap}.export-table .num{text-align:center;width:28px}.export-table tbody tr:nth-child(even){background:#fafcfb}.export-table thead{display:table-header-group}.export-table tr{page-break-inside:avoid}.export-foot{display:flex;justify-content:space-between;gap:10px;margin-top:5mm;padding-top:3mm;border-top:1px solid #cbd6d2;font-size:9px;color:#667772}@page{size:A4 landscape;margin:7mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-  </style></head><body>${html}<script>
-/* إصلاح أسماء سجل المساعدات التاريخية — يعمل على البيانات الموجودة فعلياً في المتصفح */
-(function(){
-  try{
-    const a=JSON.parse(localStorage.getItem('warith_help')||'[]');
-    const fixes={
-      'منى عبد الله يعقوب':384,
-      'عناد عبد الله كبيت':252,
-      'باسم عبد الله محمود':386,
-      'مصطفى عبد الله محمد':528
-    };
-    let changed=false;
-    const prefixes={
-      'منى عبد الله يعقوب':'منى عبد الله',
-      'عناد عبد الله كبيت':'عناد عبد الله',
-      'باسم عبد الله محمود':'باسم عبد الله',
-      'مصطفى عبد الله محمد':'مصطفى عبد الله'
-    };
-    for(const h of a){
-      const fn=String(h.familyName||'').trim();
-      const d=String(h.details||'').trim();
-      for(const full of Object.keys(fixes)){
-        const first=prefixes[full];
-        if(fn===full || (d && (d===first || d.startsWith(first+' '))) ||
-           (fn && (full.endsWith(fn)) && d.startsWith(first))){
-          const rest=(d===first?'':d.startsWith(first+' ')?d.slice(first.length).trim():d);
-          h.familyCode=fixes[full];
-          h.familyName=full;
-          h.details=rest;
-          changed=true;
-          break;
-        }
-      }
-    }
-    if(changed){ localStorage.setItem('warith_help',JSON.stringify(a)); if(typeof renderActivities==='function') renderActivities(); }
-    window._aidNameFixApplied=true;
-  }catch(e){console.error('Aid name migration failed',e)}
-})();
-</script>
-</body>
+  </style></head><body>${html}</body>
 </html>`);w.document.close();w.focus();setTimeout(()=>w.print(),450);
 }
 function doExportPDF(){
@@ -2846,6 +2807,34 @@ try{renderHomeDashboard();}catch(e){}
     rows.forEach(r=>{if(!a.some(x=>String(x.id)===String(r.id))){a.push(r);changed=true;}});
     if(changed){localStorage.setItem('warith_help',JSON.stringify(a));if(typeof renderActivities==='function')renderActivities();}
   }catch(e){console.error('Restore deleted historical helps failed',e);}
+})();
+</script>
+
+<script>
+/* إصلاح مباشر لسجل المساعدات: الأسماء الأربعة دون المساس بسجل العوائل */
+(function(){
+  try{
+    const KEY='warith_aid_name_fix_v2';
+    if(localStorage.getItem(KEY)==='1') return;
+    const fixes={'منى عبد الله يعقوب':384,'عناد عبد الله كبيت':252,'باسم عبد الله محمود':386,'مصطفى عبد الله محمد':528};
+    const prefixes={'منى عبد الله يعقوب':'منى عبد الله','عناد عبد الله كبيت':'عناد عبد الله','باسم عبد الله محمود':'باسم عبد الله','مصطفى عبد الله محمد':'مصطفى عبد الله'};
+    const a=JSON.parse(localStorage.getItem('warith_help')||'[]');
+    let changed=false;
+    for(const h of a){
+      const fn=String(h.familyName||'').trim(), d=String(h.details||'').trim();
+      for(const full of Object.keys(fixes)){
+        const prefix=prefixes[full];
+        const match=fn===full || (fn && full.endsWith(fn) && d.startsWith(prefix)) || d===prefix || d.startsWith(prefix+' ');
+        if(!match) continue;
+        h.familyCode=fixes[full]; h.familyName=full;
+        h.details=d===prefix?'':(d.startsWith(prefix+' ')?d.slice(prefix.length).trim():d);
+        changed=true; break;
+      }
+    }
+    if(changed) localStorage.setItem('warith_help',JSON.stringify(a));
+    localStorage.setItem(KEY,'1');
+    if(typeof renderActivities==='function') renderActivities();
+  }catch(e){console.error('Aid name fix failed:',e);}
 })();
 </script>
 </html>
