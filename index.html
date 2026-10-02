@@ -180,14 +180,12 @@ textarea.forminput{height:80px;resize:vertical}
 .report-a4-table tbody tr:nth-child(even){background:#f7faf9}
 .report-a4-total{font-weight:900;color:#0f5c4d}
 .report-paper-footer{
-  margin-top:12mm;padding-top:5mm;border-top:1px solid #d5c39b;
-  display:flex;justify-content:space-between;align-items:flex-end;gap:12mm;
-  font-size:9px;color:#71857f;
+  position:relative;margin-top:12mm;padding-top:5mm;border-top:1px solid #d5c39b;
+  min-height:30mm;font-size:9px;color:#71857f;
 }
-.report-paper-signature{flex:1;text-align:right;min-height:28mm;color:#243b35}
-.report-paper-stamp{width:42mm;min-height:28mm;text-align:center;color:#0f5c4d}
-.report-paper-stamp-box{min-width:34mm;min-height:18mm;margin:0 auto 2mm;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:10px;line-height:1.5;color:#0f5c4d;transform:rotate(-3deg)}
-.report-paper-sign-line{width:48mm;border-bottom:0.35mm solid #777;margin-top:12mm}
+.report-paper-stamp{position:absolute;left:0;bottom:0;width:42mm;min-height:28mm;text-align:center;color:#0f5c4d}
+.report-paper-stamp-box{width:30mm;height:30mm;margin:0 auto;display:flex;align-items:center;justify-content:center;border:1.2mm double #0f5c4d;border-radius:50%;font-weight:900;font-size:9px;line-height:1.5;color:#0f5c4d;transform:rotate(-8deg);opacity:.82}
+.report-paper-footer-date{position:absolute;right:0;bottom:2mm;font-size:8.5px;color:#71857f}
 .report-paper-footer-note{text-align:center;font-size:8.5px;color:#71857f;margin-top:3mm}
 .report-paper .report-section-title{
   font-size:13px;font-weight:900;color:#0f5c4d;margin:7mm 0 3mm;
@@ -2783,13 +2781,10 @@ function reportCard(title,body){
     </div>
     ${body}
     <div class="report-paper-footer">
-      <div class="report-paper-signature">
-        <div style="font-weight:900">توقيع إدارة الجمعية</div>
-        <div class="report-paper-sign-line"></div>
-      </div>
       <div class="report-paper-stamp">
-        <div class="report-paper-stamp-box">ختم<br>إدارة الجمعية</div>
+        <div class="report-paper-stamp-box">ختم إلكتروني</div>
       </div>
+      <div class="report-paper-footer-date">تاريخ الطباعة: ${escapeHtml(new Date().toLocaleDateString('ar-IQ'))}</div>
     </div>
     <div class="report-paper-footer-note">جمعية وارث الخيرية © 2026</div>
   </div>`;
