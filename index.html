@@ -2182,14 +2182,19 @@ function saveInventoryMovement(){const _edit=editingInventoryIndex!==null; if(!h
 function inventorySummary(){
   const map={};
   inventoryMovements.filter(m=>!isHiddenRecord(m)).forEach(m=>{
-    const key=(m.name||'').trim();
-    if(!key)return;
-    if(!map[key]) map[key]={name:key,status:m.status||'',qty:0};
+    const name=(m.name||'').trim();
+    if(!name)return;
+
+    // الأجهزة تُحسب كل حالة بشكل مستقل، حتى لا تختلط (شغال/عاطل/مستهلك).
+    // المواد تبقى مجمعة حسب الاسم فقط لأنها لا تستخدم حقل الحالة.
+    const status=(m.status||'').trim();
+    const key=m.type==='جهاز' ? `${name}||${status}` : name;
+
+    if(!map[key]) map[key]={name,status:m.type==='جهاز'?status:'',qty:0};
     if(m.move==='وارد') map[key].qty+=Number(m.qty||0);
     if(m.move==='صادر') map[key].qty-=Number(m.qty||0);
-    if(m.status) map[key].status=m.status;
   });
-  return Object.values(map).filter(x=>x.qty!==0 || x.status);
+  return Object.values(map).filter(x=>x.qty!==0);
 }
 
 function inventoryAppealPriorityRank(p){
