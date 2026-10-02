@@ -107,19 +107,19 @@ textarea.forminput{height:80px;resize:vertical}
 .financial-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:9px}.financial-summary .fs{background:#f4f7f6;border-radius:11px;padding:10px}.financial-summary .fs small{display:block;color:#71857f;font-size:9px}.financial-summary .fs b{display:block;margin-top:4px;font-size:13px;color:#0f5c4d}.financial-summary .fs.remaining b{color:#8a6517}.financial-summary .fs.covered b{color:#2f6f4e}
 
 .home-dashboard{display:grid;gap:10px;margin-bottom:17px}
-.home-card{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 10px #0000000b}
-.home-card-title{display:flex;align-items:center;gap:6px;font-size:14px;color:#24473f;margin-bottom:11px}
-.home-card-title b{font-size:15px}
-.home-card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.home-card-grid>div{background:#f4f7f6;border-radius:11px;padding:10px 7px;text-align:center}
-.home-card-grid b{display:block;font-size:20px;color:#0f5c4d}
-.home-card-grid span{display:block;font-size:10px;color:#71857f;margin-top:3px}
+.home-card{background:#fff;border-radius:11px;padding:8px;box-shadow:0 2px 7px #0000000a}
+.home-card-title{display:flex;align-items:center;gap:4px;font-size:11px;color:#24473f;margin-bottom:6px}
+.home-card-title b{font-size:12px}
+.home-card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.home-card-grid>div{background:#f4f7f6;border-radius:8px;padding:5px 4px;text-align:center}
+.home-card-grid b{display:block;font-size:15px;color:#0f5c4d}
+.home-card-grid span{display:block;font-size:8px;color:#71857f;margin-top:1px}
 .home-two-cols{grid-template-columns:1fr 1fr}
 .home-big-value{font-size:24px;font-weight:900;color:#0f5c4d;line-height:1.25}
-.home-card-note{font-size:9px;color:#7a8985;margin-top:7px}
-.home-inventory-list{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
-.home-inventory-item{background:#f4f7f6;border-radius:10px;padding:9px;display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:10px}
-.home-inventory-item b{font-size:14px;color:#0f5c4d}
+.home-card-note{font-size:8px;color:#7a8985;margin-top:5px}
+.home-inventory-list{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
+.home-inventory-item{background:#f4f7f6;border-radius:8px;padding:6px;display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:9px}
+.home-inventory-item b{font-size:12px;color:#0f5c4d}
 .home-empty{text-align:center;color:#7c8d88;font-size:10px;padding:8px;grid-column:1/-1}
 @media(min-width:700px){.home-dashboard{grid-template-columns:repeat(2,1fr)}}
 
@@ -264,10 +264,10 @@ textarea.forminput{height:80px;resize:vertical}
 <main>
 
 <section id="home" class="screen active">
-<div class="hello">السلام عليكم</div><div class="title">لوحة التحكم</div>
+<div class="hello">السلام عليكم</div><div class="title">لوحة العرض</div>
 <div class="home-dashboard">
   <div class="home-card home-families-card">
-    <div class="home-card-title">👨‍👩‍👧‍👦 <b>العوائل</b></div>
+    <div class="home-card-title">👨‍👩‍👧‍👦 <b>العوائل المسجلة</b></div>
     <div class="home-card-grid">
       <div><b id="homeFamiliesActive">0</b><span>مستمرة</span></div>
       <div><b id="homeFamiliesOpen">0</b><span>مفتوحة</span></div>
@@ -276,9 +276,12 @@ textarea.forminput{height:80px;resize:vertical}
   </div>
 
   <div class="home-card home-donations-card">
-    <div class="home-card-title">💰 <b>التبرعات</b></div>
-    <div class="home-big-value" id="homeMonthlyDonations">0 د.ع</div>
-    <div class="home-card-note">مجموع التبرعات المالية لهذا الشهر</div>
+    <div class="home-card-title">💰 <b>تبرعات هذا الشهر</b></div>
+    <div class="home-card-grid home-two-cols">
+      <div><b id="homeMonthlyDonationsReceived">0</b><span>مستلمة</span></div>
+      <div><b id="homeMonthlyDonationsPending">0</b><span>غير مستلمة</span></div>
+    </div>
+    <div class="home-card-note">التبرعات المالية خلال هذا الشهر</div>
   </div>
 
   <div class="home-card home-appeals-card">
@@ -291,9 +294,9 @@ textarea.forminput{height:80px;resize:vertical}
   </div>
 
   <div class="home-card home-inventory-card">
-    <div class="home-card-title">📦 <b>تم تجهيز</b></div>
+    <div class="home-card-title">📦 <b>تم تجهيز (لهذا الشهر)</b></div>
     <div id="homeInventoryItems" class="home-inventory-list"><div class="home-empty">لا توجد حركات إخراج لهذا الشهر</div></div>
-    <div class="home-card-note">حسب حركات الإخراج لهذا الشهر</div>
+    <div class="home-card-note">حسب اسم الجهاز والعدد</div>
   </div>
 </div>
 <div class="home-donate-general">
@@ -795,7 +798,7 @@ textarea.forminput{height:80px;resize:vertical}
     </div>
     <div>
       <label class="fl">الحالة</label>
-      <select id="a-status" class="forminput">
+      <select id="a-status" class="forminput" onchange="updateNewFamilySaveChoice()">
         <option>مفتوحة</option><option>قيد المتابعة</option><option>مكتملة</option><option>مغلقة</option>
       </select>
     </div>
@@ -1096,13 +1099,24 @@ function nextFamilyCode(){
   return Math.max(650,...families.map(f=>Number(f.c)||0))+1;
 }
 function setAppealFilter(v){appealFilter=v;renderAppeals();}
+function updateNewFamilySaveChoice(){
+  const box=document.getElementById('newFamilySaveChoice');
+  const cb=document.getElementById('a-add-family');
+  const status=document.getElementById('a-status')?.value||'';
+  if(!box||!cb)return;
+  const isNew=appealOwnerType==='new';
+  box.style.display=isNew?'block':'none';
+  cb.disabled=!(isNew && status==='مكتملة');
+  if(cb.disabled) cb.checked=false;
+  cb.title=cb.disabled?'يتفعل هذا الخيار فقط عند اختيار الحالة «مكتملة»':'';
+}
 function setAppealOwnerType(v){
   appealOwnerType=v;
   document.getElementById('registeredChoice').classList.toggle('active',v==='registered');
   document.getElementById('newChoice').classList.toggle('active',v==='new');
   document.getElementById('registeredOwnerFields').style.display=v==='registered'?'block':'none';
   document.getElementById('newOwnerFields').style.display=v==='new'?'block':'none';
-  document.getElementById('newFamilySaveChoice').style.display=v==='new'?'block':'none';
+  updateNewFamilySaveChoice();
 }
 function populateAppealFamilies(selected){
   const sel=document.getElementById('a-appeal-family'); if(!sel)return;
@@ -1135,6 +1149,7 @@ function resetAppealForm(){
   document.getElementById('a-assessment').value='';
   document.getElementById('a-priority').value='عادية';
   document.getElementById('a-status').value='مفتوحة';
+  updateNewFamilySaveChoice();
   document.getElementById('a-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('a-notes').value='';
   document.getElementById('a-name').value='';
@@ -1176,7 +1191,9 @@ function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction(_edit
     ownerName=document.getElementById('a-name').value.trim();
     ownerPhone=document.getElementById('a-phone').value.trim();
     ownerAddress=document.getElementById('a-address').value.trim();
-    if(document.getElementById('a-add-family').checked){
+    const addFamilyCheckbox=document.getElementById('a-add-family');
+    const canAddFamily=appealOwnerType==='new' && document.getElementById('a-status').value==='مكتملة' && !!addFamilyCheckbox?.checked;
+    if(canAddFamily){
       familyCode=nextFamilyCode();
       const f={
         c:familyCode,n:'عائلة '+ownerName,head:ownerName,phone:ownerPhone,
@@ -1460,12 +1477,18 @@ function renderHomeDashboard(){
   setText('homeFamiliesOpen',openFamilies);
   setText('homeFamiliesClosed',closedFamilies);
 
-  // التبرعات: مجموع التبرعات المالية لهذا الشهر.
-  const monthlyCash=visibleDonations
-    .filter(x=>x.type==='مالي'&&homeIsCurrentMonth(x.date))
+  // التبرعات: المستلمة وغير المستلمة من التبرعات المالية لهذا الشهر.
+  const monthlyFinancial=visibleDonations.filter(x=>x.type==='مالي'&&homeIsCurrentMonth(x.date));
+  const monthlyReceived=monthlyFinancial
+    .filter(x=>x.paid==='تم التسديد')
     .reduce((n,x)=>n+Number(x.amount||0),0);
-  const cashEl=document.getElementById('homeMonthlyDonations');
-  if(cashEl)cashEl.textContent=monthlyCash.toLocaleString('en-US')+' د.ع';
+  const monthlyPending=monthlyFinancial
+    .filter(x=>x.paid!=='تم التسديد')
+    .reduce((n,x)=>n+Number(x.amount||0),0);
+  const receivedEl=document.getElementById('homeMonthlyDonationsReceived');
+  const pendingEl=document.getElementById('homeMonthlyDonationsPending');
+  if(receivedEl)receivedEl.textContent=monthlyReceived.toLocaleString('en-US')+' د.ع';
+  if(pendingEl)pendingEl.textContent=monthlyPending.toLocaleString('en-US')+' د.ع';
 
   // المناشدات: مكتملة / غير مكتملة لهذا الشهر.
   const monthlyAppeals=visibleAppeals.filter(x=>homeIsCurrentMonth(x.date));
@@ -1474,7 +1497,7 @@ function renderHomeDashboard(){
 
   // تم تجهيز: تجميع كل الأجهزة والمواد التي خرجت من المخزن خلال هذا الشهر حسب الاسم والكمية.
   const prepared={};
-  visibleInventory.filter(x=>x.move==='صادر'&&homeIsCurrentMonth(x.date)).forEach(x=>{
+  visibleInventory.filter(x=>x.type==='جهاز'&&x.move==='صادر'&&homeIsCurrentMonth(x.date)).forEach(x=>{
     const name=(x.name||'غير محدد').trim()||'غير محدد';
     prepared[name]=(prepared[name]||0)+Number(x.qty||0);
   });
