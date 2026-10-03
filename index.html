@@ -485,7 +485,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="top"><button class="back" onclick="showScreen('donations')">← رجوع</button><div class="screen-title" id="donorFormTitle">إضافة متبرع</div></div>
 <div class="card">
 <label class="fl">رمز المتبرع</label><input class="forminput" id="d-code" placeholder="يُنشأ تلقائياً عند الحفظ" readonly=""/><label class="fl">اسم المتبرع</label><input class="forminput" id="d-name" placeholder="الاسم الكامل"/>
-<label class="fl">رقم الهاتف</label><input class="forminput" id="d-phone" inputmode="tel" placeholder="0770xxxxxxxx" type="tel"/>
+<label class="fl">رقم الهاتف</label><div style="display:flex;gap:7px"><input class="forminput" id="d-phone" inputmode="tel" placeholder="0770xxxxxxxx" type="tel" style="flex:1"/><button class="action" type="button" onclick="pickDonorContact()" style="flex:0 0 auto">👤 جهات الاتصال</button></div>
 <label class="fl">العنوان</label><input class="forminput" id="d-address" placeholder="العنوان"/>
 <label class="fl">ملاحظات</label><textarea class="forminput" id="d-notes" placeholder="ملاحظات" style="height:70px;resize:vertical"></textarea>
 </div>
@@ -2047,7 +2047,32 @@ if(donations.some(d=>d.type!=='مالي'&&d.appealId)){donations=donations.map(d
 let editingDonorIndex=null;
 let editingDonationIndex=null;
 
-function saveDonor(){const _edit=editingDonorIndex!==null; if(!hasAction(_edit?'edit':'add','donations')){alert('ليس لديك صلاحية هذه العملية.');return}const name=document.getElementById('d-name').value.trim(),phone=document.getElementById('d-phone').value.trim(),address=document.getElementById('d-address').value.trim(),notes=document.getElementById('d-notes').value.trim();if(!name){alert('يرجى إدخال اسم المتبرع');return}if(editingDonorIndex!==null){donors[editingDonorIndex]={...donors[editingDonorIndex],name,phone,address,notes};}else{donors.unshift({id:Date.now(),donorCode:generateUniqueDonorCode(),name,phone,address,notes});}localStorage.setItem('warith_donors',JSON.stringify(donors));editingDonorIndex=null;resetDonorForm();alert('تم حفظ المتبرع بنجاح ✓');showScreen('donations');}
+async function pickDonorContact(){
+  const input=document.getElementById('d-phone');
+  const nameInput=document.getElementById('d-name');
+  const donorName=(nameInput?.value||'').trim();
+  try{
+    if(!('contacts' in navigator) || typeof navigator.contacts.select!=='function'){
+      alert('اختيار جهة الاتصال غير مدعوم في هذا المتصفح. افتح النظام من Chrome على الهاتف وحاول مرة ثانية.');
+      return;
+    }
+    /* Contact Picker لا يسمح للموقع بإرسال اسم البحث إلى قائمة جهات الاتصال.
+       لذلك نحتفظ باسم المتبرع كاسم البحث المطلوب، ويختار المستخدم جهة الاتصال المطابقة. */
+    const contacts=await navigator.contacts.select(['name','tel'],{multiple:false});
+    if(!contacts||!contacts.length)return;
+    const c=contacts[0]||{};
+    const phones=Array.isArray(c.tel)?c.tel:[];
+    const phone=phones.find(x=>String(x||'').trim())||'';
+    const contactName=(Array.isArray(c.name)?c.name:[]).find(x=>String(x||'').trim())||'';
+    if(phone) input.value=String(phone).trim();
+    if(!donorName && contactName && nameInput) nameInput.value=String(contactName).trim();
+    if(donorName){ input.setAttribute('data-contact-search-name',donorName); input.title='جهة الاتصال المطلوبة: '+donorName; }
+  }catch(e){
+    if(e && e.name==='AbortError') return;
+    console.error('Contact Picker error',e);
+    alert('تعذر الوصول إلى جهات الاتصال. تأكد من السماح بالوصول من الجهاز والمتصفح.');
+  }
+} function saveDonor(){const _edit=editingDonorIndex!==null; if(!hasAction(_edit?'edit':'add','donations')){alert('ليس لديك صلاحية هذه العملية.');return}const name=document.getElementById('d-name').value.trim(),phone=document.getElementById('d-phone').value.trim(),address=document.getElementById('d-address').value.trim(),notes=document.getElementById('d-notes').value.trim();if(!name){alert('يرجى إدخال اسم المتبرع');return}if(editingDonorIndex!==null){donors[editingDonorIndex]={...donors[editingDonorIndex],name,phone,address,notes};}else{donors.unshift({id:Date.now(),donorCode:generateUniqueDonorCode(),name,phone,address,notes});}localStorage.setItem('warith_donors',JSON.stringify(donors));editingDonorIndex=null;resetDonorForm();alert('تم حفظ المتبرع بنجاح ✓');showScreen('donations');}
 function resetDonorForm(){editingDonorIndex=null;['d-code','d-name','d-phone','d-address','d-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.getElementById('donorFormTitle').textContent='إضافة متبرع';}
 function editDonor(i){if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل المتبرعين.');return}const d=donors[i];if(!d)return;editingDonorIndex=i;document.getElementById('d-code').value=d.donorCode||'';document.getElementById('d-name').value=d.name||'';document.getElementById('d-phone').value=d.phone||'';document.getElementById('d-address').value=d.address||'';document.getElementById('d-notes').value=d.notes||'';document.getElementById('donorFormTitle').textContent='تعديل المتبرع';showScreen('add-donor');}
 function deleteDonor(i){if(!hasAction('delete','donations')){alert('ليس لديك صلاحية حذف المتبرعين.');return}if(!confirm('حذف هذا المتبرع؟'))return;const id=donors[i]?.id;donors.splice(i,1);localStorage.setItem('warith_donors',JSON.stringify(donors));renderDonors();}
