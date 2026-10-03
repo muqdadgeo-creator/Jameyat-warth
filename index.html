@@ -2,14 +2,6 @@
 
 <html dir="rtl" lang="ar">
 <head>
-<!-- WARITH_SUPABASE_CLIENT -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-window.WARITH_SUPABASE_URL="https://zbmqgmmckabyfzecbdzh.supabase.co";
-window.WARITH_SUPABASE_PUBLISHABLE_KEY="sb_publishable_IfFTn1Vpyd5rkEa-EtATdg_xraN4vLc";
-window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,window.WARITH_SUPABASE_PUBLISHABLE_KEY);
-</script>
-<!-- /WARITH_SUPABASE_CLIENT -->
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
@@ -493,7 +485,7 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="top"><button class="back" onclick="showScreen('donations')">← رجوع</button><div class="screen-title" id="donorFormTitle">إضافة متبرع</div></div>
 <div class="card">
 <label class="fl">رمز المتبرع</label><input class="forminput" id="d-code" placeholder="يُنشأ تلقائياً عند الحفظ" readonly=""/><label class="fl">اسم المتبرع</label><input class="forminput" id="d-name" placeholder="الاسم الكامل"/>
-<label class="fl">رقم الهاتف</label><div style="display:flex;gap:7px"><input class="forminput" id="d-phone" inputmode="tel" placeholder="0770xxxxxxxx" type="tel" style="flex:1"/><button class="action" type="button" onclick="pickDonorContact()" style="flex:0 0 auto">👤 جهات الاتصال</button></div>
+<label class="fl">رقم الهاتف</label><div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><input class="forminput" id="d-phone" inputmode="tel" placeholder="0770xxxxxxxx" type="tel" style="flex:1;min-width:180px"/><button class="action" type="button" onclick="pickDonorContact()" style="flex:0 0 auto;white-space:nowrap">👤 جهات الاتصال</button></div><div id="contactNameHint" style="margin-top:6px;font-size:12px;opacity:.75"></div>
 <label class="fl">العنوان</label><input class="forminput" id="d-address" placeholder="العنوان"/>
 <label class="fl">ملاحظات</label><textarea class="forminput" id="d-notes" placeholder="ملاحظات" style="height:70px;resize:vertical"></textarea>
 </div>
@@ -970,7 +962,12 @@ textarea.forminput{height:80px;resize:vertical}
 <button data-perm="users-settings" onclick="openSettings();closeMenu()">⚙️ المستخدمون والصلاحيات</button>
 <button onclick="switchUser()">🔄 تبديل المستخدم</button>
 </div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* WARITH_SUPABASE_CLIENT */
+window.WARITH_SUPABASE_URL="https://zbmqgmmckabyfzecbdzh.supabase.co";
+window.WARITH_SUPABASE_PUBLISHABLE_KEY="sb_publishable_IfFTn1Vpyd5rkEa-EtATdg_xraN4vLc";
+window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,window.WARITH_SUPABASE_PUBLISHABLE_KEY);
 /* مرجع رموز العنوان المستخرج من ملف جرد العوائل المرفوع للجمعية. */
 const ADDRESS_CODE_GROUPS={
   1:['عويسيان'],
@@ -1640,36 +1637,31 @@ function hasPermission(p){const u=currentUser();if(!u||u.active===false)return f
 function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();if(role==='المالك'||role==='مدير الجمعية')return true;if(section==='families'&&['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات'].includes(role)&&['add','edit'].includes(action))return true;const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
 function canAccessScreen(id){if(id==='login')return true;const u=currentUser();if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(String(u.role||'').trim()))return true;return hasPermission('inventory')}return hasPermission(id)||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
 function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');document.querySelectorAll('[data-action]').forEach(el=>{const [a,s]=String(el.dataset.action).split(':');el.style.display=hasAction(a,s)?'':'none'});}
-function renderUserOptions(){const sel=document.getElementById('loginUser');if(!sel)return;const users=getUsers().filter(u=>u.active!==false);sel.innerHTML=users.map((u,i)=>`<option value="${i}">${escapeHtml(u.name)} — ${escapeHtml(u.role)}</option>`).join('')}
+function renderUserOptions(){}
 async function performLogin(){
-  const username=String(document.getElementById('loginUsername')?.value||'').trim();
+  const username=String(document.getElementById('loginUsername')?.value||'').trim().toLowerCase().replace(/\s+/g,'');
   const pass=String(document.getElementById('loginPassword')?.value||'');
   const err=document.getElementById('loginError');
   if(!username||!pass){if(err)err.textContent='أدخل اسم المستخدم والرمز';return}
-  if(!window.warithSupabase){if(err)err.textContent='تعذر الاتصال بالخادم';return}
   try{
-    if(err)err.textContent='جارٍ تسجيل الدخول...';
-    const email=username.toLowerCase().replace(/\s+/g,'')+'@warith.local';
+    if(!window.warithSupabase)throw new Error('Supabase client unavailable');
+    const usernameEmailMap={admin:'warthcare@gmail.com'};
+    const email=usernameEmailMap[username]||'';
+    if(!email)throw new Error('اسم المستخدم غير موجود');
     const {data,error}=await window.warithSupabase.auth.signInWithPassword({email,password:pass});
-    if(error)throw error;
-    const authUser=data?.user;
-    if(!authUser)throw new Error('تعذر إنشاء جلسة الدخول');
-    const {data:profile,error:profileError}=await window.warithSupabase.from('app_users').select('id,username,display_name,role,is_active,auth_user_id').eq('auth_user_id',authUser.id).maybeSingle();
-    if(profileError)throw profileError;
-    if(!profile){await window.warithSupabase.auth.signOut();throw new Error('هذا الحساب غير مربوط بمستخدم في النظام');}
-    if(profile.is_active===false){await window.warithSupabase.auth.signOut();throw new Error('هذا المستخدم موقوف');}
-    const u={name:profile.display_name||profile.username||username,username:profile.username||username,role:profile.role||'مشاهد/قارئ',active:true,id:profile.id,auth_user_id:profile.auth_user_id};
-    localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(u));
+    if(error||!data?.user)throw new Error(error?.message||'بيانات الدخول غير صحيحة');
+    const {data:profile,error:profileError}=await window.warithSupabase.from('app_users').select('*').eq('auth_user_id',data.user.id).single();
+    if(profileError||!profile)throw new Error('حساب المستخدم غير مربوط بالنظام بعد');
+    if(profile.is_active===false)throw new Error('هذا المستخدم موقوف');
+    localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,name:profile.display_name||profile.username,active:profile.is_active!==false,permissions:profile.permissions||ROLE_PERMISSIONS[profile.role]||[],actions:profile.actions||ROLE_ACTIONS[profile.role]||{add:[],edit:[],delete:[]}}));
     if(err)err.textContent='';
     document.getElementById('loginBackdrop').style.display='none';
     applyPermissionUI();updateCurrentUserBadge();showScreen('home');
-  }catch(e){
-    console.error('Supabase login failed',e);
-    if(err)err.textContent=(e?.message==='Invalid login credentials')?'اسم المستخدم أو الرمز غير صحيح':(e?.message||'تعذر تسجيل الدخول');
-  }
+  }catch(e){if(err)err.textContent='تعذر تسجيل الدخول: '+(e?.message||'تحقق من البيانات');}
 }
+async function logoutSupabaseUser(){try{if(window.warithSupabase)await window.warithSupabase.auth.signOut()}catch(e){}localStorage.removeItem(CURRENT_USER_KEY);switchUser()}
 function updateCurrentUserBadge(){const u=currentUser();document.querySelectorAll('.current-user-badge').forEach(x=>x.textContent=u?`${u.name} · ${u.role}`:'')}
-function switchUser(){if(document.getElementById('loginUsername'))document.getElementById('loginUsername').value='';document.getElementById('loginPassword').value='';document.getElementById('loginError').textContent='';document.getElementById('loginBackdrop').style.display='flex'}
+function switchUser(){const u=document.getElementById('loginUsername');if(u)u.value='';document.getElementById('loginPassword').value='';document.getElementById('loginError').textContent='';document.getElementById('loginBackdrop').style.display='flex'}
 function openSettings(){if(!hasPermission('users-settings')){alert('ليس لديك صلاحية إدارة المستخدمين والصلاحيات.');return}showScreen('settings');renderUsers()}
 function renderUsers(){const users=getUsers(),box=document.getElementById('usersTable');if(!box)return;document.getElementById('usersCount').textContent=users.length+' مستخدم';box.innerHTML=`<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>${users.map((u,i)=>{const perms=u.permissions||ROLE_PERMISSIONS[u.role]||[];return `<tr><td><b>${escapeHtml(u.name)}</b></td><td><span class="user-badge">${escapeHtml(u.role)}</span></td><td><span class="user-badge ${u.active===false?'user-off':''}">${u.active===false?'موقوف':'فعال'}</span></td><td>${perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')}</td><td><button class="more" onclick="openUserEditor(${i})">✏️</button> <button class="more" onclick="toggleUser(${i})">${u.active===false?'▶️':'⏸️'}</button>${i!==0?` <button class="more" onclick="deleteUser(${i})">🗑</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`}
 function openUserEditor(i=null){if(!hasPermission('users-settings'))return;const users=getUsers();document.getElementById('userEditorBackdrop').style.display='flex';document.getElementById('ue-index').value=i===null?'':i;document.getElementById('userEditorTitle').textContent=i===null?'إضافة مستخدم':'تعديل مستخدم';document.getElementById('ue-name').value=i===null?'':users[i].name;document.getElementById('ue-role').value=i===null?'مسؤول العوائل والكشوفات':users[i].role;document.getElementById('ue-password').value=i===null?'':users[i].password;renderEditorPermissions(i===null?ROLE_PERMISSIONS[document.getElementById('ue-role').value]:users[i].permissions||ROLE_PERMISSIONS[users[i].role]||[])}
@@ -2081,6 +2073,12 @@ if(donations.some(d=>d.type!=='مالي'&&d.appealId)){donations=donations.map(d
 let editingDonorIndex=null;
 let editingDonationIndex=null;
 
+function updateContactNameHint(){
+  const name=(document.getElementById('d-name')?.value||'').trim();
+  const hint=document.getElementById('contactNameHint');
+  if(hint) hint.textContent=name?'عند الضغط على 👤 جهات الاتصال، اختر جهة الاتصال المطابقة لاسم: '+name:'';
+}
+
 async function pickDonorContact(){
   const input=document.getElementById('d-phone');
   const nameInput=document.getElementById('d-name');
@@ -2107,8 +2105,13 @@ async function pickDonorContact(){
     alert('تعذر الوصول إلى جهات الاتصال. تأكد من السماح بالوصول من الجهاز والمتصفح.');
   }
 } function saveDonor(){const _edit=editingDonorIndex!==null; if(!hasAction(_edit?'edit':'add','donations')){alert('ليس لديك صلاحية هذه العملية.');return}const name=document.getElementById('d-name').value.trim(),phone=document.getElementById('d-phone').value.trim(),address=document.getElementById('d-address').value.trim(),notes=document.getElementById('d-notes').value.trim();if(!name){alert('يرجى إدخال اسم المتبرع');return}if(editingDonorIndex!==null){donors[editingDonorIndex]={...donors[editingDonorIndex],name,phone,address,notes};}else{donors.unshift({id:Date.now(),donorCode:generateUniqueDonorCode(),name,phone,address,notes});}localStorage.setItem('warith_donors',JSON.stringify(donors));editingDonorIndex=null;resetDonorForm();alert('تم حفظ المتبرع بنجاح ✓');showScreen('donations');}
-function resetDonorForm(){editingDonorIndex=null;['d-code','d-name','d-phone','d-address','d-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.getElementById('donorFormTitle').textContent='إضافة متبرع';}
+function resetDonorForm(){editingDonorIndex=null;['d-code','d-name','d-phone','d-address','d-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.getElementById('donorFormTitle').textContent='إضافة متبرع';updateContactNameHint();}
 function editDonor(i){if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل المتبرعين.');return}const d=donors[i];if(!d)return;editingDonorIndex=i;document.getElementById('d-code').value=d.donorCode||'';document.getElementById('d-name').value=d.name||'';document.getElementById('d-phone').value=d.phone||'';document.getElementById('d-address').value=d.address||'';document.getElementById('d-notes').value=d.notes||'';document.getElementById('donorFormTitle').textContent='تعديل المتبرع';showScreen('add-donor');}
+document.addEventListener('DOMContentLoaded',()=>{
+  const n=document.getElementById('d-name');
+  if(n) n.addEventListener('input',updateContactNameHint);
+  updateContactNameHint();
+});
 function deleteDonor(i){if(!hasAction('delete','donations')){alert('ليس لديك صلاحية حذف المتبرعين.');return}if(!confirm('حذف هذا المتبرع؟'))return;const id=donors[i]?.id;donors.splice(i,1);localStorage.setItem('warith_donors',JSON.stringify(donors));renderDonors();}
 let donationTypeFilter='الكل';
 let donationSortKey='date';
