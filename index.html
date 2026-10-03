@@ -2846,7 +2846,7 @@ function renderFamilyReport(){
     if(Number(v.familyCode)===Number(fc)&&v.received&&reportDateOk(p.date))ps.push(p);
   }));
   const fas=sortRecords(appeals.filter(a=>!isHiddenRecord(a)&&Number(a.familyCode)===Number(fc)&&reportDateOk(a.date)), 'date', ['type']);
-  const ds=sortRecords(donations.filter(d=>!isHiddenRecord(d)&&d.type==='مالي'&&reportDateOk(d.date)&&fas.some(a=>Number(a.id)===Number(d.appealId))), 'date', ['donorName']);
+  const ds=sortRecords(donations.filter(d=>!isHiddenRecord(d)&&d.type==='مالي'&&reportDateOk(d.date)&&(Number(d.familyCode||0)===Number(fc)||fas.some(a=>Number(a.id)===Number(d.appealId)))), 'date', ['donorName']);
   const familyInfo=`<div class="family-report-info">
     <div class="info${f.head||f.n?'':' is-empty'}"><small>الاسم</small><b>${escapeHtml(f.head||f.n||'غير مسجل')}</b></div>
     <div class="info${f.phone?'':' is-empty'}"><small>الهاتف</small><b>${escapeHtml(f.phone||'غير مسجل')}</b></div>
@@ -2891,7 +2891,42 @@ function renderHelpsReport(){
     ${list.length?`<table class="report-a4-table"><thead><tr><th>ت</th><th>التاريخ</th><th>العائلة</th><th>نوع المساعدة</th><th>المبلغ</th><th>التفاصيل</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table>`:`<div class="empty" style="padding:30px;text-align:center">لا توجد مساعدات ضمن الفترة المحددة</div>`}`;
   box.innerHTML=reportCard('تقرير المساعدات',body);
 }
-function renderDonationsReport(){const box=document.getElementById('reportDonations');const list=sortRecords(donations.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), 'date', ['donorName','item']);const fin=list.filter(x=>x.type==='مالي'),rec=fin.filter(x=>x.paid==='تم التسديد'),un=fin.filter(x=>x.paid!=='تم التسديد');const rows=list.map(x=>`<div class="donor-alloc-row" style="margin-top:8px"><span>${escapeHtml(x.donorName||'')} · ${escapeHtml(x.date||'')} · ${escapeHtml(x.type||'')}</span><b>${x.type==='مالي'?reportMoney(x.amount):escapeHtml(x.item||'')}</b></div>`).join('')||'<div class="empty">لا توجد تبرعات ضمن الفترة</div>';box.innerHTML=reportCard(`💝 التبرعات — ${list.length}`,`<div class="detail-grid"><div class="info"><small>إجمالي المالي</small><b>${reportMoney(fin.reduce((n,x)=>n+Number(x.amount||0),0))}</b></div><div class="info"><small>المستلمة</small><b>${reportMoney(rec.reduce((n,x)=>n+Number(x.amount||0),0))}</b></div><div class="info"><small>غير المستلمة</small><b>${reportMoney(un.reduce((n,x)=>n+Number(x.amount||0),0))}</b></div><div class="info"><small>العينية</small><b>${list.filter(x=>x.type!=='مالي').length}</b></div></div>${rows}`)}
+function renderDonationsReport(){
+  const box=document.getElementById('reportDonations');
+  if(!box)return;
+  const list=sortRecords(
+    donations.filter(x=>!isHiddenRecord(x)&&x.type==='مالي'&&reportDateOk(x.date)),
+    'date', ['donorName']
+  );
+  const rec=list.filter(x=>x.paid==='تم التسديد');
+  const un=list.filter(x=>x.paid!=='تم التسديد');
+  const total=list.reduce((n,x)=>n+Number(x.amount||0),0);
+  const received=rec.reduce((n,x)=>n+Number(x.amount||0),0);
+  const unpaid=un.reduce((n,x)=>n+Number(x.amount||0),0);
+  const beneficiary=x=>{
+    const fc=Number(x.familyCode||0);
+    if(fc) return `#${escapeHtml(fc)}`;
+    return escapeHtml(x.allocation||'عام');
+  };
+  const rows=list.map((x,i)=>`<tr>
+    <td>${i+1}</td>
+    <td>${beneficiary(x)}</td>
+    <td>${escapeHtml(x.date||'')}</td>
+    <td class="report-a4-total">${reportMoney(x.amount)}</td>
+    <td>${escapeHtml(x.paid||'غير محدد')}</td>
+  </tr>`).join('');
+  const body=`
+    <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml((document.getElementById('reportFrom')?.value||'')+' إلى '+(document.getElementById('reportTo')?.value||''))}</b></div>
+    <div class="report-summary-line">
+      <span>عدد التبرعات: ${list.length}</span>
+      <span>الإجمالي: ${reportMoney(total)}</span>
+      <span>المستلمة: ${reportMoney(received)}</span>
+      <span>غير المستلمة: ${reportMoney(unpaid)}</span>
+    </div>
+    <div class="report-section-title">سجل التبرعات المالية</div>
+    ${list.length?`<div style="overflow-x:auto"><table class="report-a4-table"><thead><tr><th>ت</th><th>المستفيد</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table></div>`:'<div class="empty" style="padding:30px;text-align:center">لا توجد تبرعات مالية ضمن الفترة المحددة</div>'}`;
+  box.innerHTML=reportCard('تقرير التبرعات',body);
+}
 
 function renderHiddenReport(){
   const box=document.getElementById('reportHidden'); if(!box)return;
