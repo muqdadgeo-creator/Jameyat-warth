@@ -2080,7 +2080,13 @@ function filterDonationType(type){donationTypeFilter=type;renderDonations();}
 function donorAllocationTotals(donorId){const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];const totals={};cats.forEach(c=>totals[c]=0);donations.filter(d=>Number(d.donorId)===Number(donorId)&&d.type==='مالي').forEach(d=>{const c=cats.includes(d.allocation)?d.allocation:'أخرى';totals[c]+=Number(d.amount)||0});return totals;}
 function donorAllocationTotals(donorId){const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];const totals={};cats.forEach(c=>totals[c]=0);donations.filter(d=>Number(d.donorId)===Number(donorId)&&d.type==='مالي').forEach(d=>{const c=cats.includes(d.allocation)?d.allocation:'أخرى';totals[c]+=Number(d.amount)||0});return totals;}
 function renderDonors(){const q=(document.getElementById('donorQ')?.value||'').trim().toLowerCase();const a=sortRecords(donors.filter(d=>!isHiddenRecord(d)&&(d.name+' '+d.phone+' '+d.address).toLowerCase().includes(q)), '', ['name']);const box=document.getElementById('donorList');if(!box)return;box.innerHTML=a.map(d=>{const i=donors.indexOf(d),t=donorAllocationTotals(d.id);return `<div class="card"><div class="row"><div class="avatar">${(d.name||'م').charAt(0)}</div><div class="grow"><div class="name">${d.name}</div><div class="sub">رمز المتبرع: <b>${d.donorCode||'غير مسجل'}</b></div><div class="sub">الهاتف: ${d.phone||'غير مسجل'}</div><div class="sub">العنوان: ${d.address||'غير مسجل'}</div></div></div><div class="donor-alloc"><div class="donor-alloc-title">💰 مجموع التبرعات حسب التخصيص</div><div class="donor-alloc-row"><span>خاص</span><b>${t['خاص'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>عام</span><b>${t['عام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>صناديق</span><b>${t['صناديق'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>خمس السادة خمس</span><b>${t['خمس السادة خمس'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>سهم الإمام</span><b>${t['سهم الإمام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>أخرى</span><b>${t['أخرى'].toLocaleString('en-US')} د.ع</b></div></div><div class="member-actions"><button class="action primary" onclick="editDonor(${i})">✏️ تعديل</button><button class="action" onclick="hideRecord('donors',${i},'المتبرع')">🚫 حجب</button><button class="action" onclick="deleteDonor(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا يوجد متبرعون بعد</div>';}
-function populateDonors(){const sel=document.getElementById('dn-donor');if(!sel)return;sel.innerHTML='<option value="">اختر المتبرع</option>'+donors.map(d=>`<option value="${d.id}">${d.name}${d.phone?' · '+d.phone:''}</option>`).join('');}
+function populateDonors(selectedId=''){
+  const sel=document.getElementById('dn-donor');if(!sel)return;
+  const currentId=selectedId==null?'':String(selectedId);
+  const sorted=[...donors].sort((a,b)=>naturalAlphaCompare(String(a.name||''),String(b.name||''))||Number(a.id||0)-Number(b.id||0));
+  sel.innerHTML='<option value="">اختر المتبرع</option>'+sorted.map(d=>`<option value="${escapeHtml(String(d.id))}">${escapeHtml(d.name||'غير محدد')}${d.phone?' · '+escapeHtml(d.phone):''}</option>`).join('');
+  sel.value=currentId;
+}
 function populateDonationBeneficiaries(selectedCode='', legacyName=''){
   const sel=document.getElementById('dn-beneficiary');
   if(!sel)return;
@@ -2088,7 +2094,7 @@ function populateDonationBeneficiaries(selectedCode='', legacyName=''){
   const currentName=String(legacyName||'').trim();
   const opts=['<option value="">عام / بدون مستفيد محدد</option>'];
   const seen=new Set();
-  [...families].sort((a,b)=>Number(a.c||0)-Number(b.c||0)).forEach(f=>{
+  [...families].sort((a,b)=>naturalAlphaCompare(String(a.n||a.head||''),String(b.n||b.head||''))||Number(a.c||0)-Number(b.c||0)).forEach(f=>{
     const code=String(f.c||'');
     if(!code||seen.has(code))return;
     seen.add(code);
@@ -2258,11 +2264,14 @@ function renderDonations(){
   if(!box)return;
   const rows=a.map((d,i)=>{
     const realIndex=donations.indexOf(d);
-    const donor=d.donorName||donors.find(x=>Number(x.id)===Number(d.donorId))?.name||'غير محدد';
+    const donorObj=donors.find(x=>Number(x.id)===Number(d.donorId));
+    const donor=d.donorName||donorObj?.name||'غير محدد';
+    const donorCode=donorObj?.donorCode||donorObj?.code||d.donorCode||d.donorId||'—';
     const beneficiary=d.familyName||(d.familyCode?('عائلة #'+d.familyCode):(d.allocation==='عام'?'عام':'غير محدد'));
     const amount=d.type==='مالي'?Number(d.amount||0).toLocaleString('en-US')+' د.ع':(Number(d.qty||0).toLocaleString('en-US')+' × '+(d.item||'تبرع عيني'));
     return `<tr>
       <td class="donation-no">${i+1}</td>
+      <td>${escapeHtml(String(donorCode))}</td>
       <td>${escapeHtml(donor)}</td>
       <td>${escapeHtml(beneficiary)}</td>
       <td class="donation-amount">${escapeHtml(amount)}</td>
@@ -2270,7 +2279,7 @@ function renderDonations(){
       <td class="donation-action"><button class="donation-edit-btn" onclick="editDonation(${realIndex})">✏️ تعديل</button></td>
     </tr>`;
   }).join('');
-  box.innerHTML=rows?`<div class="donation-table-wrap"><table class="donation-table"><thead><tr><th class="donation-no">ت</th><th>اسم المتبرع</th><th>اسم المستفيد</th><th>المبلغ</th><th>التاريخ</th><th class="donation-action">تعديل</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">لا توجد تبرعات بعد</div>';
+  box.innerHTML=rows?`<div class="donation-table-wrap"><table class="donation-table"><thead><tr><th class="donation-no">ت</th><th>رمز المتبرع</th><th>اسم المتبرع</th><th>اسم المستفيد</th><th>المبلغ</th><th>التاريخ</th><th class="donation-action">تعديل</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">لا توجد تبرعات بعد</div>';
 }
 
 function saveFamily(){const _edit=!!editingFamilyCode; if(!hasAction(_edit?'edit':'add','families')){alert('ليس لديك صلاحية هذه العملية.');return}
