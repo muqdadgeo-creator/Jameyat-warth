@@ -320,6 +320,13 @@ textarea.forminput{height:80px;resize:vertical}
  body.printing-report .family-report-info .info.is-empty{min-height:0!important;padding-top:3px!important;padding-bottom:3px!important}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* WARITH_SUPABASE_CLIENT */
+window.WARITH_SUPABASE_URL="https://zbmqgmmckabyfzecbdzh.supabase.co";
+window.WARITH_SUPABASE_PUBLISHABLE_KEY="sb_publishable_IfFTn1Vpyd5rkEa-EtATdg_xraN4vLc";
+window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,window.WARITH_SUPABASE_PUBLISHABLE_KEY);
+</script>
 </head>
 <body>
 <div class="app">
@@ -1632,10 +1639,30 @@ function hasPermission(p){const u=currentUser();if(!u||u.active===false)return f
 function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();if(role==='المالك'||role==='مدير الجمعية')return true;if(section==='families'&&['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات'].includes(role)&&['add','edit'].includes(action))return true;const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
 function canAccessScreen(id){if(id==='login')return true;const u=currentUser();if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(String(u.role||'').trim()))return true;return hasPermission('inventory')}return hasPermission(id)||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
 function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');document.querySelectorAll('[data-action]').forEach(el=>{const [a,s]=String(el.dataset.action).split(':');el.style.display=hasAction(a,s)?'':'none'});}
-function renderUserOptions(){const sel=document.getElementById('loginUser');if(!sel)return;const users=getUsers().filter(u=>u.active!==false);sel.innerHTML=users.map((u,i)=>`<option value="${i}">${escapeHtml(u.name)} — ${escapeHtml(u.role)}</option>`).join('')}
-function performLogin(){const users=getUsers().filter(u=>u.active!==false),idx=Number(document.getElementById('loginUser')?.value||0),pass=String(document.getElementById('loginPassword')?.value||''),u=users[idx];if(!u)return;if(pass!==String(u.password)){document.getElementById('loginError').textContent='الرمز غير صحيح';return}localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(u));document.getElementById('loginError').textContent='';document.getElementById('loginBackdrop').style.display='none';applyPermissionUI();updateCurrentUserBadge();showScreen('home')}
+function renderUserOptions(){}
+async function performLogin(){
+  const username=String(document.getElementById('loginUsername')?.value||'').trim().toLowerCase().replace(/\s+/g,'');
+  const pass=String(document.getElementById('loginPassword')?.value||'');
+  const err=document.getElementById('loginError');
+  if(!username||!pass){if(err)err.textContent='أدخل اسم المستخدم والرمز';return}
+  try{
+    if(!window.warithSupabase)throw new Error('Supabase client unavailable');
+    const AUTH_EMAIL_BY_USERNAME={admin:'warthcare@gmail.com'};
+    const email=AUTH_EMAIL_BY_USERNAME[username]||username+'@warith.local';
+    const {data,error}=await window.warithSupabase.auth.signInWithPassword({email,password:pass});
+    if(error||!data?.user)throw new Error(error?.message||'بيانات الدخول غير صحيحة');
+    const {data:profile,error:profileError}=await window.warithSupabase.from('app_users').select('*').eq('auth_user_id',data.user.id).single();
+    if(profileError||!profile)throw new Error('حساب المستخدم غير مربوط بالنظام بعد');
+    if(profile.is_active===false)throw new Error('هذا المستخدم موقوف');
+    localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,name:profile.display_name||profile.username,active:profile.is_active!==false,permissions:profile.permissions||ROLE_PERMISSIONS[profile.role]||[],actions:profile.actions||ROLE_ACTIONS[profile.role]||{add:[],edit:[],delete:[]}}));
+    if(err)err.textContent='';
+    document.getElementById('loginBackdrop').style.display='none';
+    applyPermissionUI();updateCurrentUserBadge();showScreen('home');
+  }catch(e){if(err)err.textContent='تعذر تسجيل الدخول: '+(e?.message||'تحقق من البيانات');}
+}
+async function logoutSupabaseUser(){try{if(window.warithSupabase)await window.warithSupabase.auth.signOut()}catch(e){}localStorage.removeItem(CURRENT_USER_KEY);switchUser()}
 function updateCurrentUserBadge(){const u=currentUser();document.querySelectorAll('.current-user-badge').forEach(x=>x.textContent=u?`${u.name} · ${u.role}`:'')}
-function switchUser(){document.getElementById('loginPassword').value='';document.getElementById('loginError').textContent='';renderUserOptions();document.getElementById('loginBackdrop').style.display='flex'}
+function switchUser(){const u=document.getElementById('loginUsername');if(u)u.value='';document.getElementById('loginPassword').value='';document.getElementById('loginError').textContent='';document.getElementById('loginBackdrop').style.display='flex'}
 function openSettings(){if(!hasPermission('users-settings')){alert('ليس لديك صلاحية إدارة المستخدمين والصلاحيات.');return}showScreen('settings');renderUsers()}
 function renderUsers(){const users=getUsers(),box=document.getElementById('usersTable');if(!box)return;document.getElementById('usersCount').textContent=users.length+' مستخدم';box.innerHTML=`<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>${users.map((u,i)=>{const perms=u.permissions||ROLE_PERMISSIONS[u.role]||[];return `<tr><td><b>${escapeHtml(u.name)}</b></td><td><span class="user-badge">${escapeHtml(u.role)}</span></td><td><span class="user-badge ${u.active===false?'user-off':''}">${u.active===false?'موقوف':'فعال'}</span></td><td>${perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')}</td><td><button class="more" onclick="openUserEditor(${i})">✏️</button> <button class="more" onclick="toggleUser(${i})">${u.active===false?'▶️':'⏸️'}</button>${i!==0?` <button class="more" onclick="deleteUser(${i})">🗑</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`}
 function openUserEditor(i=null){if(!hasPermission('users-settings'))return;const users=getUsers();document.getElementById('userEditorBackdrop').style.display='flex';document.getElementById('ue-index').value=i===null?'':i;document.getElementById('userEditorTitle').textContent=i===null?'إضافة مستخدم':'تعديل مستخدم';document.getElementById('ue-name').value=i===null?'':users[i].name;document.getElementById('ue-role').value=i===null?'مسؤول العوائل والكشوفات':users[i].role;document.getElementById('ue-password').value=i===null?'':users[i].password;renderEditorPermissions(i===null?ROLE_PERMISSIONS[document.getElementById('ue-role').value]:users[i].permissions||ROLE_PERMISSIONS[users[i].role]||[])}
@@ -3234,7 +3261,7 @@ try{renderHomeDashboard();}catch(e){}
 <h2>جمعية وارث الخيرية</h2>
 <div class="sub">تسجيل الدخول إلى نظام الجمعية</div>
 <label class="fl">المستخدم</label>
-<select class="forminput" id="loginUser"></select>
+<input class="forminput" id="loginUsername" autocomplete="username" placeholder="اسم المستخدم"/>
 <label class="fl">الرمز</label>
 <input class="forminput" id="loginPassword" inputmode="numeric" onkeydown="if(event.key==='Enter')performLogin()" placeholder="أدخل الرمز" type="password"/>
 <button class="action primary" id="loginSubmitBtn" style="width:100%;margin-top:10px" type="button">دخول</button>
