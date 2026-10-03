@@ -2867,10 +2867,44 @@ function renderFamilyReport(){
     <div class="report-section-title">المناشدات (${fas.length})</div>${reportFamilySectionList(fas,appealRows)}
     <div class="report-section-title">المساعدات (${hs.length}) — ${reportMoney(hs.reduce((n,x)=>n+Number(x.amount||0),0))}</div>${reportFamilySectionList(hs,helpRows)}
     <div class="report-section-title">البرامج المستلمة (${ps.length})</div>${reportFamilySectionList(sortRecords(ps,'date',['name']),programRows)}
-    <div class="report-section-title">التبرعات المرتبطة بالمناشدات — ${reportMoney(ds.reduce((n,x)=>n+Number(x.amount||0),0))}</div>${reportFamilySectionList(ds,donationRows)}
+    <div class="report-section-title">💰 التبرعات المرتبطة بالعائلة — ${reportMoney(ds.reduce((n,x)=>n+Number(x.amount||0),0))}</div>${reportFamilySectionList(ds,donationRows)}
   `);
 }
-function renderDonorReport(){const box=document.getElementById('reportDonor');const id=box.dataset.donor||'';if(!id){box.innerHTML=reportCard('👤 تقرير متبرع','<label class="fl">اختر المتبرع<select class="forminput" onchange="document.getElementById(\'reportDonor\').dataset.donor=this.value;renderDonorReport()"><option value="">اختر المتبرع</option>'+donors.map(d=>`<option value="${d.id}">${escapeHtml(d.name||'')} · ${escapeHtml(d.phone||'')}</option>`).join('')+'</select></label><div class="empty" style="margin-top:10px">اختر متبرع لعرض سجله</div>');return}const dlist=sortRecords(donations.filter(d=>!isHiddenRecord(d)&&String(d.donorId)===String(id)&&reportDateOk(d.date)), 'date', ['donorName','item']);const d=donors.find(x=>String(x.id)===String(id));box.innerHTML=reportCard(`👤 ${escapeHtml(d?.name||'المتبرع')}`,`<div class="sub">الهاتف: ${escapeHtml(d?.phone||'غير مسجل')}</div><div style="margin-top:8px;font-weight:900">عدد التبرعات: ${dlist.length} · المالي: ${reportMoney(dlist.filter(x=>x.type==='مالي').reduce((n,x)=>n+Number(x.amount||0),0))}</div>${dlist.map(x=>`<div class="donor-alloc-row" style="margin-top:8px"><span>${escapeHtml(x.type)} · ${escapeHtml(x.date||'')} · ${escapeHtml(x.paid||'')}</span><b>${x.type==='مالي'?reportMoney(x.amount):escapeHtml(x.item||'')}</b></div>`).join('')||'<div class="empty">لا توجد تبرعات ضمن الفترة</div>'}`)}
+function renderDonorReport(){
+  const box=document.getElementById('reportDonor');
+  const id=box.dataset.donor||'';
+  if(!id){
+    box.innerHTML=reportCard('👤 تقرير متبرع','<label class="fl">اختر المتبرع<select class="forminput" onchange="document.getElementById(\'reportDonor\').dataset.donor=this.value;renderDonorReport()"><option value="">اختر المتبرع</option>'+donors.map(d=>`<option value="${d.id}">${escapeHtml(d.name||'')} · ${escapeHtml(d.phone||'')}</option>`).join('')+'</select></label><div class="empty" style="margin-top:10px">اختر متبرع لعرض سجله</div>');
+    return;
+  }
+  const dlist=sortRecords(donations.filter(d=>!isHiddenRecord(d)&&String(d.donorId)===String(id)&&reportDateOk(d.date)), 'date', ['donorName','item']);
+  const d=donors.find(x=>String(x.id)===String(id));
+  const getBeneficiary=(x)=>{
+    const fc=x.familyCode??x.familyId??x.beneficiaryFamilyCode??x.beneficiaryFamilyId??x.cFamily??x.c??'';
+    if(fc!==''&&fc!=null) return '#'+String(fc).replace(/^#/,'');
+    return String(x.allocation||x.beneficiary||x.designation||'عام').trim()||'عام';
+  };
+  const rows=dlist.map((x,i)=>{
+    const beneficiary=getBeneficiary(x);
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${escapeHtml(beneficiary)}</td>
+      <td>${escapeHtml(x.date||'')}</td>
+      <td>${x.type==='مالي'?reportMoney(x.amount):escapeHtml(x.item||'')}</td>
+      <td>${escapeHtml(x.type==='مالي'?(x.paid||'غير محدد'):'—')}</td>
+    </tr>`;
+  }).join('');
+  const total=dlist.filter(x=>x.type==='مالي').reduce((n,x)=>n+Number(x.amount||0),0);
+  box.innerHTML=reportCard(`👤 ${escapeHtml(d?.name||'المتبرع')}`,`
+    <div class="sub">الهاتف: ${escapeHtml(d?.phone||'غير مسجل')}</div>
+    <div style="margin-top:8px;font-weight:900">عدد التبرعات: ${dlist.length} · مجموع التبرعات المالية: ${reportMoney(total)}</div>
+    <div style="overflow-x:auto;margin-top:12px">
+      <table class="report-table" style="width:100%;border-collapse:collapse;text-align:center">
+        <thead><tr><th>ت</th><th>المستفيد</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead>
+        <tbody>${rows||'<tr><td colspan="5">لا توجد تبرعات ضمن الفترة</td></tr>'}</tbody>
+      </table>
+    </div>`);
+}
 function renderHelpsReport(){
   const box=document.getElementById('reportHelps');
   const list=sortRecords(helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), 'date', ['familyName','type']);
