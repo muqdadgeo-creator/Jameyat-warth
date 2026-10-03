@@ -1663,8 +1663,8 @@ function getUsers(){try{const x=JSON.parse(localStorage.getItem(USER_KEY)||'null
 function saveUsers(x){localStorage.setItem(USER_KEY,JSON.stringify(x))}
 function currentUser(){try{return JSON.parse(localStorage.getItem(CURRENT_USER_KEY)||'null')}catch(e){return null}}
 function currentRole(){return currentUser()?.role||''}
-function hasPermission(p){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();const rolePerms=ROLE_PERMISSIONS[role]||[];const savedPerms=Array.isArray(u.permissions)?u.permissions:rolePerms;/* إصلاح صلاحية العوائل للمستخدمين ذوي أدوار العوائل/إدخال البيانات حتى لو كانت صلاحياتهم المحفوظة قديمة */if(p==='families'&&['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات','المالك','مدير الجمعية'].includes(role))return true;if(p==='inventory'&&['مسؤول المخزن','إدخال البيانات','المالك','مدير الجمعية'].includes(role))return true;return savedPerms.includes(p)||(!Array.isArray(u.permissions)&&rolePerms.includes(p))}
-function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();if(role==='المالك'||role==='مدير الجمعية')return true;if(section==='families'&&['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات'].includes(role)){if(action==='add'||action==='edit')return true;}const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
+function hasPermission(p){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();const rolePerms=ROLE_PERMISSIONS[role]||[];const savedPerms=Array.isArray(u.permissions)?u.permissions:rolePerms;/* صلاحيات العوائل الأساسية تُحسم من الدور حتى لو كانت بيانات الصلاحيات القديمة ناقصة */if(['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات','المالك','مدير الجمعية'].includes(role)&&['families','family-detail','family-members','add-member'].includes(p))return true;/* ضمان بقاء صلاحيات المخزن للأدوار المخصصة له */if(p==='inventory'&&['مسؤول المخزن','إدخال البيانات','المالك','مدير الجمعية'].includes(role))return true;return savedPerms.includes(p)||rolePerms.includes(p)}
+function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();if(role==='المالك'||role==='مدير الجمعية')return true;/* صلاحية العوائل لا تعتمد على سجل صلاحيات قديم محفوظ للمستخدم */if(section==='families'&&['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات'].includes(role)){if(['add','edit'].includes(action))return true;}const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
 function canAccessScreen(id){if(id==='login')return true;const u=currentUser();if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(String(u.role||'').trim()))return true;return hasPermission('inventory')}return hasPermission(id)||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
 function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');document.querySelectorAll('[data-action]').forEach(el=>{const [a,s]=String(el.dataset.action).split(':');el.style.display=hasAction(a,s)?'':'none'});}
 function renderUserOptions(){const sel=document.getElementById('loginUser');if(!sel)return;const users=getUsers().filter(u=>u.active!==false);sel.innerHTML=users.map((u,i)=>`<option value="${i}">${escapeHtml(u.name)} — ${escapeHtml(u.role)}</option>`).join('')}
@@ -1684,15 +1684,17 @@ function migrateUsersPermissions(){
   const users=getUsers(); let changed=false;
   users.forEach((u,i)=>{
     if(u.role==='مسؤول الكشف'){u.role='مسؤول العوائل والكشوفات';changed=true}
-    if(i===0 || u.name==='مقداد عباس'){u.role='المالك';u.permissions=ROLE_PERMISSIONS['المالك'];u.actions=ROLE_ACTIONS['المالك'];changed=true}
+    if(i===0 || u.name==='مقداد عباس'){u.role='المالك';u.permissions=ROLE_PERMISSIONS['المالك'];changed=true}
     else if(!Array.isArray(u.permissions)){u.permissions=ROLE_PERMISSIONS[u.role]||[];changed=true}
     if(!u.actions){u.actions=ROLE_ACTIONS[u.role]||{add:[],edit:[],delete:[]};changed=true}
-    /* تحديث صلاحيات العوائل للأدوار التي يجب أن تصل إليها، حتى للمستخدمين المحفوظين من نسخة قديمة */
+    /* إصلاح الصلاحيات المحفوظة القديمة للعوائل: لا نكتفي بالواجهة، بل نصلح السجل نفسه */
     if(['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات'].includes(String(u.role||'').trim())){
-      const perms=new Set(Array.isArray(u.permissions)?u.permissions:[]);
-      if(!perms.has('families')){perms.add('families');u.permissions=[...perms];changed=true}
-      const base=ROLE_ACTIONS[u.role]||ROLE_ACTIONS['مسؤول العوائل والكشوفات'];
-      if(u.role==='مسؤول العوائل والكشوفات'||u.role==='مسؤول الكشف'){u.actions={...(u.actions||{}),add:[...new Set([...(u.actions?.add||[]),'families'])],edit:[...new Set([...(u.actions?.edit||[]),'families'])]};changed=true}
+      if(u.role==='مسؤول الكشف'){u.role='مسؤول العوائل والكشوفات';changed=true}
+      const rp=ROLE_PERMISSIONS[u.role]||[];
+      const ra=ROLE_ACTIONS[u.role]||{add:[],edit:[],delete:[]};
+      ['home','families','appeals','activities','reports','files-center'].forEach(k=>{if(!u.permissions.includes(k)){u.permissions.push(k);changed=true}});
+      ['add','edit'].forEach(a=>{if(!Array.isArray(u.actions[a]))u.actions[a]=[];if(!u.actions[a].includes('families')){u.actions[a].push('families');changed=true}});
+      if(!u.actions.delete)u.actions.delete=[];
     }
     if(u.role==='مدير الجمعية'){u.permissions=ROLE_PERMISSIONS[u.role];u.actions=ROLE_ACTIONS[u.role];changed=true}
     if(u.role==='مشاهد/قارئ'){u.permissions=ROLE_PERMISSIONS[u.role];u.actions=ROLE_ACTIONS[u.role];changed=true}
@@ -1910,7 +1912,7 @@ function doExportPDF(){
   doExportPrint();
 }
 
-function normalizeArabicSearch(v){return String(v??'').normalize('NFKC').replace(/[أإآٱ]/g,'ا').replace(/[ؤ]/g,'و').replace(/[ئ]/g,'ي').toLowerCase().trim()}
+function normalizeArabicSearch(v){return String(v??'').normalize('NFKC').replace(/[أإآٱ]/g,'ا').replace(/[ى]/g,'ي').replace(/[ؤ]/g,'و').replace(/[ئ]/g,'ي').replace(/[ة]/g,'ه').toLowerCase().trim()}
 function renderFamilies(){
   populateFamilyFilterOptions();
   const q=normalizeArabicSearch(document.getElementById('q')?.value||'');
@@ -2852,8 +2854,8 @@ function renderGeneralReport(){const ds=donations.filter(x=>!isHiddenRecord(x)&&
 function reportFamilySearchRender(){
   const box=document.getElementById('reportFamily');
   if(!box)return;
-  const q=normalizeArabicSearch(document.getElementById('reportFamilySearch')?.value||'');
-  const list=families.filter(f=>!isHiddenRecord(f)&&normalizeArabicSearch([f.c,f.n,f.head,f.phone,f.address,f.i,f.j,f.addressCode].join(' ')).includes(q))
+  const q=(document.getElementById('reportFamilySearch')?.value||'').trim().toLowerCase();
+  const list=families.filter(f=>!isHiddenRecord(f)&&[f.c,f.n,f.head,f.phone,f.address,f.i,f.j,f.addressCode].join(' ').toLowerCase().includes(q))
     .slice().sort((a,b)=>Number(a.c||0)-Number(b.c||0));
   const selected=box.dataset.family||'';
   const cards=list.map(f=>`<div class="card" style="margin-top:7px"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${escapeHtml(f.c)}</div><div class="name">${escapeHtml(f.head||f.n||'')}</div><div class="sub">${escapeHtml(f.address||'العنوان غير مسجل')} · الهاتف: ${escapeHtml(f.phone||'غير مسجل')}</div></div></div><div class="member-actions"><button class="action primary" onclick="document.getElementById('reportFamily').dataset.family='${Number(f.c)}';renderFamilyReport()">👁️ التقرير</button><button class="action" onclick="addAppealForFamily(${Number(f.c)})">＋ إضافة مناشدة</button></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للبحث</div>';
