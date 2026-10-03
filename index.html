@@ -463,6 +463,13 @@ textarea.forminput{height:80px;resize:vertical}
 <button class="chip" onclick="filterDonationType('مالي')">مالي</button>
 <button class="chip" onclick="filterDonationType('جهاز')">أجهزة</button>
 <button class="chip" onclick="filterDonationType('مواد')">مواد</button>
+<button class="chip" id="donationSortBtn" onclick="toggleDonationSortMenu()">↕ فرز</button>
+<div id="donationSortMenu" style="display:none;width:100%;margin-top:6px;padding:7px;border-radius:10px;background:#f7f7f7;gap:6px;flex-wrap:wrap">
+<button class="chip" onclick="setDonationSort('donor')">المتبرع</button>
+<button class="chip" onclick="setDonationSort('beneficiary')">المستفيد</button>
+<button class="chip" onclick="setDonationSort('date')">التاريخ</button>
+<button class="chip" onclick="toggleDonationSortDirection()" id="donationSortDirBtn">تنازلي ↓</button>
+</div>
 </div>
 <div class="stats">
 <div class="stat">👤 <b id="donorTotal">0</b><span>المتبرعون</span></div>
@@ -2045,6 +2052,28 @@ function resetDonorForm(){editingDonorIndex=null;['d-code','d-name','d-phone','d
 function editDonor(i){if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل المتبرعين.');return}const d=donors[i];if(!d)return;editingDonorIndex=i;document.getElementById('d-code').value=d.donorCode||'';document.getElementById('d-name').value=d.name||'';document.getElementById('d-phone').value=d.phone||'';document.getElementById('d-address').value=d.address||'';document.getElementById('d-notes').value=d.notes||'';document.getElementById('donorFormTitle').textContent='تعديل المتبرع';showScreen('add-donor');}
 function deleteDonor(i){if(!hasAction('delete','donations')){alert('ليس لديك صلاحية حذف المتبرعين.');return}if(!confirm('حذف هذا المتبرع؟'))return;const id=donors[i]?.id;donors.splice(i,1);localStorage.setItem('warith_donors',JSON.stringify(donors));renderDonors();}
 let donationTypeFilter='الكل';
+let donationSortKey='date';
+let donationSortDirection='desc';
+function toggleDonationSortMenu(){
+  const m=document.getElementById('donationSortMenu');
+  if(!m)return;
+  m.style.display=m.style.display==='none'?'flex':'none';
+}
+function setDonationSort(key){
+  donationSortKey=key;
+  const labels={donor:'المتبرع',beneficiary:'المستفيد',date:'التاريخ'};
+  const btn=document.getElementById('donationSortBtn');
+  if(btn)btn.textContent='↕ فرز: '+(labels[key]||'التاريخ');
+  const m=document.getElementById('donationSortMenu');
+  if(m)m.style.display='none';
+  renderDonations();
+}
+function toggleDonationSortDirection(){
+  donationSortDirection=donationSortDirection==='desc'?'asc':'desc';
+  const btn=document.getElementById('donationSortDirBtn');
+  if(btn)btn.textContent=donationSortDirection==='desc'?'تنازلي ↓':'تصاعدي ↑';
+  renderDonations();
+}
 function switchDonationTab(tab){const donorsTab=document.getElementById('donorsTab'),recordsTab=document.getElementById('recordsTab'),td=document.getElementById('tabDonors'),tr=document.getElementById('tabRecords');if(tab==='records'){donorsTab.style.display='none';recordsTab.style.display='block';td.classList.remove('active');tr.classList.add('active');renderDonations();}else{recordsTab.style.display='none';donorsTab.style.display='block';tr.classList.remove('active');td.classList.add('active');renderDonors();}}
 function filterDonationType(type){donationTypeFilter=type;renderDonations();}
 
@@ -2203,11 +2232,20 @@ function editDonation(i){
 function deleteDonation(i){if(!hasAction('delete','donations')){alert('ليس لديك صلاحية حذف التبرعات.');return}if(!donations[i])return;if(!confirm('حذف هذا التبرع؟'))return;donations.splice(i,1);localStorage.setItem('warith_donations',JSON.stringify(donations));renderDonations();}
 function renderDonations(){
   const q=(document.getElementById('donationQ')?.value||'').trim().toLowerCase();
-  const a=sortRecords(
-    donations.filter(d=>!isHiddenRecord(d)&&(donationTypeFilter==='الكل'||d.type===donationTypeFilter)&&
-      (String(d.id)+' '+(d.donorName||'')+' '+(d.familyName||'')+' '+(d.item||'')+' '+(d.type||'')+' '+(d.receipt||'')+' '+(d.allocation||'')).toLowerCase().includes(q)),
-    'date',['donorName','familyName','item']
-  );
+  const filtered=donations.filter(d=>!isHiddenRecord(d)&&(donationTypeFilter==='الكل'||d.type===donationTypeFilter)&&
+      (String(d.id)+' '+(d.donorName||'')+' '+(d.familyName||'')+' '+(d.item||'')+' '+(d.type||'')+' '+(d.receipt||'')+' '+(d.allocation||'')).toLowerCase().includes(q));
+  const a=filtered.slice().sort((x,y)=>{
+    let c=0;
+    if(donationSortKey==='date'){
+      c=String(x.date||'').slice(0,10).localeCompare(String(y.date||'').slice(0,10));
+    }else if(donationSortKey==='donor'){
+      c=naturalAlphaCompare(x.donorName||'',y.donorName||'');
+    }else{
+      c=naturalAlphaCompare(x.familyName||(x.familyCode?'عائلة #'+x.familyCode:''),y.familyName||(y.familyCode?'عائلة #'+y.familyCode:''));
+    }
+    if(c===0)c=naturalAlphaCompare(x.id||'',y.id||'');
+    return donationSortDirection==='asc'?c:-c;
+  });
   document.getElementById('donationCount').textContent=a.length+' تبرع';
   const visibleDonations=donations.filter(d=>!isHiddenRecord(d));
   const cash=visibleDonations.filter(d=>d.type==='مالي').reduce((n,d)=>n+Number(d.amount||0),0);
