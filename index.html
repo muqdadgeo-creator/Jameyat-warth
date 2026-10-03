@@ -1663,8 +1663,8 @@ function getUsers(){try{const x=JSON.parse(localStorage.getItem(USER_KEY)||'null
 function saveUsers(x){localStorage.setItem(USER_KEY,JSON.stringify(x))}
 function currentUser(){try{return JSON.parse(localStorage.getItem(CURRENT_USER_KEY)||'null')}catch(e){return null}}
 function currentRole(){return currentUser()?.role||''}
-function hasPermission(p){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();const rolePerms=ROLE_PERMISSIONS[role]||[];const savedPerms=Array.isArray(u.permissions)?u.permissions:rolePerms;/* صلاحيات العوائل الأساسية تُحسم من الدور حتى لو كانت بيانات الصلاحيات القديمة ناقصة */if(['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات','المالك','مدير الجمعية'].includes(role)&&['families','family-detail','family-members','add-member'].includes(p))return true;/* ضمان بقاء صلاحيات المخزن للأدوار المخصصة له */if(p==='inventory'&&['مسؤول المخزن','إدخال البيانات','المالك','مدير الجمعية'].includes(role))return true;return savedPerms.includes(p)||rolePerms.includes(p)}
-function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();if(role==='المالك'||role==='مدير الجمعية')return true;/* صلاحية العوائل لا تعتمد على سجل صلاحيات قديم محفوظ للمستخدم */if(section==='families'&&['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات'].includes(role)){if(['add','edit'].includes(action))return true;}const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
+function hasPermission(p){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();/* المالك ومدير الجمعية لا يتأثران بأي صلاحيات قديمة مخزنة */if(role==='المالك')return true;if(role==='مدير الجمعية')return p!=='users-settings';const rolePerms=ROLE_PERMISSIONS[role]||[];const savedPerms=Array.isArray(u.permissions)?u.permissions:rolePerms;if(['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات'].includes(role)&&['families','family-detail','family-members','add-member'].includes(p))return true;if(p==='inventory'&&['مسؤول المخزن','إدخال البيانات'].includes(role))return true;return savedPerms.includes(p)||rolePerms.includes(p)}
+function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=String(u.role||'').trim();if(role==='المالك'||role==='مدير الجمعية')return true;if(section==='families'&&['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات'].includes(role)&&['add','edit'].includes(action))return true;const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
 function canAccessScreen(id){if(id==='login')return true;const u=currentUser();if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(String(u.role||'').trim()))return true;return hasPermission('inventory')}return hasPermission(id)||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
 function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');document.querySelectorAll('[data-action]').forEach(el=>{const [a,s]=String(el.dataset.action).split(':');el.style.display=hasAction(a,s)?'':'none'});}
 function renderUserOptions(){const sel=document.getElementById('loginUser');if(!sel)return;const users=getUsers().filter(u=>u.active!==false);sel.innerHTML=users.map((u,i)=>`<option value="${i}">${escapeHtml(u.name)} — ${escapeHtml(u.role)}</option>`).join('')}
@@ -1682,26 +1682,45 @@ function toggleUser(i){const users=getUsers();if(i===0){alert('لا يمكن إ�
 function deleteUser(i){const users=getUsers();if(i===0){alert('لا يمكن حذف المالك');return}if(!confirm('حذف هذا المستخدم؟'))return;users.splice(i,1);saveUsers(users);renderUsers();renderUserOptions()}
 function migrateUsersPermissions(){
   const users=getUsers(); let changed=false;
-  users.forEach((u,i)=>{
-    if(u.role==='مسؤول الكشف'){u.role='مسؤول العوائل والكشوفات';changed=true}
-    if(i===0 || u.name==='مقداد عباس'){u.role='المالك';u.permissions=ROLE_PERMISSIONS['المالك'];changed=true}
-    else if(!Array.isArray(u.permissions)){u.permissions=ROLE_PERMISSIONS[u.role]||[];changed=true}
-    if(!u.actions){u.actions=ROLE_ACTIONS[u.role]||{add:[],edit:[],delete:[]};changed=true}
-    /* إصلاح الصلاحيات المحفوظة القديمة للعوائل: لا نكتفي بالواجهة، بل نصلح السجل نفسه */
-    if(['مسؤول العوائل والكشوفات','مسؤول الكشف','إدخال البيانات'].includes(String(u.role||'').trim())){
-      if(u.role==='مسؤول الكشف'){u.role='مسؤول العوائل والكشوفات';changed=true}
-      const rp=ROLE_PERMISSIONS[u.role]||[];
-      const ra=ROLE_ACTIONS[u.role]||{add:[],edit:[],delete:[]};
-      ['home','families','appeals','activities','reports','files-center'].forEach(k=>{if(!u.permissions.includes(k)){u.permissions.push(k);changed=true}});
-      ['add','edit'].forEach(a=>{if(!Array.isArray(u.actions[a]))u.actions[a]=[];if(!u.actions[a].includes('families')){u.actions[a].push('families');changed=true}});
-      if(!u.actions.delete)u.actions.delete=[];
+  users.forEach((u)=>{
+    const oldRole=String(u.role||'').trim();
+    if(oldRole==='مسؤول الكشف'){u.role='مسؤول العوائل والكشوفات';changed=true}
+    if(String(u.role||'').trim()==='مالك'){u.role='المالك';changed=true}
+    const role=String(u.role||'').trim();
+    if(role==='المالك'){
+      u.permissions=ROLE_PERMISSIONS['المالك'];
+      u.actions=ROLE_ACTIONS['المالك'];
+      changed=true;
+    }else if(role==='مدير الجمعية'){
+      u.permissions=ROLE_PERMISSIONS['مدير الجمعية'];
+      u.actions=ROLE_ACTIONS['مدير الجمعية'];
+      changed=true;
+    }else{
+      if(!Array.isArray(u.permissions)){
+        u.permissions=ROLE_PERMISSIONS[role]||[];
+        changed=true;
+      }
+      if(!u.actions || typeof u.actions!=='object'){
+        u.actions=ROLE_ACTIONS[role]||{add:[],edit:[],delete:[]};
+        changed=true;
+      }
+      if(['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)){
+        ['home','families','appeals','activities','reports','files-center'].forEach(k=>{
+          if(!u.permissions.includes(k)){u.permissions.push(k);changed=true}
+        });
+        ['add','edit'].forEach(a=>{
+          if(!Array.isArray(u.actions[a]))u.actions[a]=[];
+          if(!u.actions[a].includes('families')){u.actions[a].push('families');changed=true}
+        });
+      }
     }
-    if(u.role==='مدير الجمعية'){u.permissions=ROLE_PERMISSIONS[u.role];u.actions=ROLE_ACTIONS[u.role];changed=true}
-    if(u.role==='مشاهد/قارئ'){u.permissions=ROLE_PERMISSIONS[u.role];u.actions=ROLE_ACTIONS[u.role];changed=true}
   });
   if(changed)saveUsers(users);
   const cu=currentUser();
-  if(cu){const fresh=users.find(x=>x.name===cu.name);if(fresh)localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(fresh));}
+  if(cu){
+    const fresh=users.find(x=>String(x.name)===String(cu.name));
+    if(fresh)localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(fresh));
+  }
 }
 function initUsersPermissions(){migrateUsersPermissions();renderUserOptions();applyPermissionUI();const login=document.getElementById('loginBackdrop');if(!currentUser()){login.style.display='flex'}else{login.style.display='none';updateCurrentUserBadge()}}
 
@@ -1748,6 +1767,8 @@ let familyQuickFilter='all';
 function toggleFamilyFilters(){const el=document.getElementById('familyAdvancedFilters');if(!el)return;const show=el.style.display==='none'||!el.style.display;el.style.display=show?'block':'none';if(show)populateFamilyFilterOptions();}
 function familyFilterValue(id){return document.getElementById(id)?.value||'الكل';}
 function normalizeSalaryValue(v){return Number(String(v??'').replace(/[^0-9.]/g,''))||0;}
+function normalizeArabicSearch(v){return String(v??'').normalize('NFKC').replace(/[أإآٱ]/g,'ا').replace(/[ًٌٍَُِّْـ]/g,'').trim().toLowerCase();}
+
 function populateFamilyFilterOptions(){
   const unique=(arr)=>[...new Set(arr.filter(v=>v!==undefined&&v!==null&&String(v).trim()!=='').map(v=>String(v).trim()))].sort((a,b)=>a.localeCompare(b,'ar'));
   const fill=(id,values)=>{const el=document.getElementById(id);if(!el)return;const current=el.value||'الكل';el.innerHTML='<option value="الكل">الكل</option>'+values.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');if(current==='__HAS_RIGHTS__' || values.includes(current))el.value=current;};
@@ -1912,7 +1933,6 @@ function doExportPDF(){
   doExportPrint();
 }
 
-function normalizeArabicSearch(v){return String(v??'').normalize('NFKC').replace(/[أإآٱ]/g,'ا').replace(/[ى]/g,'ي').replace(/[ؤ]/g,'و').replace(/[ئ]/g,'ي').replace(/[ة]/g,'ه').toLowerCase().trim()}
 function renderFamilies(){
   populateFamilyFilterOptions();
   const q=normalizeArabicSearch(document.getElementById('q')?.value||'');
