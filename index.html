@@ -1715,7 +1715,64 @@ function migrateUsersPermissions(){
     if(fresh)localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(fresh));
   }
 }
-function initUsersPermissions(){migrateUsersPermissions();renderUserOptions();applyPermissionUI();const login=document.getElementById('loginBackdrop');if(!currentUser()){login.style.display='flex'}else{login.style.display='none';updateCurrentUserBadge()}}
+async function initUsersPermissions(){
+  migrateUsersPermissions();
+  renderUserOptions();
+  const login=document.getElementById('loginBackdrop');
+  if(login) login.style.display='flex';
+
+  try{
+    if(!window.warithSupabase) throw new Error('Supabase client unavailable');
+
+    const {data:sessionData,error:sessionError}=await window.warithSupabase.auth.getSession();
+    if(sessionError) throw sessionError;
+
+    const authUser=sessionData?.session?.user;
+    if(!authUser){
+      localStorage.removeItem(CURRENT_USER_KEY);
+      applyPermissionUI();
+      return;
+    }
+
+    const {data:profile,error:profileError}=await window.warithSupabase
+      .from('app_users')
+      .select('*')
+      .eq('auth_user_id',authUser.id)
+      .single();
+
+    if(profileError||!profile){
+      await window.warithSupabase.auth.signOut();
+      localStorage.removeItem(CURRENT_USER_KEY);
+      if(login) login.style.display='flex';
+      return;
+    }
+
+    if(profile.is_active===false){
+      await window.warithSupabase.auth.signOut();
+      localStorage.removeItem(CURRENT_USER_KEY);
+      if(login) login.style.display='flex';
+      const err=document.getElementById('loginError');
+      if(err) err.textContent='هذا المستخدم موقوف';
+      return;
+    }
+
+    localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({
+      ...profile,
+      name:profile.display_name||profile.username,
+      active:true,
+      permissions:profile.permissions||ROLE_PERMISSIONS[profile.role]||[],
+      actions:profile.actions||ROLE_ACTIONS[profile.role]||{add:[],edit:[],delete:[]}
+    }));
+
+    if(login) login.style.display='none';
+    applyPermissionUI();
+    updateCurrentUserBadge();
+  }catch(e){
+    localStorage.removeItem(CURRENT_USER_KEY);
+    if(login) login.style.display='flex';
+    applyPermissionUI();
+  }
+}
 
 let filesCategory='الكل';
 function canAccessFiles(){return hasPermission('files-center')}
