@@ -53,6 +53,22 @@ main{padding:12px 12px 65px}.screen{display:none!important}.screen.active{displa
 .donor-alloc-row{display:flex;justify-content:space-between;align-items:center;background:#f5f8f7;border-radius:8px;padding:7px 9px;margin-top:5px;font-size:10px}
 .donor-alloc-row b{font-size:11px;color:#0f5c4d}
 
+/* ===== سجل التبرعات كجدول ===== */
+.donation-table-wrap{width:100%;overflow-x:auto;background:#fff;border-radius:14px;box-shadow:0 2px 10px #0000000b;margin-top:8px}
+.donation-table{width:100%;min-width:650px;border-collapse:collapse;direction:rtl;font-size:11px}
+.donation-table th{background:#0f5c4d;color:#fff;padding:10px 8px;text-align:right;font-weight:900;white-space:nowrap}
+.donation-table td{padding:9px 8px;border-bottom:1px solid #e5ece9;text-align:right;vertical-align:middle}
+.donation-table tbody tr:nth-child(even){background:#f8faf9}
+.donation-table tbody tr:hover{background:#eef6f3}
+.donation-table .donation-amount{font-weight:900;color:#0f5c4d;white-space:nowrap}
+.donation-table .donation-date{white-space:nowrap}
+.donation-edit-btn{border:0;background:#e9f5f0;color:#0f5c4d;border-radius:9px;padding:7px 11px;font:inherit;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap}
+.donation-edit-btn:active{transform:scale(.97)}
+.donation-table .donation-no{width:45px}
+.donation-table .donation-action{width:78px}
+.donation-normalize-note{background:#fffaf0;border:1px solid #e7d7ad;border-radius:10px;padding:9px 10px;margin-top:8px;font-size:9px;color:#725a21;line-height:1.7}
+@media(max-width:700px){.donation-table{font-size:10px}.donation-table th,.donation-table td{padding:8px 6px}.donation-table-wrap{border-radius:10px}}
+
 .donation-type{display:flex;gap:7px;overflow:auto;margin:8px 0}.type-btn{border:1px solid #d7e3df;background:#fff;border-radius:18px;padding:8px 12px;white-space:nowrap;font-size:10px;color:#41635b}.type-btn.active{background:#0f5c4d;color:#fff}
 .attach-row{display:flex;gap:7px;align-items:center;margin-top:8px}.attach-row input{display:none}
 .attachments{margin-top:10px}.attachment{background:#f4f7f6;border-radius:10px;padding:9px;margin-top:7px;display:flex;align-items:center;gap:8px}
@@ -472,6 +488,8 @@ textarea.forminput{height:80px;resize:vertical}
 <div class="top"><button class="back" onclick="showScreen('donations')">← رجوع</button><div class="screen-title" id="donationFormTitle">تسجيل تبرع</div></div>
 <div class="card">
 <label class="fl">المتبرع</label><select class="forminput" id="dn-donor"></select>
+<div class="donation-normalize-note">لتوحيد الأسماء القديمة: اختر الاسم المعتمد من سجل <b>المتبرعين</b>، واختر العائلة المعتمدة من سجل <b>العوائل</b> ثم احفظ التعديل. لا يتم حذف سجل التبرع.</div>
+<label class="fl">المستفيد / العائلة</label><select class="forminput" id="dn-beneficiary"><option value="">عام / بدون مستفيد محدد</option></select>
 <div id="donationAppealWrap"><label class="fl">ربط التبرع بمناشدة</label><select class="forminput" id="dn-appeal"><option value="">بدون مناشدة</option></select>
 <div class="inline-note">هذا الربط متاح للتبرع المالي فقط.</div></div>
 <div class="donation-type">
@@ -2034,6 +2052,27 @@ function donorAllocationTotals(donorId){const cats=['خاص','عام','صناد�
 function donorAllocationTotals(donorId){const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];const totals={};cats.forEach(c=>totals[c]=0);donations.filter(d=>Number(d.donorId)===Number(donorId)&&d.type==='مالي').forEach(d=>{const c=cats.includes(d.allocation)?d.allocation:'أخرى';totals[c]+=Number(d.amount)||0});return totals;}
 function renderDonors(){const q=(document.getElementById('donorQ')?.value||'').trim().toLowerCase();const a=sortRecords(donors.filter(d=>!isHiddenRecord(d)&&(d.name+' '+d.phone+' '+d.address).toLowerCase().includes(q)), '', ['name']);const box=document.getElementById('donorList');if(!box)return;box.innerHTML=a.map(d=>{const i=donors.indexOf(d),t=donorAllocationTotals(d.id);return `<div class="card"><div class="row"><div class="avatar">${(d.name||'م').charAt(0)}</div><div class="grow"><div class="name">${d.name}</div><div class="sub">رمز المتبرع: <b>${d.donorCode||'غير مسجل'}</b></div><div class="sub">الهاتف: ${d.phone||'غير مسجل'}</div><div class="sub">العنوان: ${d.address||'غير مسجل'}</div></div></div><div class="donor-alloc"><div class="donor-alloc-title">💰 مجموع التبرعات حسب التخصيص</div><div class="donor-alloc-row"><span>خاص</span><b>${t['خاص'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>عام</span><b>${t['عام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>صناديق</span><b>${t['صناديق'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>خمس السادة خمس</span><b>${t['خمس السادة خمس'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>سهم الإمام</span><b>${t['سهم الإمام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>أخرى</span><b>${t['أخرى'].toLocaleString('en-US')} د.ع</b></div></div><div class="member-actions"><button class="action primary" onclick="editDonor(${i})">✏️ تعديل</button><button class="action" onclick="hideRecord('donors',${i},'المتبرع')">🚫 حجب</button><button class="action" onclick="deleteDonor(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا يوجد متبرعون بعد</div>';}
 function populateDonors(){const sel=document.getElementById('dn-donor');if(!sel)return;sel.innerHTML='<option value="">اختر المتبرع</option>'+donors.map(d=>`<option value="${d.id}">${d.name}${d.phone?' · '+d.phone:''}</option>`).join('');}
+function populateDonationBeneficiaries(selectedCode='', legacyName=''){
+  const sel=document.getElementById('dn-beneficiary');
+  if(!sel)return;
+  const currentCode=selectedCode==null?'':String(selectedCode);
+  const currentName=String(legacyName||'').trim();
+  const opts=['<option value="">عام / بدون مستفيد محدد</option>'];
+  const seen=new Set();
+  [...families].sort((a,b)=>Number(a.c||0)-Number(b.c||0)).forEach(f=>{
+    const code=String(f.c||'');
+    if(!code||seen.has(code))return;
+    seen.add(code);
+    const label=f.n||('عائلة '+(f.head||''));
+    opts.push(`<option value="${escapeHtml(code)}">#${escapeHtml(code)} · ${escapeHtml(label)}</option>`);
+  });
+  if(currentName && currentCode && !seen.has(currentCode)){
+    opts.push(`<option value="${escapeHtml(currentCode)}">${escapeHtml(currentName)}</option>`);
+  }
+  sel.innerHTML=opts.join('');
+  sel.value=currentCode;
+}
+
 function setDonationType(type){document.getElementById('dn-type').value=type;['cashTypeBtn','deviceTypeBtn','materialTypeBtn'].forEach(id=>document.getElementById(id).classList.remove('active'));const map={'مالي':'cashTypeBtn','جهاز':'deviceTypeBtn','مواد':'materialTypeBtn'};document.getElementById(map[type]).classList.add('active');document.getElementById('cashDonationFields').style.display=type==='مالي'?'block':'none';document.getElementById('inKindDonationFields').style.display=type==='مالي'?'none':'block';document.getElementById('deviceStatusWrap').style.display=type==='جهاز'?'block':'none';const aw=document.getElementById('donationAppealWrap');if(aw)aw.style.display=type==='مالي'?'block':'none';if(type!=='مالي'&&document.getElementById('dn-appeal'))document.getElementById('dn-appeal').value='';}
 function populateAppealDonations(selectedId=''){
   const sel=document.getElementById('dn-appeal');
@@ -2079,6 +2118,7 @@ function resetDonationForm(){
   document.getElementById('dn-type').value='مالي';
   setDonationType('مالي');
   populateDonors();
+  populateDonationBeneficiaries('','');
   populateAppealDonations('');
   document.getElementById('dn-date').value=new Date().toISOString().slice(0,10);
   ['dn-amount','dn-item','dn-notes','dn-receipt'].forEach(id=>document.getElementById(id).value='');
@@ -2094,11 +2134,106 @@ function addDonationForAppeal(appealId){
   setDonationType('مالي');
   populateAppealDonations(appealId);
 }
-function saveDonation(){const _edit=editingDonationIndex!==null; if(!hasAction(_edit?'edit':'add','donations')){alert('ليس لديك صلاحية هذه العملية.');return}const donorId=document.getElementById('dn-donor').value,type=document.getElementById('dn-type').value,date=document.getElementById('dn-date').value||new Date().toISOString().slice(0,10);if(!donorId){alert('اختر المتبرع أولاً');return}if(type==='مالي'&&!document.getElementById('dn-amount').value){alert('أدخل مبلغ التبرع');return}if(type!=='مالي'&&!document.getElementById('dn-item').value.trim()){alert('أدخل اسم الجهاز أو المادة');return}const donor=donors.find(d=>String(d.id)===String(donorId));const appealId=type==='مالي'?(document.getElementById('dn-appeal')?.value||''):'';const item={id:editingDonationIndex!==null?donations[editingDonationIndex].id:Date.now(),donorId:Number(donorId),donorName:donor?.name||'',appealId:appealId?Number(appealId):null,type,date,amount:type==='مالي'?Number(document.getElementById('dn-amount').value):0,paid:type==='مالي'?document.getElementById('dn-paid').value:'',payment:type==='مالي'?document.getElementById('dn-payment').value:'',allocation:type==='مالي'?document.getElementById('dn-allocation').value:'',item:type!=='مالي'?document.getElementById('dn-item').value.trim():'',qty:type!=='مالي'?Number(document.getElementById('dn-qty').value||1):0,status:type==='جهاز'?document.getElementById('dn-status').value:'',receipt:document.getElementById('dn-receipt').value.trim(),notes:document.getElementById('dn-notes').value.trim(),attachments:donationAttachments};if(editingDonationIndex!==null)donations[editingDonationIndex]=item;else donations.unshift(item);localStorage.setItem('warith_donations',JSON.stringify(donations));notifyDonationSaved(item,editingDonationIndex!==null);renderDonors();alert(editingDonationIndex!==null?'تم تعديل التبرع بنجاح ✓':'تم حفظ التبرع بنجاح ✓');editingDonationIndex=null;showScreen('donations');}
+function saveDonation(){
+  const _edit=editingDonationIndex!==null;
+  if(!hasAction(_edit?'edit':'add','donations')){alert('ليس لديك صلاحية هذه العملية.');return}
+  const donorId=document.getElementById('dn-donor').value;
+  const type=document.getElementById('dn-type').value;
+  const date=document.getElementById('dn-date').value||new Date().toISOString().slice(0,10);
+  if(!donorId){alert('اختر المتبرع أولاً');return}
+  if(type==='مالي'&&!document.getElementById('dn-amount').value){alert('أدخل مبلغ التبرع');return}
+  if(type!=='مالي'&&!document.getElementById('dn-item').value.trim()){alert('أدخل اسم الجهاز أو المادة');return}
+  const donor=donors.find(d=>String(d.id)===String(donorId));
+  const beneficiaryCode=document.getElementById('dn-beneficiary')?.value||'';
+  const beneficiary=beneficiaryCode?families.find(f=>String(f.c)===String(beneficiaryCode)):null;
+  const appealId=type==='مالي'?(document.getElementById('dn-appeal')?.value||''):'';
+  const item={
+    id:editingDonationIndex!==null?donations[editingDonationIndex].id:Date.now(),
+    donorId:Number(donorId),donorName:donor?.name||'',
+    appealId:appealId?Number(appealId):null,type,date,
+    amount:type==='مالي'?Number(document.getElementById('dn-amount').value):0,
+    paid:type==='مالي'?document.getElementById('dn-paid').value:'',
+    payment:type==='مالي'?document.getElementById('dn-payment').value:'',
+    allocation:type==='مالي'?document.getElementById('dn-allocation').value:'',
+    familyCode:beneficiary?Number(beneficiary.c):null,
+    familyName:beneficiary?(beneficiary.n||('عائلة '+(beneficiary.head||''))):'',
+    item:type!=='مالي'?document.getElementById('dn-item').value.trim():'',
+    qty:type!=='مالي'?Number(document.getElementById('dn-qty').value||1):0,
+    status:type==='جهاز'?document.getElementById('dn-status').value:'',
+    receipt:document.getElementById('dn-receipt').value.trim(),
+    notes:document.getElementById('dn-notes').value.trim(),
+    attachments:donationAttachments
+  };
+  if(editingDonationIndex!==null)donations[editingDonationIndex]=item;else donations.unshift(item);
+  localStorage.setItem('warith_donations',JSON.stringify(donations));
+  notifyDonationSaved(item,editingDonationIndex!==null);
+  renderDonors();
+  alert(editingDonationIndex!==null?'تم تعديل التبرع وتوحيد الاسم ✓':'تم حفظ التبرع بنجاح ✓');
+  editingDonationIndex=null;
+  showScreen('donations');
+}
 
-function editDonation(i){if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل التبرعات.');return}const d=donations[i];if(!d)return;editingDonationIndex=i;populateDonors();populateAppealDonations(d.type==='مالي'?(d.appealId||''):'');document.getElementById('dn-donor').value=d.donorId||'';setDonationType(d.type||'مالي');document.getElementById('dn-amount').value=d.amount||'';document.getElementById('dn-paid').value=d.paid||'تم التسديد';document.getElementById('dn-payment').value=d.payment||'';document.getElementById('dn-allocation').value=d.allocation||'خاص';document.getElementById('dn-item').value=d.item||'';document.getElementById('dn-qty').value=d.qty||1;document.getElementById('dn-status').value=d.status||'شغال';document.getElementById('dn-receipt').value=d.receipt||'';document.getElementById('dn-date').value=d.date||'';document.getElementById('dn-notes').value=d.notes||'';donationAttachments=JSON.parse(JSON.stringify(d.attachments||[]));renderTempAttachments('donationAttachmentsList',donationAttachments,'removeDonationAttachment');document.getElementById('donationFormTitle').textContent='تعديل التبرع';document.querySelector('#add-donation button.action.primary').textContent='حفظ التعديل';showScreen('add-donation');}
+function editDonation(i){
+  if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل التبرعات.');return}
+  const d=donations[i];if(!d)return;
+  editingDonationIndex=i;
+  populateDonors();
+  populateDonationBeneficiaries(d.familyCode||'',d.familyName||d.notes||'');
+  populateAppealDonations(d.type==='مالي'?(d.appealId||''):'');
+  document.getElementById('dn-donor').value=d.donorId||'';
+  document.getElementById('dn-beneficiary').value=d.familyCode||'';
+  setDonationType(d.type||'مالي');
+  document.getElementById('dn-amount').value=d.amount||'';
+  document.getElementById('dn-paid').value=d.paid||'تم التسديد';
+  document.getElementById('dn-payment').value=d.payment||'';
+  document.getElementById('dn-allocation').value=d.allocation||'خاص';
+  document.getElementById('dn-item').value=d.item||'';
+  document.getElementById('dn-qty').value=d.qty||1;
+  document.getElementById('dn-status').value=d.status||'شغال';
+  document.getElementById('dn-receipt').value=d.receipt||'';
+  document.getElementById('dn-date').value=d.date||'';
+  document.getElementById('dn-notes').value=d.notes||'';
+  donationAttachments=JSON.parse(JSON.stringify(d.attachments||[]));
+  renderTempAttachments('donationAttachmentsList',donationAttachments,'removeDonationAttachment');
+  document.getElementById('donationFormTitle').textContent='تعديل التبرع وتوحيد الأسماء';
+  document.querySelector('#add-donation button.action.primary').textContent='حفظ التعديل';
+  showScreen('add-donation');
+}
+
 function deleteDonation(i){if(!hasAction('delete','donations')){alert('ليس لديك صلاحية حذف التبرعات.');return}if(!donations[i])return;if(!confirm('حذف هذا التبرع؟'))return;donations.splice(i,1);localStorage.setItem('warith_donations',JSON.stringify(donations));renderDonations();}
-function renderDonations(){const q=(document.getElementById('donationQ')?.value||'').trim().toLowerCase();const a=sortRecords(donations.filter(d=>!isHiddenRecord(d)&&(donationTypeFilter==='الكل'||d.type===donationTypeFilter)&&(String(d.id)+' '+d.donorName+' '+d.item+' '+d.type+' '+(d.receipt||'')+' '+(d.allocation||'')).toLowerCase().includes(q)), 'date', ['donorName','item']);document.getElementById('donationCount').textContent=a.length+' تبرع';const visibleDonations=donations.filter(d=>!isHiddenRecord(d));const cash=visibleDonations.filter(d=>d.type==='مالي').reduce((n,d)=>n+(d.amount||0),0),ink=donations.filter(d=>d.type!=='مالي').reduce((n,d)=>n+(d.qty||0),0);document.getElementById('donorTotal').textContent=donors.length;document.getElementById('cashTotal').textContent=cash.toLocaleString('en-US')+' د.ع';document.getElementById('inKindTotal').textContent=ink;document.getElementById('donationTotal').textContent=visibleDonations.length;document.getElementById('donationList').innerHTML=a.map(d=>{const i=donations.indexOf(d);return `<div class="card"><div class="row"><div class="avatar">${d.type==='مالي'?'💰':'📦'}</div><div class="grow"><div class="name">${d.donorName}</div><div class="sub">${d.type==='مالي'?`${(d.amount||0).toLocaleString('en-US')} د.ع · ${d.allocation||'أخرى'} · ${d.paid||'غير محدد'} · ${d.payment||'طريقة غير محددة'}`:`${d.item} · الكمية: ${d.qty}${d.status?' · '+d.status:''}`}</div><div class="sub">${d.date} · رقم التبرع #${d.id}${d.receipt?' · الوصل: '+d.receipt:''}</div></div></div><div class="member-actions"><button class="action primary" onclick="editDonation(${i})">✏️ تعديل</button><button class="action" onclick="hideRecord('donations',${i},'التبرع')">🚫 حجب</button><button class="action" onclick="deleteDonation(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد تبرعات بعد</div>';}
+function renderDonations(){
+  const q=(document.getElementById('donationQ')?.value||'').trim().toLowerCase();
+  const a=sortRecords(
+    donations.filter(d=>!isHiddenRecord(d)&&(donationTypeFilter==='الكل'||d.type===donationTypeFilter)&&
+      (String(d.id)+' '+(d.donorName||'')+' '+(d.familyName||'')+' '+(d.item||'')+' '+(d.type||'')+' '+(d.receipt||'')+' '+(d.allocation||'')).toLowerCase().includes(q)),
+    'date',['donorName','familyName','item']
+  );
+  document.getElementById('donationCount').textContent=a.length+' تبرع';
+  const visibleDonations=donations.filter(d=>!isHiddenRecord(d));
+  const cash=visibleDonations.filter(d=>d.type==='مالي').reduce((n,d)=>n+Number(d.amount||0),0);
+  const ink=visibleDonations.filter(d=>d.type!=='مالي').reduce((n,d)=>n+Number(d.qty||0),0);
+  document.getElementById('donorTotal').textContent=donors.length;
+  document.getElementById('cashTotal').textContent=cash.toLocaleString('en-US')+' د.ع';
+  document.getElementById('inKindTotal').textContent=ink;
+  document.getElementById('donationTotal').textContent=visibleDonations.length;
+  const box=document.getElementById('donationList');
+  if(!box)return;
+  const rows=a.map((d,i)=>{
+    const realIndex=donations.indexOf(d);
+    const donor=d.donorName||donors.find(x=>Number(x.id)===Number(d.donorId))?.name||'غير محدد';
+    const beneficiary=d.familyName||(d.familyCode?('عائلة #'+d.familyCode):(d.allocation==='عام'?'عام':'غير محدد'));
+    const amount=d.type==='مالي'?Number(d.amount||0).toLocaleString('en-US')+' د.ع':(Number(d.qty||0).toLocaleString('en-US')+' × '+(d.item||'تبرع عيني'));
+    return `<tr>
+      <td class="donation-no">${i+1}</td>
+      <td>${escapeHtml(donor)}</td>
+      <td>${escapeHtml(beneficiary)}</td>
+      <td class="donation-amount">${escapeHtml(amount)}</td>
+      <td class="donation-date">${escapeHtml(d.date||'')}</td>
+      <td class="donation-action"><button class="donation-edit-btn" onclick="editDonation(${realIndex})">✏️ تعديل</button></td>
+    </tr>`;
+  }).join('');
+  box.innerHTML=rows?`<div class="donation-table-wrap"><table class="donation-table"><thead><tr><th class="donation-no">ت</th><th>اسم المتبرع</th><th>اسم المستفيد</th><th>المبلغ</th><th>التاريخ</th><th class="donation-action">تعديل</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">لا توجد تبرعات بعد</div>';
+}
 
 function saveFamily(){const _edit=!!editingFamilyCode; if(!hasAction(_edit?'edit':'add','families')){alert('ليس لديك صلاحية هذه العملية.');return}
 const code=Number(document.getElementById('f-code').value);
