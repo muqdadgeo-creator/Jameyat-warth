@@ -3174,11 +3174,11 @@ function renderGeneralReport(){
   const es=expenses.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));
   const inv=inventoryMovements.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));
   const aps=appeals.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));
-  const rec=ds.filter(x=>x.paid==='تم التسديد');
   const un=ds.filter(x=>x.paid!=='تم التسديد');
   const moneyTotal=list=>reportMoney(list.reduce((n,x)=>n+Number(x.amount||0),0));
+
   const delivered=inv.filter(x=>x.move==='صادر'&&x.type==='جهاز');
-  const deviceQty=(kind)=>delivered.reduce((n,x)=>{
+  const deviceQty=kind=>delivered.reduce((n,x)=>{
     const name=String(x.name||'').trim().toLowerCase();
     let match=false;
     if(kind==='ثلاجة') match=/ثلاج/.test(name);
@@ -3189,15 +3189,17 @@ function renderGeneralReport(){
     else if(kind==='كيزر') match=/كيزر|سخان|geyser|خزان.*حار/.test(name);
     return n+(match?Number(x.qty||0):0);
   },0);
+
   const caseTypes=['زواج','طبية','سكن','معيشية','دراسية'];
-  const caseQty=(kind)=>hs.reduce((n,x)=>{
+  const caseQty=kind=>hs.reduce((n,x)=>{
     const t=String(x.type||'').trim();
-    const isOther=!caseTypes.includes(t);
-    return n+((kind==='اخرى'?isOther:t===kind)?1:0);
+    return n+((kind==='اخرى'?!caseTypes.includes(t):t===kind)?1:0);
   },0);
+
   const stat=(label,value)=>`<div class="report-detail-cell"><span>${escapeHtml(label)}</span><b>${escapeHtml(String(value))}</b></div>`;
   const deviceRows=['ثلاجة','مجمدة','سبلت','مكيف','هيتر','كيزر'];
   const caseRows=['زواج','طبية','سكن','معيشية','دراسية','اخرى'];
+
   const body=`
     <div class="report-detail-grid">
       ${stat('عدد العوائل',families.filter(x=>!isHiddenRecord(x)).length)}
@@ -3214,7 +3216,7 @@ function renderGeneralReport(){
       </div>
       <div>
         <div class="report-detail-heading">عدد الحالات</div>
-        ${caseRows.map(c=>stat(c,caseQty(c))).join('')}
+        ${caseRows.map(x=>stat(x,caseQty(x))).join('')}
       </div>
     </div>`;
   document.getElementById('reportGeneral').innerHTML=reportCard('التقرير المفصل',body);
