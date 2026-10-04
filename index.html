@@ -1780,9 +1780,16 @@ async function initUsersPermissions(){
 
     const authUser=sessionData?.session?.user;
     if(!authUser){
-      localStorage.removeItem(CURRENT_USER_KEY);
-      applyPermissionUI();
-      updateAuthHeaderUI();
+      const localUser=currentUser();
+      if(localUser && localUser.active!==false){
+        applyPermissionUI();
+        updateCurrentUserBadge();
+        updateAuthHeaderUI();
+      }else{
+        localStorage.removeItem(CURRENT_USER_KEY);
+        applyPermissionUI();
+        updateAuthHeaderUI();
+      }
       return;
     }
 
@@ -1820,9 +1827,11 @@ async function initUsersPermissions(){
     updateCurrentUserBadge();
     updateAuthHeaderUI();
   }catch(e){
-    localStorage.removeItem(CURRENT_USER_KEY);
+    const localUser=currentUser();
+    if(!localUser || localUser.active===false) localStorage.removeItem(CURRENT_USER_KEY);
     if(login) login.style.display='none';
     applyPermissionUI();
+    updateCurrentUserBadge();
     updateAuthHeaderUI();
   }
 }
