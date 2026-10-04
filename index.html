@@ -40,6 +40,17 @@ main{padding:12px 12px 65px}.screen{display:none!important}.screen.active{displa
 .family-report-info .info:nth-child(2n){border-left:0}
 .family-report-info .info:nth-last-child(-n+2){border-bottom:0}
 .report-two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;align-items:start}
+.report-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #d8e2df;border-radius:8px;overflow:hidden;background:#fff;margin-top:6px}
+.report-detail-cell{min-height:42px;padding:8px 10px;border-bottom:1px solid #d8e2df;border-left:1px solid #d8e2df;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:10px}
+.report-detail-cell:nth-child(2n){border-left:0}
+.report-detail-cell span{color:#536c65;font-weight:700}
+.report-detail-cell b{color:#0f5c4d;font-size:12px}
+.report-detail-columns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;align-items:start}
+.report-detail-columns>div{border:1px solid #d8e2df;border-radius:8px;overflow:hidden;background:#fff}
+.report-detail-heading{background:#0f5c4d;color:#fff;padding:8px 10px;font-size:11px;font-weight:900;text-align:center}
+.report-detail-columns .report-detail-cell{border-left:0;border-right:0}
+.report-detail-columns .report-detail-cell:last-child{border-bottom:0}
+@media(max-width:600px){.report-detail-grid,.report-detail-columns{gap:7px}.report-detail-cell{padding:7px 8px;font-size:9px}.report-detail-cell b{font-size:11px}.report-detail-heading{font-size:10px;padding:7px 8px}}
 .report-two-col>div{min-width:0}
 .report-compact-row{padding:5px 7px;margin-bottom:4px;border:1px solid #e1e8e5;border-radius:6px;background:#fff;font-size:9.5px;line-height:1.4}
 .report-compact-row:nth-child(even){background:#f7faf9}
@@ -3157,7 +3168,57 @@ function reportCard(title,body){
     <div class="report-paper-footer-note">جمعية وارث الخيرية © 2026</div>
   </div>`;
 }
-function renderGeneralReport(){const ds=donations.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), hs=helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), es=expenses.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), inv=inventoryMovements.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));const fin=ds.filter(x=>x.type==='مالي'), rec=fin.filter(x=>x.paid==='تم التسديد'), un=fin.filter(x=>x.paid!=='تم التسديد');const rows=[['العوائل',families.filter(x=>!isHiddenRecord(x)).length],['التبرعات المالية',reportMoney(fin.reduce((n,x)=>n+Number(x.amount||0),0))],['التبرعات المستلمة',reportMoney(rec.reduce((n,x)=>n+Number(x.amount||0),0))],['التبرعات غير المستلمة',reportMoney(un.reduce((n,x)=>n+Number(x.amount||0),0))],['المساعدات',reportMoney(hs.reduce((n,x)=>n+Number(x.amount||0),0))],['المصروفات',reportMoney(es.reduce((n,x)=>n+Number(x.amount||0),0))],['حركات المخزن',inv.length]];document.getElementById('reportGeneral').innerHTML=reportCard('📊 الملخص العام',`<div class="detail-grid">${rows.map(r=>`<div class="info"><small>${r[0]}</small><b>${r[1]}</b></div>`).join('')}</div>`)}
+function renderGeneralReport(){
+  const ds=donations.filter(x=>!isHiddenRecord(x)&&x.type==='مالي'&&reportDateOk(x.date));
+  const hs=helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));
+  const es=expenses.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));
+  const inv=inventoryMovements.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));
+  const aps=appeals.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date));
+  const rec=ds.filter(x=>x.paid==='تم التسديد');
+  const un=ds.filter(x=>x.paid!=='تم التسديد');
+  const moneyTotal=list=>reportMoney(list.reduce((n,x)=>n+Number(x.amount||0),0));
+  const delivered=inv.filter(x=>x.move==='صادر'&&x.type==='جهاز');
+  const deviceQty=(kind)=>delivered.reduce((n,x)=>{
+    const name=String(x.name||'').trim().toLowerCase();
+    let match=false;
+    if(kind==='ثلاجة') match=/ثلاج/.test(name);
+    else if(kind==='مجمدة') match=/مجمد|فريزر|freezer/.test(name);
+    else if(kind==='سبلت') match=/سبلت|split/.test(name);
+    else if(kind==='مكيف') match=/مكيف|مبرد|كولر|cooler/.test(name)&&!/سبلت|split/.test(name);
+    else if(kind==='هيتر') match=/هيتر|دفاية|مدفأة|heater/.test(name);
+    else if(kind==='كيزر') match=/كيزر|سخان|geyser|خزان.*حار/.test(name);
+    return n+(match?Number(x.qty||0):0);
+  },0);
+  const caseTypes=['زواج','طبية','سكن','معيشية','دراسية'];
+  const caseQty=(kind)=>hs.reduce((n,x)=>{
+    const t=String(x.type||'').trim();
+    const isOther=!caseTypes.includes(t);
+    return n+((kind==='اخرى'?isOther:t===kind)?1:0);
+  },0);
+  const stat=(label,value)=>`<div class="report-detail-cell"><span>${escapeHtml(label)}</span><b>${escapeHtml(String(value))}</b></div>`;
+  const deviceRows=['ثلاجة','مجمدة','سبلت','مكيف','هيتر','كيزر'];
+  const caseRows=['زواج','طبية','سكن','معيشية','دراسية','اخرى'];
+  const body=`
+    <div class="report-detail-grid">
+      ${stat('عدد العوائل',families.filter(x=>!isHiddenRecord(x)).length)}
+      ${stat('عدد المناشدات المكتملة',aps.filter(x=>x.status==='مكتملة').length)}
+      ${stat('التبرعات',moneyTotal(ds))}
+      ${stat('تبرعات غير مستلمة',moneyTotal(un))}
+      ${stat('المساعدات',moneyTotal(hs))}
+      ${stat('المصروفات',moneyTotal(es))}
+    </div>
+    <div class="report-detail-columns">
+      <div>
+        <div class="report-detail-heading">الأجهزة المسلمة</div>
+        ${deviceRows.map(d=>stat(d,deviceQty(d))).join('')}
+      </div>
+      <div>
+        <div class="report-detail-heading">عدد الحالات</div>
+        ${caseRows.map(c=>stat(c,caseQty(c))).join('')}
+      </div>
+    </div>`;
+  document.getElementById('reportGeneral').innerHTML=reportCard('التقرير المفصل',body);
+}
 function reportFamilySearchRender(){
   const box=document.getElementById('reportFamily');
   if(!box)return;
