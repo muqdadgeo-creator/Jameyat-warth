@@ -953,6 +953,7 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <button class="donation-tab" data-report-tab="donor" onclick="switchReportTab('donor')">👤 تقرير متبرع</button>
 <button class="donation-tab" data-report-tab="helps" onclick="switchReportTab('helps')">🤝 المساعدات</button>
 <button class="donation-tab" data-report-tab="donations" onclick="switchReportTab('donations')">💝 التبرعات</button>
+<button class="donation-tab" data-report-tab="expenses" onclick="switchReportTab('expenses')">💸 المصروفات</button>
 <button class="donation-tab" data-report-tab="hidden" onclick="switchReportTab('hidden')">🚫 المحجوبات</button>
 </div>
 <div class="card" style="margin-bottom:10px">
@@ -968,6 +969,7 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <div class="report-panel" id="reportDonor" style="display:none"></div>
 <div class="report-panel" id="reportHelps" style="display:none"></div>
 <div class="report-panel" id="reportDonations" style="display:none"></div>
+<div class="report-panel" id="reportExpenses" style="display:none"></div>
 <div class="report-panel" id="reportHidden" style="display:none"></div>
 </section>
 </main>
@@ -3120,7 +3122,7 @@ let activeReportTab='general';
 function reportDateOk(v){if(!v)return true;const from=document.getElementById('reportFrom')?.value||'';const to=document.getElementById('reportTo')?.value||'';return (!from||v>=from)&&(!to||v<=to)}
 function setDefaultReportDates(){const f=document.getElementById('reportFrom'),t=document.getElementById('reportTo');if(f?.value||t?.value)return;const now=new Date();const y=now.getFullYear(),m=String(now.getMonth()+1).padStart(2,'0'),d=String(now.getDate()).padStart(2,'0');if(f)f.value=`${y}-01-01`;if(t)t.value=`${y}-${m}-${d}`;}
 function clearReportDates(){const f=document.getElementById('reportFrom'),t=document.getElementById('reportTo');if(f)f.value='';if(t)t.value='';renderActiveReport()}
-function switchReportTab(tab){activeReportTab=tab;document.querySelectorAll('[data-report-tab]').forEach(b=>b.classList.toggle('active',b.dataset.reportTab===tab));document.querySelectorAll('.report-panel').forEach(x=>x.style.display='none');const box=document.getElementById('report'+({general:'General',family:'Family',donor:'Donor',helps:'Helps',donations:'Donations',hidden:'Hidden'}[tab]||'General'));if(box)box.style.display='block';renderActiveReport()}
+function switchReportTab(tab){activeReportTab=tab;document.querySelectorAll('[data-report-tab]').forEach(b=>b.classList.toggle('active',b.dataset.reportTab===tab));document.querySelectorAll('.report-panel').forEach(x=>x.style.display='none');const box=document.getElementById('report'+({general:'General',family:'Family',donor:'Donor',helps:'Helps',donations:'Donations',expenses:'Expenses',hidden:'Hidden'}[tab]||'General'));if(box)box.style.display='block';renderActiveReport()}
 function printActiveReport(){
   const reports=document.querySelectorAll('#reports>.report-panel');
   const active=Array.from(reports).find(x=>{
@@ -3140,7 +3142,7 @@ function printActiveReport(){
   setTimeout(()=>window.print(),50);
 }
 
-function renderActiveReport(){if(activeReportTab==='general')renderGeneralReport();else if(activeReportTab==='family')renderFamilyReport();else if(activeReportTab==='donor')renderDonorReport();else if(activeReportTab==='helps')renderHelpsReport();else if(activeReportTab==='donations')renderDonationsReport();else renderHiddenReport()}
+function renderActiveReport(){if(activeReportTab==='general')renderGeneralReport();else if(activeReportTab==='family')renderFamilyReport();else if(activeReportTab==='donor')renderDonorReport();else if(activeReportTab==='helps')renderHelpsReport();else if(activeReportTab==='donations')renderDonationsReport();else if(activeReportTab==='expenses')renderExpensesReport();else renderHiddenReport()}
 function reportMoney(n){return (Number(n)||0).toLocaleString('en-US')+' د.ع'}
 function reportTitleText(title){
   return String(title||'تقرير مفصل').replace(/^[^\p{L}\p{N}]+/u,'').replace(/\s+—.*$/,'').trim()||'تقرير مفصل';
@@ -3367,6 +3369,39 @@ function renderDonationsReport(){
     <div class="report-section-title">سجل التبرعات المالية</div>
     ${list.length?`<div style="overflow-x:auto"><table class="report-a4-table"><thead><tr><th>ت</th><th>المتبرع</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table></div>`:'<div class="empty" style="padding:30px;text-align:center">لا توجد تبرعات مالية ضمن الفترة المحددة</div>'}`;
   box.innerHTML=reportCard('تقرير التبرعات',body);
+}
+
+function renderExpensesReport(){
+  const box=document.getElementById('reportExpenses');
+  if(!box)return;
+  const list=sortRecords(expenses.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)),'date',['details','category']);
+  const total=list.reduce((n,x)=>n+Number(x.amount||0),0);
+  const cats=['انشائية','مواد احتياطية','ايجار','نقل','صيانة','أخرى'];
+  const stats={}; cats.forEach(c=>stats[c]=0);
+  list.forEach(x=>{
+    const c=effectiveExpenseCategory(x);
+    stats[cats.includes(c)?c:'أخرى']+=Number(x.amount||0);
+  });
+  const dates=list.map(x=>String(x.date||'').slice(0,10)).filter(Boolean).sort();
+  const from=document.getElementById('reportFrom')?.value||dates[0]||'';
+  const to=document.getElementById('reportTo')?.value||dates[dates.length-1]||'';
+  const dateText=from||to?`${from||'—'} إلى ${to||'—'}`:'كل الفترات';
+  const summary=cats.map(c=>`<div class="info"><small>${escapeHtml(c)}</small><b>${reportMoney(stats[c])}</b></div>`).join('');
+  const rows=list.map((x,i)=>`<tr>
+    <td>${i+1}</td>
+    <td>${escapeHtml(x.date||'')}</td>
+    <td>${escapeHtml(effectiveExpenseCategory(x))}</td>
+    <td>${escapeHtml(x.details||'')}</td>
+    <td class="report-a4-total">${reportMoney(x.amount)}</td>
+  </tr>`).join('');
+  const body=`
+    <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml(dateText)}</b></div>
+    <div class="report-summary-line"><span>عدد المصروفات: ${list.length}</span><span>إجمالي المصروفات: ${reportMoney(total)}</span></div>
+    <div class="report-section-title">المصروفات حسب الصنف</div>
+    <div class="detail-grid">${summary}</div>
+    <div class="report-section-title">سجل المصروفات</div>
+    ${list.length?`<div style="overflow-x:auto"><table class="report-a4-table"><thead><tr><th>ت</th><th>التاريخ</th><th>الصنف</th><th>التفاصيل</th><th>المبلغ</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="font-weight:900">إجمالي المصروفات</td><td class="report-a4-total">${reportMoney(total)}</td></tr></tfoot></table></div>`:'<div class="empty" style="padding:30px;text-align:center">لا توجد مصروفات ضمن الفترة المحددة</div>'}`;
+  box.innerHTML=reportCard('تقرير المصروفات',body);
 }
 
 function renderHiddenReport(){
