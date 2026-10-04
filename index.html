@@ -951,9 +951,9 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <button class="donation-tab active" data-report-tab="general" onclick="switchReportTab('general')">📊 التقرير العام</button>
 <button class="donation-tab" data-report-tab="family" onclick="switchReportTab('family')">👨‍👩‍👧 تقرير عائلة</button>
 <button class="donation-tab" data-report-tab="donor" onclick="switchReportTab('donor')">👤 تقرير متبرع</button>
-<button class="donation-tab" data-report-tab="helps" onclick="switchReportTab('helps')">🤝 تقرير مفصل عن المساعدات</button>
-<button class="donation-tab" data-report-tab="donations" onclick="switchReportTab('donations')">💝 التبرعات</button>
-<button class="donation-tab" data-report-tab="expenses" onclick="switchReportTab('expenses')">💸 تقرير مفصل عن المصروفات</button>
+<button class="donation-tab" data-report-tab="helps" onclick="switchReportTab('helps')">🤝 تقرير المساعدات</button>
+<button class="donation-tab" data-report-tab="donations" onclick="switchReportTab('donations')">💝 تقرير التبرعات</button>
+<button class="donation-tab" data-report-tab="expenses" onclick="switchReportTab('expenses')">💸 تقرير المصروفات</button>
 <button class="donation-tab" data-report-tab="hidden" onclick="switchReportTab('hidden')">🚫 المحجوبات</button>
 </div>
 <div class="card" style="margin-bottom:10px">
@@ -3145,7 +3145,7 @@ function printActiveReport(){
 function renderActiveReport(){if(activeReportTab==='general')renderGeneralReport();else if(activeReportTab==='family')renderFamilyReport();else if(activeReportTab==='donor')renderDonorReport();else if(activeReportTab==='helps')renderHelpsReport();else if(activeReportTab==='donations')renderDonationsReport();else if(activeReportTab==='expenses')renderExpensesReport();else renderHiddenReport()}
 function reportMoney(n){return (Number(n)||0).toLocaleString('en-US')+' د.ع'}
 function reportTitleText(title){
-  return String(title||'تقرير مفصل').replace(/^[^\p{L}\p{N}]+/u,'').replace(/\s+—.*$/,'').trim()||'تقرير مفصل';
+  return String(title||'التقرير').replace(/^[^\p{L}\p{N}]+/u,'').replace(/\s+—.*$/,'').trim()||'التقرير';
 }
 function reportCard(title,body){
   const clean=reportTitleText(title);
@@ -3158,7 +3158,7 @@ function reportCard(title,body){
       <div class="report-paper-quote">((اعلموا أن حوائج الناس إليكم من نعم الله عليكم فلا تملوا النعم فتتحول إلى غيركم))</div>
       <div class="report-paper-quote-attrib">الإمام الحسين عليه السلام</div>
       <div class="report-paper-greeting">تهديكم جمعيتنا أطيب التحيات</div>
-      <div class="report-paper-title">تقرير مفصل عن ${escapeHtml(clean)}</div>
+      <div class="report-paper-title">${escapeHtml(clean)}</div>
     </div>
     ${body}
     <div class="report-paper-footer">
@@ -3344,7 +3344,7 @@ function renderHelpsReport(){
     <div class="report-summary-line"><span>عدد المساعدات: ${list.length}</span><span>إجمالي المساعدات: ${reportMoney(total)}</span></div>
     <div class="report-section-title">تفاصيل المساعدات</div>
     ${list.length?`<table class="report-a4-table"><thead><tr><th>ت</th><th>التاريخ</th><th>العائلة</th><th>نوع المساعدة</th><th>المبلغ</th><th>التفاصيل</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table>`:`<div class="empty" style="padding:30px;text-align:center">لا توجد مساعدات ضمن الفترة المحددة</div>`}`;
-  box.innerHTML=reportCard('تقرير مفصل عن المساعدات',body);
+  box.innerHTML=reportCard('تقرير المساعدات',body);
 }
 function renderDonationsReport(){
   const box=document.getElementById('reportDonations');
@@ -3380,7 +3380,7 @@ function renderDonationsReport(){
     </div>
     <div class="report-section-title">سجل التبرعات المالية</div>
     ${list.length?`<div style="overflow-x:auto"><table class="report-a4-table"><thead><tr><th>ت</th><th>المتبرع</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table></div>`:'<div class="empty" style="padding:30px;text-align:center">لا توجد تبرعات مالية ضمن الفترة المحددة</div>'}`;
-  box.innerHTML=reportCard('تقرير مفصل عن التبرعات',body);
+  box.innerHTML=reportCard('تقرير التبرعات',body);
 }
 
 function renderExpensesReport(){
@@ -3413,7 +3413,7 @@ function renderExpensesReport(){
     <div class="detail-grid">${summary}</div>
     <div class="report-section-title">سجل المصروفات</div>
     ${list.length?`<div style="overflow-x:auto"><table class="report-a4-table"><thead><tr><th>ت</th><th>التاريخ</th><th>الصنف</th><th>التفاصيل</th><th>المبلغ</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="font-weight:900">إجمالي المصروفات</td><td class="report-a4-total">${reportMoney(total)}</td></tr></tfoot></table></div>`:'<div class="empty" style="padding:30px;text-align:center">لا توجد مصروفات ضمن الفترة المحددة</div>'}`;
-  box.innerHTML=reportCard('تقرير مفصل عن المصروفات',body);
+  box.innerHTML=reportCard('تقرير المصروفات',body);
 }
 
 function renderHiddenReport(){
