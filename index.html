@@ -1672,6 +1672,7 @@ function getUsers(){try{const x=JSON.parse(localStorage.getItem(USER_KEY)||'null
 function saveUsers(x){localStorage.setItem(USER_KEY,JSON.stringify(x))}
 function currentUser(){try{return JSON.parse(localStorage.getItem(CURRENT_USER_KEY)||'null')}catch(e){return null}}
 function normalizeRole(role){const r=String(role||'').trim();const m={owner:'المالك',manager:'مدير الجمعية',inspection:'مسؤول العوائل والكشوفات',inventory:'مسؤول المخزن',finance:'مسؤول المالية والتبرعات',data_entry:'إدخال البيانات',viewer:'مشاهد/قارئ',مالك:'المالك','مسؤول الكشف':'مسؤول العوائل والكشوفات'};return m[r]||r}
+function authEmailForUsername(username){return String(username||'').trim().toLowerCase().replace(/\s+/g,'')+'@users.warith.local'}
 function currentRole(){return normalizeRole(currentUser()?.role||'')}
 function hasPermission(p){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);/* المالك ومدير الجمعية لا يتأثران بأي صلاحيات قديمة مخزنة */if(role==='المالك')return true;if(role==='مدير الجمعية')return p!=='users-settings';const rolePerms=ROLE_PERMISSIONS[role]||[];const savedPerms=Array.isArray(u.permissions)?u.permissions:rolePerms;if(['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['families','family-detail','family-members','add-member'].includes(p))return true;if(p==='inventory'&&['مسؤول المخزن','إدخال البيانات'].includes(role))return true;return savedPerms.includes(p)||rolePerms.includes(p)}
 function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);if(role==='المالك'||role==='مدير الجمعية')return true;/* صلاحية العوائل ثابتة لمسؤولي العوائل/الكشف وإدخال البيانات، حتى لو كانت بيانات الصلاحيات القديمة ناقصة */if(section==='families'&&['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['add','edit'].includes(action))return true;const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
@@ -1685,44 +1686,96 @@ async function performLogin(){
   const err=document.getElementById('loginError');
   if(!username||!pass){if(err)err.textContent='أدخل اسم المستخدم والرمز';return}
   try{
-    if(username==='admin'){
-      if(!window.warithSupabase)throw new Error('Supabase client unavailable');
-      const {data,error}=await window.warithSupabase.auth.signInWithPassword({email:'warthcare@gmail.com',password:pass});
-      if(error||!data?.user)throw new Error(error?.message||'بيانات الدخول غير صحيحة');
-      const {data:profileData,error:profileError}=await window.warithSupabase.rpc('get_my_app_user');
-      const profile=Array.isArray(profileData)?profileData[0]:profileData;
-      if(profileError||!profile)throw new Error('حساب المستخدم غير مربوط بالنظام بعد');
-      if(profile.is_active===false)throw new Error('هذا المستخدم موقوف');
-      const uiRole=normalizeRole(profile.role);
-      localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,role:uiRole,name:profile.display_name||profile.username,active:profile.is_active!==false,permissions:ROLE_PERMISSIONS[uiRole]||[],actions:ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}}));
-    }else{
-      const users=getUsers();
-      const norm=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,'');
-      const user=users.find(u=>u.active!==false && (norm(u.name)===username || norm(u.username)===username));
-      if(!user || String(user.password||'')!==pass)throw new Error('اسم المستخدم أو الرمز غير صحيح');
-      const uiRole=normalizeRole(user.role);
-      const safeUser={...user,role:uiRole,name:user.name||user.username,active:user.active!==false,permissions:ROLE_PERMISSIONS[uiRole]||[],actions:ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}};
-      localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(safeUser));
-    }
+    if(!window.warithSupabase)throw new Error('Supabase client unavailable');
+    const email=username==='admin'?'warthcare@gmail.com':authEmailForUsername(username);
+    const {data,error}=await window.warithSupabase.auth.signInWithPassword({email,password:pass});
+    if(error||!data?.user)throw new Error('اسم المستخدم أو الرمز غير صحيح');
+    const {data:profileData,error:profileError}=await window.warithSupabase.rpc('get_my_app_user');
+    const profile=Array.isArray(profileData)?profileData[0]:profileData;
+    if(profileError||!profile)throw new Error('حساب المستخدم غير مربوط بالنظام بعد');
+    if(profile.is_active===false)throw new Error('هذا المستخدم موقوف');
+    const uiRole=normalizeRole(profile.role);
+    localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,role:uiRole,name:profile.display_name||profile.username,active:true,permissions:profile.permissions||ROLE_PERMISSIONS[uiRole]||[],actions:profile.actions||ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}}));
     if(err)err.textContent='';
     document.getElementById('loginBackdrop').style.display='none';
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();showScreen('home');
   }catch(e){if(err)err.textContent='تعذر تسجيل الدخول: '+(e?.message||'تحقق من البيانات');}
 }
-async function logoutSupabaseUser(){try{if(window.warithSupabase)await window.warithSupabase.auth.signOut()}catch(e){}localStorage.removeItem(CURRENT_USER_KEY);updateAuthHeaderUI();showScreen('home')}
+async function logoutSupabaseUser(){try{if(window.warithSupabase)await window.warithSupabase.auth.signOut({scope:'local'})}catch(e){}localStorage.removeItem(CURRENT_USER_KEY);updateAuthHeaderUI();showScreen('home')}
 function updateCurrentUserBadge(){const u=currentUser();document.querySelectorAll('.current-user-badge').forEach(x=>x.textContent=u?`${u.name} · ${u.role}`:'')}
 function openLogin(){const u=document.getElementById('loginUsername');if(u)u.value='';const p=document.getElementById('loginPassword');if(p)p.value='';const e=document.getElementById('loginError');if(e)e.textContent='';const b=document.getElementById('loginBackdrop');if(b)b.style.display='flex';}
 function updateAuthHeaderUI(){const logged=!!currentUser();const btn=document.getElementById('headerLoginBtn');if(btn){btn.textContent=logged?'🚪 خروج':'🔐 تسجيل الدخول';btn.setAttribute('aria-label',logged?'تسجيل الخروج':'تسجيل الدخول');btn.onclick=logged?logoutSupabaseUser:openLogin;}const menuBtn=document.getElementById('menuLoginButton');if(menuBtn){menuBtn.textContent=logged?'🚪 تسجيل الخروج':'🔐 تسجيل الدخول';menuBtn.onclick=logged?logoutSupabaseUser:openLogin;}document.querySelectorAll('[data-auth-only]').forEach(el=>el.style.display=logged?'':'none');}
 function switchUser(){openLogin()}
 function openSettings(){if(!hasPermission('users-settings')){alert('ليس لديك صلاحية إدارة المستخدمين والصلاحيات.');return}showScreen('settings');renderUsers()}
-function renderUsers(){const users=getUsers(),box=document.getElementById('usersTable');if(!box)return;document.getElementById('usersCount').textContent=users.length+' مستخدم';box.innerHTML=`<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>${users.map((u,i)=>{const perms=u.permissions||ROLE_PERMISSIONS[u.role]||[];return `<tr><td><b>${escapeHtml(u.name)}</b></td><td><span class="user-badge">${escapeHtml(u.role)}</span></td><td><span class="user-badge ${u.active===false?'user-off':''}">${u.active===false?'موقوف':'فعال'}</span></td><td>${perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')}</td><td><button class="more" onclick="openUserEditor(${i})">✏️</button> <button class="more" onclick="toggleUser(${i})">${u.active===false?'▶️':'⏸️'}</button>${i!==0?` <button class="more" onclick="deleteUser(${i})">🗑</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`}
-function openUserEditor(i=null){if(!hasPermission('users-settings'))return;const users=getUsers();document.getElementById('userEditorBackdrop').style.display='flex';document.getElementById('ue-index').value=i===null?'':i;document.getElementById('userEditorTitle').textContent=i===null?'إضافة مستخدم':'تعديل مستخدم';document.getElementById('ue-name').value=i===null?'':users[i].name;document.getElementById('ue-role').value=i===null?'مسؤول العوائل والكشوفات':users[i].role;document.getElementById('ue-password').value=i===null?'':users[i].password;renderEditorPermissions(i===null?ROLE_PERMISSIONS[document.getElementById('ue-role').value]:users[i].permissions||ROLE_PERMISSIONS[users[i].role]||[])}
+let remoteUsersCache=[];
+async function loadRemoteUsers(){
+  const {data,error}=await window.warithSupabase.functions.invoke('manage-app-user',{body:{action:'list'}});
+  if(error)throw error;
+  remoteUsersCache=Array.isArray(data?.users)?data.users:[];
+  return remoteUsersCache;
+}
+async function migrateLegacyUsersToAuth(){
+  try{
+    if(currentRole()!=='المالك')return;
+    const legacy=getUsers().filter(u=>u.active!==false&&String(u.name||'').trim()&&String(u.password||'').trim()&&String(u.role||'')!=='المالك');
+    const roleMap={'مدير الجمعية':'manager','مسؤول المالية والتبرعات':'finance','مسؤول العوائل والكشوفات':'inspection','مسؤول المخزن':'inventory','إدخال البيانات':'data_entry','مشاهد/قارئ':'viewer'};
+    for(const u of legacy){
+      try{await window.warithSupabase.functions.invoke('manage-app-user',{body:{action:'create',display_name:u.name,username:u.username||u.name,password:u.password,role:roleMap[u.role]||'inspection'}})}catch(e){}
+    }
+    const all=getUsers().map(u=>{const x={...u};delete x.password;return x});
+    localStorage.setItem(USER_KEY,JSON.stringify(all));
+  }catch(e){}
+}
+async function renderUsers(){
+  const box=document.getElementById('usersTable');if(!box)return;
+  try{
+    const users=await loadRemoteUsers();
+    const count=document.getElementById('usersCount');if(count)count.textContent=users.length+' مستخدم';
+    box.innerHTML='<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>'+
+      users.map(u=>{const role=normalizeRole(u.role);const perms=ROLE_PERMISSIONS[role]||[];return '<tr><td><b>'+escapeHtml(u.display_name||u.username)+'</b></td><td><span class="user-badge">'+escapeHtml(role)+'</span></td><td><span class="user-badge '+(u.is_active===false?'user-off':'')+'">'+(u.is_active===false?'موقوف':'فعال')+'</span></td><td>'+perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')+'</td><td>'+(u.username==='admin'?'—':'<button class="more" onclick="openUserEditorById(\''+u.id+'\')">✏️</button>')+'</td></tr>'}).join('')+
+      '</tbody></table></div>';
+  }catch(e){box.innerHTML='<div class="empty">تعذر تحميل مستخدمي Supabase</div>'}
+}
+async function openUserEditorById(id){
+  if(!hasPermission('users-settings'))return;
+  const u=remoteUsersCache.find(x=>String(x.id)===String(id));if(!u)return;
+  document.getElementById('userEditorBackdrop').style.display='flex';
+  document.getElementById('ue-index').value=id;
+  document.getElementById('userEditorTitle').textContent='تعديل مستخدم';
+  document.getElementById('ue-name').value=u.display_name||u.username||'';
+  document.getElementById('ue-role').value=normalizeRole(u.role);
+  document.getElementById('ue-password').value='';
+  renderEditorPermissions(ROLE_PERMISSIONS[normalizeRole(u.role)]||[]);
+}
+function openUserEditor(i=null){
+  if(!hasPermission('users-settings')||i!==null)return;
+  document.getElementById('userEditorBackdrop').style.display='flex';
+  document.getElementById('ue-index').value='';
+  document.getElementById('userEditorTitle').textContent='إضافة مستخدم';
+  document.getElementById('ue-name').value='';
+  document.getElementById('ue-role').value='مسؤول العوائل والكشوفات';
+  document.getElementById('ue-password').value='';
+  renderEditorPermissions(ROLE_PERMISSIONS['مسؤول العوائل والكشوفات']);
+}
 function closeUserEditor(){document.getElementById('userEditorBackdrop').style.display='none'}
-function renderEditorPermissions(selected){const box=document.getElementById('ue-perms');box.innerHTML=Object.entries(PERM_LABELS).map(([k,v])=>`<label class="perm-item"><input type="checkbox" value="${k}" ${selected.includes(k)?'checked':''}>${escapeHtml(v)}</label>`).join('')}
+function renderEditorPermissions(selected){const box=document.getElementById('ue-perms');box.innerHTML=Object.entries(PERM_LABELS).map(([k,v])=>'<label class="perm-item"><input type="checkbox" value="'+k+'" '+(selected.includes(k)?'checked':'')+'>'+escapeHtml(v)+'</label>').join('')}
 function applyRolePermissionsToEditor(){renderEditorPermissions(ROLE_PERMISSIONS[document.getElementById('ue-role').value]||[])}
-function saveUserEditor(){const users=getUsers(),idx=document.getElementById('ue-index').value===''?null:Number(document.getElementById('ue-index').value),name=document.getElementById('ue-name').value.trim(),role=document.getElementById('ue-role').value,password=document.getElementById('ue-password').value.trim();if(!name||!password){alert('أدخل اسم المستخدم والرمز');return}const permissions=ROLE_PERMISSIONS[role]||[];const actions=ROLE_ACTIONS[role]||{add:[],edit:[],delete:[]};const obj={name,role,password,permissions,actions,active:true};if(idx===null){users.push(obj)}else{obj.active=users[idx].active!==false;users[idx]={...users[idx],...obj};if(idx===0){users[idx].role='المالك';users[idx].permissions=ROLE_PERMISSIONS['المالك'];users[idx].actions=ROLE_ACTIONS['المالك']}}saveUsers(users);closeUserEditor();renderUsers();renderUserOptions();const cu=currentUser();if(cu&&idx!==null&&cu.name===users[idx].name)localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(users[idx]));applyPermissionUI()}
-function toggleUser(i){const users=getUsers();if(i===0){alert('لا يمكن إيقاف المالك');return}users[i].active=users[i].active===false;saveUsers(users);renderUsers();renderUserOptions()}
-function deleteUser(i){const users=getUsers();if(i===0){alert('لا يمكن حذف المالك');return}if(!confirm('حذف هذا المستخدم؟'))return;users.splice(i,1);saveUsers(users);renderUsers();renderUserOptions()}
+async function saveUserEditor(){
+  const id=document.getElementById('ue-index').value;
+  const name=document.getElementById('ue-name').value.trim();
+  const roleMap={'المالك':'owner','مدير الجمعية':'manager','مسؤول المالية والتبرعات':'finance','مسؤول العوائل والكشوفات':'inspection','مسؤول المخزن':'inventory','إدخال البيانات':'data_entry','مشاهد/قارئ':'viewer'};
+  const role=roleMap[document.getElementById('ue-role').value]||'inspection';
+  const password=document.getElementById('ue-password').value.trim();
+  if(!name||(!id&&!password)){alert('أدخل اسم المستخدم والرمز');return}
+  try{
+    const body=id?{action:'update',id,display_name:name,username:name,role,password}:{action:'create',display_name:name,username:name,role,password};
+    const {data,error}=await window.warithSupabase.functions.invoke('manage-app-user',{body});
+    if(error||data?.error)throw new Error(data?.error||error?.message||'تعذر حفظ المستخدم');
+    closeUserEditor();await renderUsers();
+  }catch(e){alert('تعذر حفظ المستخدم: '+(e?.message||'تحقق من البيانات'))}
+}
+function toggleUser(i){alert('إدارة إيقاف/تفعيل المستخدم ستكون مركزية في Supabase Auth.')}
+function deleteUser(i){alert('حذف المستخدم سيكون مركزياً من Supabase Auth.')}
 function migrateUsersPermissions(){
   const users=getUsers(); let changed=false;
   users.forEach((u)=>{
@@ -1766,76 +1819,23 @@ function migrateUsersPermissions(){
   }
 }
 async function initUsersPermissions(){
-  migrateUsersPermissions();
   renderUserOptions();
-  const login=document.getElementById('loginBackdrop');
-  if(login) login.style.display='none';
+  const login=document.getElementById('loginBackdrop');if(login)login.style.display='none';
   updateAuthHeaderUI();
-
   try{
-    if(!window.warithSupabase) throw new Error('Supabase client unavailable');
-
-    const {data:sessionData,error:sessionError}=await window.warithSupabase.auth.getSession();
-    if(sessionError) throw sessionError;
-
-    const authUser=sessionData?.session?.user;
-    if(!authUser){
-      const localUser=currentUser();
-      if(localUser && localUser.active!==false){
-        applyPermissionUI();
-        updateCurrentUserBadge();
-        updateAuthHeaderUI();
-      }else{
-        localStorage.removeItem(CURRENT_USER_KEY);
-        applyPermissionUI();
-        updateAuthHeaderUI();
-      }
-      return;
-    }
-
+    if(!window.warithSupabase)throw new Error('Supabase client unavailable');
+    const {data:{user:authUser},error:userError}=await window.warithSupabase.auth.getUser();
+    if(userError||!authUser){localStorage.removeItem(CURRENT_USER_KEY);applyPermissionUI();updateAuthHeaderUI();return}
     const {data:profileData,error:profileError}=await window.warithSupabase.rpc('get_my_app_user');
     const profile=Array.isArray(profileData)?profileData[0]:profileData;
-
-    if(profileError||!profile){
-      await window.warithSupabase.auth.signOut();
-      localStorage.removeItem(CURRENT_USER_KEY);
-      if(login) login.style.display='none';
-      applyPermissionUI();
-      updateAuthHeaderUI();
-      return;
-    }
-
-    if(profile.is_active===false){
-      await window.warithSupabase.auth.signOut();
-      localStorage.removeItem(CURRENT_USER_KEY);
-      if(login) login.style.display='none';
-      const err=document.getElementById('loginError');
-      if(err) err.textContent='هذا المستخدم موقوف';
-      return;
-    }
-
-    localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({
-      ...profile,
-      name:profile.display_name||profile.username,
-      active:true,
-      permissions:profile.permissions||ROLE_PERMISSIONS[profile.role]||[],
-      actions:profile.actions||ROLE_ACTIONS[profile.role]||{add:[],edit:[],delete:[]}
-    }));
-
-    if(login) login.style.display='none';
-    applyPermissionUI();
-    updateCurrentUserBadge();
-    updateAuthHeaderUI();
-  }catch(e){
-    const localUser=currentUser();
-    if(!localUser || localUser.active===false) localStorage.removeItem(CURRENT_USER_KEY);
-    if(login) login.style.display='none';
-    applyPermissionUI();
-    updateCurrentUserBadge();
-    updateAuthHeaderUI();
-  }
+    if(profileError||!profile||profile.is_active===false){await window.warithSupabase.auth.signOut({scope:'local'});localStorage.removeItem(CURRENT_USER_KEY);applyPermissionUI();updateAuthHeaderUI();return}
+    const uiRole=normalizeRole(profile.role);
+    localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,name:profile.display_name||profile.username,role:uiRole,active:true,permissions:profile.permissions||ROLE_PERMISSIONS[uiRole]||[],actions:profile.actions||ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}}));
+    if(uiRole==='المالك')await migrateLegacyUsersToAuth();
+    applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
+    if(document.getElementById('usersTable'))renderUsers();
+  }catch(e){localStorage.removeItem(CURRENT_USER_KEY);applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI()}
 }
-
 let filesCategory='الكل';
 function canAccessFiles(){return hasPermission('files-center')}
 function openFilesCenter(){
