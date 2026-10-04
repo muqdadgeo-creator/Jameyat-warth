@@ -1735,11 +1735,8 @@ async function initUsersPermissions(){
       return;
     }
 
-    const {data:profile,error:profileError}=await window.warithSupabase
-      .from('app_users')
-      .select('*')
-      .eq('auth_user_id',authUser.id)
-      .single();
+    const {data:profileData,error:profileError}=await window.warithSupabase.rpc('get_my_app_user');
+    const profile=Array.isArray(profileData)?profileData[0]:profileData;
 
     if(profileError||!profile){
       await window.warithSupabase.auth.signOut();
