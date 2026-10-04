@@ -602,9 +602,9 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <section class="screen" id="activities">
 <div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">النشاطات</div></div>
 <div class="activity-tabs">
-<button class="activity-tab active" id="activityTabHelp" onclick="switchActivityTab('help')">🤝 تقرير مفصل عن المساعدات</button>
+<button class="activity-tab active" id="activityTabHelp" onclick="switchActivityTab('help')">🤝 المساعدات</button>
 <button class="activity-tab" id="activityTabPrograms" onclick="switchActivityTab('programs')">🎯 البرامج</button>
-<button class="activity-tab" id="activityTabExpenses" onclick="switchActivityTab('expenses')">💸 تقرير مفصل عن المصروفات</button>
+<button class="activity-tab" id="activityTabExpenses" onclick="switchActivityTab('expenses')">💸 المصروفات</button>
 </div>
 <div id="helpTab">
 <div class="actions"><button class="action primary" onclick="openActivityForm('help')">＋ إضافة مساعدة</button></div>
@@ -952,7 +952,7 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <button class="donation-tab" data-report-tab="family" onclick="switchReportTab('family')">👨‍👩‍👧 تقرير عائلة</button>
 <button class="donation-tab" data-report-tab="donor" onclick="switchReportTab('donor')">👤 تقرير متبرع</button>
 <button class="donation-tab" data-report-tab="helps" onclick="switchReportTab('helps')">🤝 تقرير مفصل عن المساعدات</button>
-<button class="donation-tab" data-report-tab="donations" onclick="switchReportTab('donations')">💝 تقرير مفصل عن التبرعات</button>
+<button class="donation-tab" data-report-tab="donations" onclick="switchReportTab('donations')">💝 التبرعات</button>
 <button class="donation-tab" data-report-tab="expenses" onclick="switchReportTab('expenses')">💸 تقرير مفصل عن المصروفات</button>
 <button class="donation-tab" data-report-tab="hidden" onclick="switchReportTab('hidden')">🚫 المحجوبات</button>
 </div>
@@ -1341,12 +1341,12 @@ function renderAppealFinancialSummary(a){
 function renderAppealDonations(a){
   const box=document.getElementById('appealDonationsBox'); if(!box)return;
   const x=appealFinancialSummary(a);
-  box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">💝 تقرير مفصل عن التبرعات المالية المرتبطة بالمناشدة</div><div class="sub" style="margin-bottom:8px">إجمالي التبرعات: <b>${x.donationTotal.toLocaleString('en-US')} د.ع</b> · المستلمة: <b>${x.receivedTotal.toLocaleString('en-US')} د.ع</b> · غير المستلمة: <b>${x.pledgedTotal.toLocaleString('en-US')} د.ع</b> · العدد: ${x.linkedDonations.length}</div>${x.linkedDonations.map(d=>`<div class="donor-alloc-row"><span>${escapeHtml(d.donorName||'غير محدد')} · ${escapeHtml(d.date||'')} · ${escapeHtml(d.paid||'')}</span><b>${Number(d.amount||0).toLocaleString('en-US')} د.ع</b></div>`).join('')||'<div class="empty" style="padding:10px">لا توجد تبرعات مالية مرتبطة بهذه المناشدة</div>'}<button class="action primary" style="width:100%;margin-top:8px" onclick="addDonationForAppeal(${Number(a.id)})">＋ تسجيل تبرع مالي لهذه المناشدة</button></div>`;
+  box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">💝 التبرعات المالية المرتبطة بالمناشدة</div><div class="sub" style="margin-bottom:8px">إجمالي التبرعات: <b>${x.donationTotal.toLocaleString('en-US')} د.ع</b> · المستلمة: <b>${x.receivedTotal.toLocaleString('en-US')} د.ع</b> · غير المستلمة: <b>${x.pledgedTotal.toLocaleString('en-US')} د.ع</b> · العدد: ${x.linkedDonations.length}</div>${x.linkedDonations.map(d=>`<div class="donor-alloc-row"><span>${escapeHtml(d.donorName||'غير محدد')} · ${escapeHtml(d.date||'')} · ${escapeHtml(d.paid||'')}</span><b>${Number(d.amount||0).toLocaleString('en-US')} د.ع</b></div>`).join('')||'<div class="empty" style="padding:10px">لا توجد تبرعات مالية مرتبطة بهذه المناشدة</div>'}<button class="action primary" style="width:100%;margin-top:8px" onclick="addDonationForAppeal(${Number(a.id)})">＋ تسجيل تبرع مالي لهذه المناشدة</button></div>`;
 }
 function renderAppealHelps(a){
   const box=document.getElementById('appealHelpsBox'); if(!box)return;
   const x=appealFinancialSummary(a);
-  box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">🤝 تقرير مفصل عن المساعدات المرتبطة بالمناشدة</div><div class="sub" style="margin-bottom:8px">المجموع المالي للمساعدات: <b>${x.helpTotal.toLocaleString('en-US')} د.ع</b> · العدد: ${x.linkedHelps.length}</div>${x.linkedHelps.map(h=>`<div class="donor-alloc-row"><span>${escapeHtml(h.type||'مساعدة')} · ${escapeHtml(h.date||'')}</span><b>${Number(h.amount||0).toLocaleString('en-US')} د.ع</b></div><div class="sub" style="padding:4px 0 6px">${escapeHtml(h.details||'')}</div>`).join('')||'<div class="empty" style="padding:10px">لا توجد مساعدات مرتبطة بهذه المناشدة</div>'}</div>`;
+  box.innerHTML=`<div class="card" style="margin-top:9px"><div style="font-size:12px;font-weight:900;margin-bottom:8px">🤝 المساعدات المرتبطة بالمناشدة</div><div class="sub" style="margin-bottom:8px">المجموع المالي للمساعدات: <b>${x.helpTotal.toLocaleString('en-US')} د.ع</b> · العدد: ${x.linkedHelps.length}</div>${x.linkedHelps.map(h=>`<div class="donor-alloc-row"><span>${escapeHtml(h.type||'مساعدة')} · ${escapeHtml(h.date||'')}</span><b>${Number(h.amount||0).toLocaleString('en-US')} د.ع</b></div><div class="sub" style="padding:4px 0 6px">${escapeHtml(h.details||'')}</div>`).join('')||'<div class="empty" style="padding:10px">لا توجد مساعدات مرتبطة بهذه المناشدة</div>'}</div>`;
 }
 
 function normalizeIraqPhone(v){
@@ -3221,7 +3221,7 @@ function renderGeneralReport(){
         ${caseRows.map(x=>stat(x,caseQty(x))).join('')}
       </div>
     </div>`;
-  document.getElementById('reportGeneral').innerHTML=reportCard('التقرير المفصل',body);
+  document.getElementById('reportGeneral').innerHTML=reportCard('التقرير العام',body);
 }
 function reportFamilySearchRender(){
   const box=document.getElementById('reportFamily');
