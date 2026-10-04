@@ -735,7 +735,7 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <label id="inv-appeal-wrap">رقم المناشدة<select class="forminput" id="inv-appeal" onchange="onInventoryAppealChange()"><option value="">اختر رقم المناشدة</option></select></label>
 <label id="inv-new-head-wrap" style="display:none">اسم المستفيد<input class="forminput" id="inv-new-head" placeholder="اكتب اسم المستفيد / رب الأسرة"/></label>
 <div id="inv-beneficiary-info" style="grid-column:1/-1"></div>
-<label style="grid-column:1/-1">توثيق الإخراج<input class="forminput" id="inv-proof" type="file" accept="image/*" capture="environment" onchange="previewInventoryProof(this)"/><div id="inv-proof-preview" class="sub" style="margin-top:6px">يمكن إرفاق صورة التوثيق.</div></label>
+<label style="grid-column:1/-1">توثيق الإخراج<input class="forminput" id="inv-proof" type="file" accept="image/*" onchange="previewInventoryProof(this)"/><div id="inv-proof-preview" class="sub" style="margin-top:6px">يمكن إرفاق صورة التوثيق.</div></label>
 </div>
 <input id="inv-beneficiary" type="hidden"/>
 </div>
