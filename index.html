@@ -3722,5 +3722,166 @@ try{renderHomeDashboard();}catch(e){}
     if(typeof renderActivities==='function') renderActivities();
   }catch(e){console.error('Aid name fix failed:',e);}
 })();
+
+/* ================= مزامنة سحابية بين أجهزة الجمعية =================
+   Supabase هو المصدر المشترك، وlocalStorage يعمل كنسخة محلية/كاش.
+   لا تبدأ المزامنة إلا بعد وجود جلسة Supabase مصادق عليها.
+*/
+const WARITH_SYNC_CONFIG={
+  families:{key:'warith_families_v2',entity:'families',id:x=>String(x?.c??'')},
+  appeals:{key:'warith_appeals',entity:'appeals',id:x=>String(x?.id??'')},
+  donors:{key:'warith_donors',entity:'donors',id:x=>String(x?.id??'')},
+  donations:{key:'warith_donations',entity:'donations',id:x=>String(x?.id??'')},
+  inventory:{key:'warith_inventory',entity:'inventory',id:x=>String(x?.id??'')},
+  help:{key:'warith_help',entity:'help',id:x=>String(x?.id??'')},
+  programs:{key:'warith_programs',entity:'programs',id:x=>String(x?.id??'')},
+  expenses:{key:'warith_expenses',entity:'expenses',id:x=>String(x?.id??'')}
+};
+let warithSyncReady=false;
+let warithSyncPulling=false;
+let warithSyncChannel=null;
+const warithSyncTimers={};
+const warithSyncOriginalSetItem=localStorage.setItem.bind(localStorage);
+
+function warithSyncArray(entity){
+  switch(entity){
+    case 'families':return families;
+    case 'appeals':return appeals;
+    case 'donors':return donors;
+    case 'donations':return donations;
+    case 'inventory':return inventoryMovements;
+    case 'help':return helps;
+    case 'programs':return programs;
+    case 'expenses':return expenses;
+    default:return [];
+  }
+}
+function warithSyncSetArray(entity,value){
+  switch(entity){
+    case 'families':families=value;break;
+    case 'appeals':appeals=value;break;
+    case 'donors':donors=value;break;
+    case 'donations':donations=value;break;
+    case 'inventory':inventoryMovements=value;break;
+    case 'help':helps=value;break;
+    case 'programs':programs=value;break;
+    case 'expenses':expenses=value;break;
+  }
+}
+function warithSyncLocalSet(cfg,arr){
+  const data=JSON.stringify(arr||[]);
+  warithSyncOriginalSetItem(cfg.key,data);
+  if(cfg.entity==='families')warithSyncOriginalSetItem('warith_families',data);
+}
+function warithSyncRefreshUI(entity){
+  try{
+    if(entity==='families'&&typeof renderFamilies==='function')renderFamilies();
+    if(entity==='appeals'&&typeof renderAppeals==='function'){renderAppeals();if(typeof updateAppealDashboard==='function')updateAppealDashboard();}
+    if(entity==='donors'&&typeof renderDonors==='function')renderDonors();
+    if(entity==='donations'&&typeof renderDonations==='function')renderDonations();
+    if(entity==='inventory'&&typeof renderInventory==='function')renderInventory();
+    if((entity==='help'||entity==='programs'||entity==='expenses')&&typeof renderActivities==='function')renderActivities();
+  }catch(e){console.warn('Warith sync UI refresh:',e);}
+}
+function warithSyncSchedule(entity){
+  if(!warithSyncReady||warithSyncPulling)return;
+  clearTimeout(warithSyncTimers[entity]);
+  warithSyncTimers[entity]=setTimeout(()=>warithSyncPushEntity(entity),900);
+}
+async function warithSyncPushEntity(entity){
+  if(!warithSyncReady||!window.warithSupabase)return;
+  const cfg=Object.values(WARITH_SYNC_CONFIG).find(x=>x.entity===entity);
+  if(!cfg)return;
+  try{
+    const arr=Array.isArray(warithSyncArray(entity))?warithSyncArray(entity):[];
+    const rows=arr.map(x=>({
+      entity,
+      record_key:cfg.id(x),
+      data:x,
+      updated_at:new Date().toISOString(),
+      deleted:false
+    })).filter(x=>x.record_key&&x.record_key!=='undefined'&&x.record_key!=='null');
+    if(rows.length){
+      const {error}=await window.warithSupabase.from('client_sync_records').upsert(rows,{onConflict:'entity,record_key'});
+      if(error)throw error;
+    }
+    const {data:remote,error:readError}=await window.warithSupabase.from('client_sync_records').select('record_key').eq('entity',entity).eq('deleted',false);
+    if(readError)throw readError;
+    const localKeys=new Set(rows.map(x=>x.record_key));
+    const stale=(remote||[]).map(x=>x.record_key).filter(k=>!localKeys.has(String(k)));
+    if(stale.length){
+      const {error}=await window.warithSupabase.from('client_sync_records')
+        .update({deleted:true,updated_at:new Date().toISOString()})
+        .eq('entity',entity).in('record_key',stale);
+      if(error)throw error;
+    }
+  }catch(e){console.warn('Warith cloud sync failed:',entity,e);}
+}
+async function warithSyncPullEntity(cfg){
+  const {data,error}=await window.warithSupabase.from('client_sync_records')
+    .select('record_key,data,updated_at,deleted').eq('entity',cfg.entity);
+  if(error)throw error;
+  const rows=Array.isArray(data)?data:[];
+  const active=rows.filter(r=>!r.deleted&&r.data).map(r=>r.data);
+  if(rows.length===0){
+    await warithSyncPushEntity(cfg.entity);
+    return;
+  }
+  warithSyncSetArray(cfg.entity,active);
+  warithSyncLocalSet(cfg,active);
+  warithSyncRefreshUI(cfg.entity);
+}
+async function warithSyncInitial(){
+  if(!window.warithSupabase||warithSyncPulling)return;
+  const {data:sessionData,error}=await window.warithSupabase.auth.getSession();
+  if(error||!sessionData?.session?.user)return;
+  warithSyncPulling=true;
+  try{
+    for(const cfg of Object.values(WARITH_SYNC_CONFIG))await warithSyncPullEntity(cfg);
+    warithSyncReady=true;
+    console.log('Warith cloud sync: READY');
+  }catch(e){
+    console.warn('Warith cloud sync initialization failed:',e);
+    warithSyncReady=false;
+  }finally{
+    warithSyncPulling=false;
+  }
+}
+function warithSyncApplyRealtime(payload){
+  const entity=payload?.new?.entity||payload?.old?.entity;
+  const cfg=Object.values(WARITH_SYNC_CONFIG).find(x=>x.entity===entity);
+  if(!cfg||!warithSyncReady)return;
+  const row=payload.new||payload.old;
+  const key=String(row?.record_key??'');
+  if(!key)return;
+  const arr=Array.isArray(warithSyncArray(entity))?[...warithSyncArray(entity)]:[];
+  const idx=arr.findIndex(x=>cfg.id(x)===key);
+  if(payload.eventType==='DELETE'||row?.deleted){
+    if(idx>=0)arr.splice(idx,1);
+  }else if(payload.new?.data){
+    if(idx>=0)arr[idx]=payload.new.data;else arr.unshift(payload.new.data);
+  }
+  warithSyncPulling=true;
+  try{warithSyncSetArray(entity,arr);warithSyncLocalSet(cfg,arr);}finally{warithSyncPulling=false;}
+  warithSyncRefreshUI(entity);
+}
+function warithSyncStartRealtime(){
+  if(!window.warithSupabase||warithSyncChannel)return;
+  warithSyncChannel=window.warithSupabase.channel('warith-client-sync')
+    .on('postgres_changes',{event:'*',schema:'public',table:'client_sync_records'},warithSyncApplyRealtime)
+    .subscribe(status=>console.log('Warith sync realtime:',status));
+}
+async function initWarithCloudSync(){
+  await warithSyncInitial();
+  if(warithSyncReady)warithSyncStartRealtime();
+}
+localStorage.setItem=function(key,value){
+  warithSyncOriginalSetItem(key,value);
+  if(warithSyncPulling||!warithSyncReady)return;
+  const cfg=Object.values(WARITH_SYNC_CONFIG).find(x=>x.key===key||x.entity===key);
+  if(cfg)warithSyncSchedule(cfg.entity);
+};
+window.addEventListener('load',()=>setTimeout(initWarithCloudSync,1400));
+
 </script>
 </html>
