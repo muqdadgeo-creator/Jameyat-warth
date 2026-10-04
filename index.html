@@ -3279,11 +3279,22 @@ function renderFamilyReport(){
     <div class="report-section-title">💰 التبرعات المرتبطة بالعائلة — ${reportMoney(ds.reduce((n,x)=>n+Number(x.amount||0),0))}</div>${reportFamilySectionList(ds,donationRows)}
   `);
 }
+function reportDonorSearchRender(){
+  const box=document.getElementById('reportDonor');
+  if(!box)return;
+  const q=(document.getElementById('reportDonorSearch')?.value||'').trim().toLowerCase();
+  const list=donors.filter(d=>!isHiddenRecord(d)&&[d.id,d.name,d.phone,d.address].join(' ').toLowerCase().includes(q))
+    .slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ar'));
+  const selected=box.dataset.donor||'';
+  const cards=list.map(d=>`<div class="card" style="margin-top:7px"><div class="row"><div class="avatar">م</div><div class="grow"><div class="code">رقم المتبرع #${escapeHtml(d.id)}</div><div class="name">${escapeHtml(d.name||'غير مسجل')}</div><div class="sub">الهاتف: ${escapeHtml(d.phone||'غير مسجل')} · ${escapeHtml(d.address||'العنوان غير مسجل')}</div></div></div><div class="member-actions"><button class="action primary" onclick="document.getElementById('reportDonor').dataset.donor='${escapeHtml(d.id)}';renderDonorReport()">👁️ التقرير</button></div></div>`).join('')||'<div class="empty">لا توجد متبرعين مطابقين للبحث</div>';
+  const current=selected?donors.find(x=>String(x.id)===String(selected)):null;
+  box.innerHTML=reportCard('👤 سجل المتبرعين في التقارير',`<label class="fl">🔎 البحث في سجل المتبرعين<input id="reportDonorSearch" class="forminput" placeholder="اسم المتبرع، الهاتف، العنوان، الرقم..." value="${escapeHtml(q)}" oninput="reportDonorSearchRender()"></label>${current?`<div class="actions" style="margin-top:8px"><button class="action" onclick="document.getElementById('reportDonor').dataset.donor='';renderDonorReport()">← العودة إلى سجل المتبرعين</button></div>`:''}<div style="margin-top:9px"><b>المتبرعون (${list.length})</b></div>${cards}`);
+}
 function renderDonorReport(){
   const box=document.getElementById('reportDonor');
   const id=box.dataset.donor||'';
   if(!id){
-    box.innerHTML=reportCard('👤 تقرير متبرع','<label class="fl">اختر المتبرع<select class="forminput" onchange="document.getElementById(\'reportDonor\').dataset.donor=this.value;renderDonorReport()"><option value="">اختر المتبرع</option>'+donors.map(d=>`<option value="${d.id}">${escapeHtml(d.name||'')} · ${escapeHtml(d.phone||'')}</option>`).join('')+'</select></label><div class="empty" style="margin-top:10px">اختر متبرع لعرض سجله</div>');
+    reportDonorSearchRender();
     return;
   }
   const dlist=sortRecords(donations.filter(d=>!isHiddenRecord(d)&&String(d.donorId)===String(id)&&reportDateOk(d.date)), 'date', ['donorName','item']);
@@ -3305,6 +3316,7 @@ function renderDonorReport(){
   }).join('');
   const total=dlist.filter(x=>x.type==='مالي').reduce((n,x)=>n+Number(x.amount||0),0);
   box.innerHTML=reportCard(`👤 ${escapeHtml(d?.name||'المتبرع')}`,`
+    <div class="actions"><button class="action" onclick="document.getElementById('reportDonor').dataset.donor='';renderDonorReport()">← سجل المتبرعين</button></div>
     <div class="sub">الهاتف: ${escapeHtml(d?.phone||'غير مسجل')}</div>
     <div style="margin-top:8px;font-weight:900">عدد التبرعات: ${dlist.length} · مجموع التبرعات المالية: ${reportMoney(total)}</div>
     <div style="overflow-x:auto;margin-top:12px">
