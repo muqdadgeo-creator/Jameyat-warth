@@ -821,6 +821,14 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <input class="forminput" id="a-address" placeholder="العنوان"/>
 <label class="fl">أقرب نقطة</label>
 <input class="forminput" id="a-landmark" placeholder="نقطة دالة"/>
+<label class="fl">المهنة</label>
+<input class="forminput" id="a-job" placeholder="مهنة رب الأسرة"/>
+<label class="fl">الموقع</label>
+<div style="display:flex;gap:7px">
+<input class="forminput" id="a-map" placeholder="سيظهر رابط الموقع هنا" readonly style="flex:1" type="url"/>
+<button class="action primary" onclick="pickAppealLocation()" style="flex:0 0 auto;padding:0 12px" type="button">📍 إضافة موقع</button>
+</div>
+<div class="sub" id="a-location-status" style="margin-top:5px">اضغط «إضافة موقع» لتحديد الموقع.</div>
 </div>
 </div>
 <div class="card">
@@ -839,9 +847,9 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <input class="forminput" id="a-amount" inputmode="numeric" min="0" placeholder="بالدينار العراقي" type="number"/>
 </div>
 <label class="fl">موقف الكشف</label>
-<select class="forminput" id="a-assessment">
+<select class="forminput" id="a-assessment" onchange="updateNewFamilySaveChoice()">
 <option value="">اختر موقف الكشف (اختياري)</option>
-<option value="مستحق">مستحق</option>
+<option value="مستحقة">مستحقة</option>
 <option value="غير مستحق">غير مستحق</option>
 </select>
 <div class="choice-row">
@@ -1140,13 +1148,13 @@ function setAppealFilter(v){appealFilter=v;renderAppeals();}
 function updateNewFamilySaveChoice(){
   const box=document.getElementById('newFamilySaveChoice');
   const cb=document.getElementById('a-add-family');
-  const status=document.getElementById('a-status')?.value||'';
+  const assessment=document.getElementById('a-assessment')?.value||'';
   if(!box||!cb)return;
   const isNew=appealOwnerType==='new';
   box.style.display=isNew?'block':'none';
-  cb.disabled=!(isNew && status==='مكتملة');
+  cb.disabled=!(isNew && assessment==='مستحقة');
   if(cb.disabled) cb.checked=false;
-  cb.title=cb.disabled?'يتفعل هذا الخيار فقط عند اختيار الحالة «مكتملة»':'';
+  cb.title=cb.disabled?'يتفعل هذا الخيار فقط عند اختيار موقف الكشف «مستحقة»':'';
 }
 function setAppealOwnerType(v){
   appealOwnerType=v;
@@ -1194,6 +1202,9 @@ function resetAppealForm(){
   document.getElementById('a-phone').value='';
   document.getElementById('a-address').value='';
   document.getElementById('a-landmark').value='';
+  document.getElementById('a-job').value='';
+  document.getElementById('a-map').value='';
+  document.getElementById('a-location-status').textContent='اضغط «إضافة موقع» لتحديد الموقع.';
   document.getElementById('a-add-family').checked=false;
   document.getElementById('appeal-attachments').innerHTML='';
   document.getElementById('appeal-attachment-input').value='';
@@ -1229,15 +1240,17 @@ function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction(_edit
     ownerName=document.getElementById('a-name').value.trim();
     ownerPhone=document.getElementById('a-phone').value.trim();
     ownerAddress=document.getElementById('a-address').value.trim();
+    const ownerJob=document.getElementById('a-job').value.trim();
+    const ownerMap=document.getElementById('a-map').value.trim();
     const addFamilyCheckbox=document.getElementById('a-add-family');
-    const canAddFamily=appealOwnerType==='new' && document.getElementById('a-status').value==='مكتملة' && !!addFamilyCheckbox?.checked;
+    const canAddFamily=appealOwnerType==='new' && document.getElementById('a-assessment').value==='مستحقة' && !!addFamilyCheckbox?.checked;
     if(canAddFamily){
       familyCode=nextFamilyCode();
       const f={
         c:familyCode,n:'عائلة '+ownerName,head:ownerName,phone:ownerPhone,
-        hasSalary:'غير محدد',salarySource:'',i:'',m:0,j:'غير محدد',s:'0 د.ع',
+        hasSalary:'غير محدد',salarySource:'',i:'',m:0,j:ownerJob||'غير محدد',s:'0 د.ع',
         h:'غير محدد',r:'غير محدد',st:'مفتوح',address:ownerAddress,
-        landmark:document.getElementById('a-landmark').value.trim(),map:'',
+        landmark:document.getElementById('a-landmark').value.trim(),map:ownerMap,
         createdAt:Date.now(),updatedAt:Date.now(),fromAppeal:true
       };
       families.unshift(f);
@@ -1255,6 +1268,8 @@ function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction(_edit
     familyCode,
     ownerType:appealOwnerType,
     ownerName,ownerPhone,ownerAddress,
+    ownerJob:appealOwnerType==='new'?document.getElementById('a-job').value.trim():'',
+    ownerMap:appealOwnerType==='new'?document.getElementById('a-map').value.trim():'',
     ownerLandmark:appealOwnerType==='new'?document.getElementById('a-landmark').value.trim():'',
     type:appealType,
     amount:Number(document.getElementById('a-amount').value||0),
@@ -1422,6 +1437,8 @@ function editAppeal(){if(!hasAction('edit','appeals')){alert('ليس لديك ص
   document.getElementById('a-phone').value=a.ownerPhone||'';
   document.getElementById('a-address').value=a.ownerAddress||'';
   document.getElementById('a-landmark').value=a.ownerLandmark||'';
+  document.getElementById('a-job').value=a.ownerJob||'';
+  document.getElementById('a-map').value=a.ownerMap||'';
   document.getElementById('a-add-family').checked=false;
   appealAttachments=JSON.parse(JSON.stringify(a.attachments||[]));
   renderAppealAttachments();
@@ -2132,6 +2149,25 @@ navigator.geolocation.getCurrentPosition(pos=>{
 const lat=pos.coords.latitude.toFixed(6), lon=pos.coords.longitude.toFixed(6);
 const url=`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
 document.getElementById('f-map').value=url;
+status.textContent=`تم حفظ الموقع: ${lat}, ${lon}`;
+window.open(url,'_blank');
+},err=>{
+let msg='تعذر تحديد الموقع.';
+if(err.code===1)msg='تم رفض إذن الموقع. فعّل Location للمتصفح ثم حاول مرة أخرى.';
+if(err.code===2)msg='تعذر تحديد الموقع حالياً. تأكد من تشغيل GPS/Location.';
+if(err.code===3)msg='انتهت مهلة تحديد الموقع. حاول مرة أخرى.';
+status.textContent=msg;
+alert(msg);
+},{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+}
+function pickAppealLocation(){
+const status=document.getElementById('a-location-status');
+if(!navigator.geolocation){alert('المتصفح لا يدعم تحديد الموقع.');return}
+status.textContent='جارٍ تحديد موقع الهاتف…';
+navigator.geolocation.getCurrentPosition(pos=>{
+const lat=pos.coords.latitude.toFixed(6), lon=pos.coords.longitude.toFixed(6);
+const url=`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
+document.getElementById('a-map').value=url;
 status.textContent=`تم حفظ الموقع: ${lat}, ${lon}`;
 window.open(url,'_blank');
 },err=>{
