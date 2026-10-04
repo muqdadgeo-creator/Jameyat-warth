@@ -1652,7 +1652,8 @@ async function performLogin(){
     const email=AUTH_EMAIL_BY_USERNAME[username]||username+'@warith.local';
     const {data,error}=await window.warithSupabase.auth.signInWithPassword({email,password:pass});
     if(error||!data?.user)throw new Error(error?.message||'بيانات الدخول غير صحيحة');
-    const {data:profile,error:profileError}=await window.warithSupabase.from('app_users').select('*').eq('auth_user_id',data.user.id).single();
+    const {data:profileData,error:profileError}=await window.warithSupabase.rpc('get_my_app_user');
+    const profile=Array.isArray(profileData)?profileData[0]:profileData;
     if(profileError||!profile)throw new Error('حساب المستخدم غير مربوط بالنظام بعد');
     if(profile.is_active===false)throw new Error('هذا المستخدم موقوف');
     localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,name:profile.display_name||profile.username,active:profile.is_active!==false,permissions:profile.permissions||ROLE_PERMISSIONS[profile.role]||[],actions:profile.actions||ROLE_ACTIONS[profile.role]||{add:[],edit:[],delete:[]}}));
