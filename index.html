@@ -1672,7 +1672,12 @@ function getUsers(){try{const x=JSON.parse(localStorage.getItem(USER_KEY)||'null
 function saveUsers(x){localStorage.setItem(USER_KEY,JSON.stringify(x))}
 function currentUser(){try{return JSON.parse(localStorage.getItem(CURRENT_USER_KEY)||'null')}catch(e){return null}}
 function normalizeRole(role){const r=String(role||'').trim();const m={owner:'المالك',manager:'مدير الجمعية',inspection:'مسؤول العوائل والكشوفات',inventory:'مسؤول المخزن',finance:'مسؤول المالية والتبرعات',data_entry:'إدخال البيانات',viewer:'مشاهد/قارئ',مالك:'المالك','مسؤول الكشف':'مسؤول العوائل والكشوفات'};return m[r]||r}
-function authEmailForUsername(username){return String(username||'').trim().toLowerCase().replace(/\s+/g,'')+'@users.warith.local'}
+function authEmailForUsername(username){
+  const normalized=String(username||'').trim().toLowerCase().replace(/\s+/g,'');
+  const bytes=new TextEncoder().encode(normalized);
+  let hex='';for(const b of bytes)hex+=b.toString(16).padStart(2,'0');
+  return 'u_'+hex+'@users.warith.local';
+}
 function currentRole(){return normalizeRole(currentUser()?.role||'')}
 function hasPermission(p){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);/* المالك ومدير الجمعية لا يتأثران بأي صلاحيات قديمة مخزنة */if(role==='المالك')return true;if(role==='مدير الجمعية')return p!=='users-settings';const rolePerms=ROLE_PERMISSIONS[role]||[];const savedPerms=Array.isArray(u.permissions)?u.permissions:rolePerms;if(['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['families','family-detail','family-members','add-member'].includes(p))return true;if(p==='inventory'&&['مسؤول المخزن','إدخال البيانات'].includes(role))return true;return savedPerms.includes(p)||rolePerms.includes(p)}
 function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);if(role==='المالك'||role==='مدير الجمعية')return true;/* صلاحية العوائل ثابتة لمسؤولي العوائل/الكشف وإدخال البيانات، حتى لو كانت بيانات الصلاحيات القديمة ناقصة */if(section==='families'&&['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['add','edit'].includes(action))return true;const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
