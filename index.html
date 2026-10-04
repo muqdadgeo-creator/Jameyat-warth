@@ -3302,7 +3302,7 @@ function renderDonationsReport(){
       <span>غير المستلمة: ${reportMoney(unpaid)}</span>
     </div>
     <div class="report-section-title">سجل التبرعات المالية</div>
-    ${list.length?`<div style="overflow-x:auto"><table class="report-a4-table"><thead><tr><th>ت</th><th>المستفيد</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table></div>`:'<div class="empty" style="padding:30px;text-align:center">لا توجد تبرعات مالية ضمن الفترة المحددة</div>'}`;
+    ${list.length?`<div style="overflow-x:auto"><table class="report-a4-table"><thead><tr><th>ت</th><th>المتبرع</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="3" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table></div>`:'<div class="empty" style="padding:30px;text-align:center">لا توجد تبرعات مالية ضمن الفترة المحددة</div>'}`;
   box.innerHTML=reportCard('تقرير التبرعات',body);
 }
 
