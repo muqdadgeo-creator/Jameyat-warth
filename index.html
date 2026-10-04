@@ -710,6 +710,7 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <th style="padding:10px;text-align:right">العدد</th>
 <th style="padding:10px;text-align:right">تاريخ الإدخال / الإخراج</th>
 <th style="padding:10px;text-align:right">المستفيد</th>
+<th style="padding:10px;text-align:right">توثيق</th>
 <th style="padding:10px;text-align:right">إجراءات</th>
 </tr>
 </thead>
@@ -734,6 +735,7 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <label id="inv-appeal-wrap">رقم المناشدة<select class="forminput" id="inv-appeal" onchange="onInventoryAppealChange()"><option value="">اختر رقم المناشدة</option></select></label>
 <label id="inv-new-head-wrap" style="display:none">اسم المستفيد<input class="forminput" id="inv-new-head" placeholder="اكتب اسم المستفيد / رب الأسرة"/></label>
 <div id="inv-beneficiary-info" style="grid-column:1/-1"></div>
+<label style="grid-column:1/-1">توثيق الإخراج<input class="forminput" id="inv-proof" type="file" accept="image/*" capture="environment" onchange="previewInventoryProof(this)"/><div id="inv-proof-preview" class="sub" style="margin-top:6px">يمكن إرفاق صورة التوثيق.</div></label>
 </div>
 <input id="inv-beneficiary" type="hidden"/>
 </div>
@@ -2565,6 +2567,8 @@ function openInventoryMovement(move){
   document.getElementById('inv-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('inv-source').value=''; document.getElementById('inv-notes').value='';
   document.getElementById('inv-beneficiary').value=''; document.getElementById('inv-new-head').value='';
+  const proof=document.getElementById('inv-proof'); if(proof) proof.value='';
+  const pp=document.getElementById('inv-proof-preview'); if(pp) pp.innerHTML='يمكن إرفاق صورة التوثيق.';
   populateInventoryAppeals();
   document.getElementById('inv-beneficiary-mode').value='appeal';
   document.getElementById('inv-appeal').value='';
@@ -2609,7 +2613,24 @@ function toggleInventoryStatus(){
   if(wrap) wrap.style.display=(type && type.value==='جهاز')?'block':'none';
 }
 
-function saveInventoryMovement(){const _edit=editingInventoryIndex!==null; if(!hasAction(_edit?'edit':'add','inventory')){alert('ليس لديك صلاحية هذه العملية.');return}
+function previewInventoryProof(input){
+  const file=input?.files?.[0]; const box=document.getElementById('inv-proof-preview');
+  if(!box||!file)return;
+  if(!file.type.startsWith('image/')){alert('اختر صورة فقط للتوثيق.');input.value='';box.textContent='يمكن إرفاق صورة التوثيق.';return;}
+  if(file.size>5*1024*1024){alert('حجم الصورة أكبر من 5 MB.');input.value='';box.textContent='يمكن إرفاق صورة التوثيق.';return;}
+  const reader=new FileReader(); reader.onload=()=>{box.innerHTML=`<img src="${reader.result}" style="max-width:180px;max-height:140px;border-radius:10px;object-fit:cover" alt="توثيق الإخراج"/>`;}; reader.readAsDataURL(file);
+}
+function readInventoryProof(){
+  const input=document.getElementById('inv-proof'); const file=input?.files?.[0];
+  if(!file)return Promise.resolve(null);
+  return new Promise(resolve=>{const r=new FileReader();r.onload=()=>resolve({name:file.name,type:file.type,size:file.size,data:r.result});r.readAsDataURL(file);});
+}
+function openInventoryProof(index){
+  const item=inventoryMovements[index];
+  if(item?.proof?.data) openFileViewer(item.proof);
+}
+
+async function saveInventoryMovement(){const _edit=editingInventoryIndex!==null; if(!hasAction(_edit?'edit':'add','inventory')){alert('ليس لديك صلاحية هذه العملية.');return}
   const move=document.getElementById('inv-move-type')?.value||'وارد';
   const type=document.getElementById('inv-item-type')?.value||'جهاز';
   const name=(document.getElementById('inv-name')?.value||'').trim();
@@ -2637,8 +2658,11 @@ function saveInventoryMovement(){const _edit=editingInventoryIndex!==null; if(!h
     familyCode:move==='صادر'?familyCode:null,
     appealId:move==='صادر'?appealId:null,
     source:(document.getElementById('inv-source')?.value||'').trim(),
-    notes:(document.getElementById('inv-notes')?.value||'').trim()
+    notes:(document.getElementById('inv-notes')?.value||'').trim(),
+    proof:move==='صادر'?await readInventoryProof():null
   };
+
+  if(editingInventoryIndex!==null && !item.proof) item.proof=inventoryMovements[editingInventoryIndex].proof||null;
 
   if(editingInventoryIndex!==null) inventoryMovements[editingInventoryIndex]=item;
   else inventoryMovements.unshift(item);
@@ -2653,14 +2677,15 @@ function saveInventoryMovement(){const _edit=editingInventoryIndex!==null; if(!h
 function inventorySummary(){
   const map={};
   inventoryMovements.filter(m=>!isHiddenRecord(m)).forEach(m=>{
-    const key=(m.name||'').trim();
-    if(!key)return;
-    if(!map[key]) map[key]={name:key,status:m.status||'',qty:0};
+    const name=(m.name||'').trim();
+    if(!name)return;
+    const status=m.type==='جهاز'?(m.status||'شغال'):'مواد';
+    const key=name+'\u0000'+status;
+    if(!map[key]) map[key]={name,status,qty:0};
     if(m.move==='وارد') map[key].qty+=Number(m.qty||0);
     if(m.move==='صادر') map[key].qty-=Number(m.qty||0);
-    if(m.status) map[key].status=m.status;
   });
-  return Object.values(map).filter(x=>x.qty!==0 || x.status);
+  return Object.values(map).filter(x=>Number(x.qty)!==0);
 }
 
 function inventoryAppealPriorityRank(p){
@@ -2725,13 +2750,14 @@ function renderInventory(){
         <td style="padding:9px;border-top:1px solid #edf1ef">${Number(m.qty||0)}</td>
         <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.date||'')}</td>
         <td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(m.beneficiary||'—')}</td>
+        <td style="padding:9px;border-top:1px solid #edf1ef">${m.proof?.data?`<button class="action" title="عرض التوثيق" onclick="openInventoryProof(${originalIndex})">🖼️</button>`:'—'}</td>
         <td style="padding:9px;border-top:1px solid #edf1ef;white-space:nowrap">
           <button class="action primary" onclick="editInventoryMovement(${originalIndex})">✏️</button>
           <button class="action" onclick="hideRecord('inventoryMovements',${originalIndex},'حركة المخزن')">🚫</button><button class="action" onclick="deleteInventoryMovement(${originalIndex})">🗑</button>
         </td>
       </tr>`;
     }).join('') || `
-      <tr><td colspan="8" style="padding:18px;text-align:center;color:#71857f">
+      <tr><td colspan="9" style="padding:18px;text-align:center;color:#71857f">
         لا توجد حركات للمخزن بعد
       </td></tr>`;
   }
@@ -2760,6 +2786,9 @@ function editInventoryMovement(i){if(!hasAction('edit','inventory')){alert('لي
   if(m.appealId) onInventoryAppealChange();
   document.getElementById('inv-source').value=m.source||'';
   document.getElementById('inv-notes').value=m.notes||'';
+  const proofInput=document.getElementById('inv-proof'); if(proofInput) proofInput.value='';
+  const proofPreview=document.getElementById('inv-proof-preview');
+  if(proofPreview) proofPreview.innerHTML=m.proof?.data?`<img src="${m.proof.data}" style="max-width:180px;max-height:140px;border-radius:10px;object-fit:cover" alt="توثيق الإخراج"/>`:'يمكن إرفاق صورة التوثيق.';
   toggleInventoryStatus();
   const btn=document.querySelector('#add-inventory button.action.primary');
   if(btn) btn.textContent='حفظ التعديل';
