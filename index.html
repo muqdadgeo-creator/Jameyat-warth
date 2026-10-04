@@ -735,7 +735,12 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <label id="inv-appeal-wrap">رقم المناشدة<select class="forminput" id="inv-appeal" onchange="onInventoryAppealChange()"><option value="">اختر رقم المناشدة</option></select></label>
 <label id="inv-new-head-wrap" style="display:none">اسم المستفيد<input class="forminput" id="inv-new-head" placeholder="اكتب اسم المستفيد / رب الأسرة"/></label>
 <div id="inv-beneficiary-info" style="grid-column:1/-1"></div>
-<label style="grid-column:1/-1">توثيق الإخراج<input class="forminput" id="inv-proof" type="file" accept="image/*" onchange="previewInventoryProof(this)"/><div id="inv-proof-preview" class="sub" style="margin-top:6px">يمكن إرفاق صورة التوثيق.</div></label>
+<label style="grid-column:1/-1">توثيق الإخراج
+<div class="attach-row" style="margin-top:5px">
+<label class="action primary" style="flex:1;text-align:center;cursor:pointer">📷 فتح الكاميرا<input id="inv-proof-camera" type="file" accept="image/*" capture="environment" onchange="previewInventoryProof(this)"/></label>
+<label class="action" style="flex:1;text-align:center;cursor:pointer">🖼️ اختيار من الاستديو<input id="inv-proof" type="file" accept="image/*" onchange="previewInventoryProof(this)"/></label>
+</div>
+<div id="inv-proof-preview" class="sub" style="margin-top:6px">يمكن إرفاق صورة التوثيق.</div></label>
 </div>
 <input id="inv-beneficiary" type="hidden"/>
 </div>
@@ -2613,15 +2618,17 @@ function toggleInventoryStatus(){
   if(wrap) wrap.style.display=(type && type.value==='جهاز')?'block':'none';
 }
 
+let inventoryProofSelectedFile=null;
 function previewInventoryProof(input){
   const file=input?.files?.[0]; const box=document.getElementById('inv-proof-preview');
   if(!box||!file)return;
   if(!file.type.startsWith('image/')){alert('اختر صورة فقط للتوثيق.');input.value='';box.textContent='يمكن إرفاق صورة التوثيق.';return;}
   if(file.size>5*1024*1024){alert('حجم الصورة أكبر من 5 MB.');input.value='';box.textContent='يمكن إرفاق صورة التوثيق.';return;}
-  const reader=new FileReader(); reader.onload=()=>{box.innerHTML=`<img src="${reader.result}" style="max-width:180px;max-height:140px;border-radius:10px;object-fit:cover" alt="توثيق الإخراج"/>`;}; reader.readAsDataURL(file);
+  inventoryProofSelectedFile=file;
+  const reader=new FileReader(); reader.onload=()=>{box.innerHTML=`<img src="${reader.result}" style="max-width:180px;max-height:140px;border-radius:10px;object-fit:cover" alt="توثيق الإخراج"/><div style="margin-top:4px">✓ تم اختيار الصورة: ${file.name}</div>`;}; reader.readAsDataURL(file);
 }
 function readInventoryProof(){
-  const input=document.getElementById('inv-proof'); const file=input?.files?.[0];
+  const file=inventoryProofSelectedFile || document.getElementById('inv-proof')?.files?.[0] || document.getElementById('inv-proof-camera')?.files?.[0];
   if(!file)return Promise.resolve(null);
   return new Promise(resolve=>{const r=new FileReader();r.onload=()=>resolve({name:file.name,type:file.type,size:file.size,data:r.result});r.readAsDataURL(file);});
 }
