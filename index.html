@@ -3788,8 +3788,8 @@ function warithSyncSchedule(entity){
   clearTimeout(warithSyncTimers[entity]);
   warithSyncTimers[entity]=setTimeout(()=>warithSyncPushEntity(entity),900);
 }
-async function warithSyncPushEntity(entity){
-  if(!warithSyncReady||!window.warithSupabase)return;
+async function warithSyncPushEntity(entity,force=false){
+  if((!warithSyncReady&&!force)||!window.warithSupabase)return;
   const cfg=Object.values(WARITH_SYNC_CONFIG).find(x=>x.entity===entity);
   if(!cfg)return;
   try{
@@ -3824,7 +3824,7 @@ async function warithSyncPullEntity(cfg){
   const rows=Array.isArray(data)?data:[];
   const active=rows.filter(r=>!r.deleted&&r.data).map(r=>r.data);
   if(rows.length===0){
-    await warithSyncPushEntity(cfg.entity);
+    await warithSyncPushEntity(cfg.entity,true);
     return;
   }
   warithSyncSetArray(cfg.entity,active);
