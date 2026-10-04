@@ -3321,7 +3321,7 @@ try{renderHomeDashboard();}catch(e){}
 <label class="fl">المستخدم</label>
 <input class="forminput" id="loginUsername" autocomplete="username" placeholder="اسم المستخدم"/>
 <label class="fl">الرمز</label>
-<input class="forminput" id="loginPassword" inputmode="numeric" onkeydown="if(event.key==='Enter')performLogin()" placeholder="أدخل الرمز" type="password"/>
+<input class="forminput" id="loginPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')performLogin()" placeholder="أدخل الرمز" type="password"/>
 <button class="action primary" id="loginSubmitBtn" style="width:100%;margin-top:10px" type="button">دخول</button>
 <div class="sub" id="loginError" style="color:#a33;text-align:center;min-height:18px;margin-top:8px"></div>
 </div>
@@ -3332,7 +3332,7 @@ try{renderHomeDashboard();}catch(e){}
 <input id="ue-index" type="hidden"/>
 <label class="fl">اسم المستخدم</label><input class="forminput" id="ue-name" placeholder="الاسم الثلاثي"/>
 <label class="fl">الدور</label><select class="forminput" id="ue-role" onchange="applyRolePermissionsToEditor()"><option>المالك</option><option>مدير الجمعية</option><option>مسؤول المالية والتبرعات</option><option>مسؤول العوائل والكشوفات</option><option>مسؤول المخزن</option><option>إدخال البيانات</option><option>مشاهد/قارئ</option></select>
-<label class="fl">الرمز</label><input class="forminput" id="ue-password" inputmode="numeric" placeholder="الرمز" type="password"/>
+<label class="fl">الرمز</label><input class="forminput" id="ue-password" autocomplete="new-password" placeholder="الرمز" type="password"/>
 <label class="fl">الصلاحيات</label>
 <div class="perm-grid" id="ue-perms"></div>
 <div class="user-action-row" style="margin-top:12px"><button class="action" onclick="closeUserEditor()">إلغاء</button><button class="action primary" onclick="saveUserEditor()">حفظ</button></div>
