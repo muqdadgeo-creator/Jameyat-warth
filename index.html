@@ -997,8 +997,7 @@ function normalizeAddressForCode(v){
 }
 const ADDRESS_CODE_LOOKUP=(()=>{
   const out={};
-  Object.entries(ADDRESS_CODE_GROUPS).forEach(([code,names])=>names.forEach(name=>{
-    const key=normalizeAddressForCode(name);
+  Object.entries(ADDRESS_CODE_GROUPS).forEach(([code,names])=>names.forEach(name=>{    const key=normalizeAddressForCode(name);
     if(!out[key])out[key]=[];
     if(!out[key].includes(Number(code)))out[key].push(Number(code));
   }));
@@ -1634,29 +1633,39 @@ const DEFAULT_USERS=[
 function getUsers(){try{const x=JSON.parse(localStorage.getItem(USER_KEY)||'null');if(Array.isArray(x)&&x.length)return x}catch(e){}localStorage.setItem(USER_KEY,JSON.stringify(DEFAULT_USERS));return JSON.parse(JSON.stringify(DEFAULT_USERS))}
 function saveUsers(x){localStorage.setItem(USER_KEY,JSON.stringify(x))}
 function currentUser(){try{return JSON.parse(localStorage.getItem(CURRENT_USER_KEY)||'null')}catch(e){return null}}
-function normalizeRole(role){const r=String(role||'').trim();if(r==='owner')return 'المالك';if(r==='manager')return 'مدير الجمعية';if(r==='data_entry')return 'إدخال البيانات';if(r==='viewer')return 'مشاهد/قارئ';if(r==='مالك')return 'المالك';if(r==='مسؤول الكشف')return 'مسؤول العوائل والكشوفات';return r}
+function normalizeRole(role){const r=String(role||'').trim();const m={owner:'المالك',manager:'مدير الجمعية',inspection:'مسؤول العوائل والكشوفات',inventory:'مسؤول المخزن',finance:'مسؤول المالية والتبرعات',data_entry:'إدخال البيانات',viewer:'مشاهد/قارئ',مالك:'المالك','مسؤول الكشف':'مسؤول العوائل والكشوفات'};return m[r]||r}
 function currentRole(){return normalizeRole(currentUser()?.role||'')}
 function hasPermission(p){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);/* المالك ومدير الجمعية لا يتأثران بأي صلاحيات قديمة مخزنة */if(role==='المالك')return true;if(role==='مدير الجمعية')return p!=='users-settings';const rolePerms=ROLE_PERMISSIONS[role]||[];const savedPerms=Array.isArray(u.permissions)?u.permissions:rolePerms;if(['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['families','family-detail','family-members','add-member'].includes(p))return true;if(p==='inventory'&&['مسؤول المخزن','إدخال البيانات'].includes(role))return true;return savedPerms.includes(p)||rolePerms.includes(p)}
 function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);if(role==='المالك'||role==='مدير الجمعية')return true;/* صلاحية العوائل ثابتة لمسؤولي العوائل/الكشف وإدخال البيانات، حتى لو كانت بيانات الصلاحيات القديمة ناقصة */if(section==='families'&&['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['add','edit'].includes(action))return true;const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
-function canAccessScreen(id){if(id==='login')return true;const u=currentUser();if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(String(u.role||'').trim()))return true;return hasPermission('inventory')}return hasPermission(id)||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
+function canAccessScreen(id){if(id==='login')return true;const u=currentUser();const role=normalizeRole(u?.role||'');if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(role))return true;return hasPermission('inventory')}return hasPermission(id)||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
 function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');document.querySelectorAll('[data-action]').forEach(el=>{const [a,s]=String(el.dataset.action).split(':');el.style.display=hasAction(a,s)?'':'none'});}
 function renderUserOptions(){}
 async function performLogin(){
-  const username=String(document.getElementById('loginUsername')?.value||'').trim().toLowerCase().replace(/\s+/g,'');
+  const rawInput=String(document.getElementById('loginUsername')?.value||'').trim();
+  const username=rawInput.toLowerCase().replace(/\s+/g,'');
   const pass=String(document.getElementById('loginPassword')?.value||'');
   const err=document.getElementById('loginError');
   if(!username||!pass){if(err)err.textContent='أدخل اسم المستخدم والرمز';return}
   try{
-    if(!window.warithSupabase)throw new Error('Supabase client unavailable');
-    const AUTH_EMAIL_BY_USERNAME={admin:'warthcare@gmail.com'};
-    const email=AUTH_EMAIL_BY_USERNAME[username]||username+'@warith.local';
-    const {data,error}=await window.warithSupabase.auth.signInWithPassword({email,password:pass});
-    if(error||!data?.user)throw new Error(error?.message||'بيانات الدخول غير صحيحة');
-    const {data:profileData,error:profileError}=await window.warithSupabase.rpc('get_my_app_user');
-    const profile=Array.isArray(profileData)?profileData[0]:profileData;
-    if(profileError||!profile)throw new Error('حساب المستخدم غير مربوط بالنظام بعد');
-    if(profile.is_active===false)throw new Error('هذا المستخدم موقوف');
-    localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,name:profile.display_name||profile.username,active:profile.is_active!==false,permissions:profile.permissions||ROLE_PERMISSIONS[profile.role]||[],actions:profile.actions||ROLE_ACTIONS[profile.role]||{add:[],edit:[],delete:[]}}));
+    if(username==='admin'){
+      if(!window.warithSupabase)throw new Error('Supabase client unavailable');
+      const {data,error}=await window.warithSupabase.auth.signInWithPassword({email:'warthcare@gmail.com',password:pass});
+      if(error||!data?.user)throw new Error(error?.message||'بيانات الدخول غير صحيحة');
+      const {data:profileData,error:profileError}=await window.warithSupabase.rpc('get_my_app_user');
+      const profile=Array.isArray(profileData)?profileData[0]:profileData;
+      if(profileError||!profile)throw new Error('حساب المستخدم غير مربوط بالنظام بعد');
+      if(profile.is_active===false)throw new Error('هذا المستخدم موقوف');
+      const uiRole=normalizeRole(profile.role);
+      localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,role:uiRole,name:profile.display_name||profile.username,active:profile.is_active!==false,permissions:ROLE_PERMISSIONS[uiRole]||[],actions:ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}}));
+    }else{
+      const users=getUsers();
+      const norm=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,'');
+      const user=users.find(u=>u.active!==false && (norm(u.name)===username || norm(u.username)===username));
+      if(!user || String(user.password||'')!==pass)throw new Error('اسم المستخدم أو الرمز غير صحيح');
+      const uiRole=normalizeRole(user.role);
+      const safeUser={...user,role:uiRole,name:user.name||user.username,active:user.active!==false,permissions:ROLE_PERMISSIONS[uiRole]||[],actions:ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}};
+      localStorage.setItem(CURRENT_USER_KEY,JSON.stringify(safeUser));
+    }
     if(err)err.textContent='';
     document.getElementById('loginBackdrop').style.display='none';
     applyPermissionUI();updateCurrentUserBadge();showScreen('home');
@@ -1997,8 +2006,7 @@ function openFileViewer(file){
   const back=document.getElementById('fileViewerBackdrop'),body=document.getElementById('fileViewerBody'),title=document.getElementById('fileViewerTitle');
   if(!back||!body)return;
   title.textContent=file.name||'عرض المرفق';
-  const type=String(file.type||'').toLowerCase(),name=String(file.name||'').toLowerCase();
-  body.innerHTML='';
+  const type=String(file.type||'').toLowerCase(),name=String(file.name||'').toLowerCase();  body.innerHTML='';
   if(type.startsWith('image/')||/\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(name)){const img=document.createElement('img');img.src=file.data;img.alt=file.name||'مرفق';body.appendChild(img);}
   else if(type==='application/pdf'||/\.pdf$/i.test(name)){const iframe=document.createElement('iframe');iframe.src=file.data;iframe.title=file.name||'PDF';body.appendChild(iframe);}
   else if(type.startsWith('text/')||/\.(txt|csv)$/i.test(name)){const iframe=document.createElement('iframe');iframe.src=file.data;iframe.title=file.name||'ملف';body.appendChild(iframe);}
@@ -2998,7 +3006,6 @@ function expenseCategoryFromDetails(details){const d=String(details||'').toLower
 function effectiveExpenseCategory(x){const c=String(x?.category||'').trim();if(c==='إنشائية')return 'انشائية';if(c==='احتياطية')return 'مواد احتياطية';if(c==='مصروفات الجمعية'||!c){return expenseCategoryFromDetails(x?.details)}if(c==='مواد احتياطية')return 'مواد احتياطية';return c}
 function renderExpenses(){const q=(document.getElementById('expenseQ')?.value||'').trim().toLowerCase();const all=sortRecords(expenses.filter(x=>!isHiddenRecord(x)&&(x.details+' '+effectiveExpenseCategory(x)+' '+x.date).toLowerCase().includes(q)), 'date', ['details','category']);const a=activityExpanded.expense?all:all.slice(0,5);const visibleExpenses=expenses.filter(x=>!isHiddenRecord(x));const total=visibleExpenses.reduce((n,x)=>n+(Number(x.amount)||0),0);document.getElementById('expenseTotal').textContent=total.toLocaleString('en-US')+' د.ع';document.getElementById('expenseCountStat').textContent=visibleExpenses.length;const em=document.getElementById('expenseMoreBtn');if(em)em.textContent=all.length>5?(activityExpanded.expense?'عرض آخر 5':'عرض الكل'):'';const cats=['انشائية','مواد احتياطية','ايجار','نقل','صيانة','أخرى'];const stats={};cats.forEach(c=>stats[c]=0);visibleExpenses.forEach(x=>{const c=effectiveExpenseCategory(x);stats[cats.includes(c)?c:'أخرى']+=Number(x.amount)||0});const sb=document.getElementById('expenseStats');if(sb)sb.innerHTML=cats.map(c=>`<div class="category-box"><span>${c}</span><b>${stats[c].toLocaleString('en-US')} د.ع</b></div>`).join('');const b=document.getElementById('expenseList');if(!b)return;b.innerHTML=a.map(x=>{const i=expenses.indexOf(x);return `<div class="card"><div class="row"><div class="avatar">💸</div><div class="grow"><div class="name">${(Number(x.amount)||0).toLocaleString('en-US')} د.ع</div><div class="sub">${escapeHtml(effectiveExpenseCategory(x))} · ${escapeHtml(x.date)}</div><div class="sub">${escapeHtml(x.details)}</div></div></div><div class="member-actions"><button class="action primary" onclick="openActivityForm('expense',${i})">✏️ تعديل</button><button class="action" onclick="hideRecord('expenses',${i},'المصروف')">🚫 حجب</button><button class="action" onclick="deleteActivity('expense',${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد مصروفات بعد</div>';}
 function deleteActivity(type,i){if(!hasAction('delete','activities')){alert('ليس لديك صلاحية حذف النشاطات.');return}const arr=type==='help'?helps:type==='program'?programs:expenses;if(!arr[i])return;if(!confirm('حذف هذا السجل؟'))return;arr.splice(i,1);localStorage.setItem(type==='help'?'warith_help':type==='program'?'warith_programs':'warith_expenses',JSON.stringify(arr));renderActivities();}
-
 
 function isHiddenRecord(x){return !!(x&&x.hidden);}
 function hideFamilyByCode(code){
