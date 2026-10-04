@@ -3244,7 +3244,7 @@ function renderDonorReport(){
     <div style="margin-top:8px;font-weight:900">عدد التبرعات: ${dlist.length} · مجموع التبرعات المالية: ${reportMoney(total)}</div>
     <div style="overflow-x:auto;margin-top:12px">
       <table class="report-table" style="width:100%;border-collapse:collapse;text-align:center">
-        <thead><tr><th>ت</th><th>المستفيد</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead>
+        <thead><tr><th>ت</th><th>المتبرع</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead>
         <tbody>${rows||'<tr><td colspan="5">لا توجد تبرعات ضمن الفترة</td></tr>'}</tbody>
       </table>
     </div>`);
@@ -3281,14 +3281,14 @@ function renderDonationsReport(){
   const total=list.reduce((n,x)=>n+Number(x.amount||0),0);
   const received=rec.reduce((n,x)=>n+Number(x.amount||0),0);
   const unpaid=un.reduce((n,x)=>n+Number(x.amount||0),0);
-  const beneficiary=x=>{
-    const fc=Number(x.familyCode||0);
-    if(fc) return `#${escapeHtml(fc)}`;
-    return escapeHtml(x.allocation||'عام');
+  const donor=x=>{
+    if(x.donorName) return String(x.donorName);
+    const d=donors.find(v=>String(v.id)===String(x.donorId));
+    return d?.name||'غير محدد';
   };
   const rows=list.map((x,i)=>`<tr>
     <td>${i+1}</td>
-    <td>${beneficiary(x)}</td>
+    <td>${escapeHtml(donor(x))}</td>
     <td>${escapeHtml(x.date||'')}</td>
     <td class="report-a4-total">${reportMoney(x.amount)}</td>
     <td>${escapeHtml(x.paid||'غير محدد')}</td>
