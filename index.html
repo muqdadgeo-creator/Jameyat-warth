@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261005-1405';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261005-1425';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -1708,6 +1708,7 @@ async function performLogin(){
     if(err)err.textContent='';
     document.getElementById('loginBackdrop').style.display='none';
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();showScreen('home');
+    setTimeout(()=>initWarithCloudSync(),100);
   }catch(e){if(err)err.textContent='تعذر تسجيل الدخول: '+(e?.message||'تحقق من البيانات');}
 }
 async function logoutSupabaseUser(){try{if(window.warithSupabase)await window.warithSupabase.auth.signOut({scope:'local'})}catch(e){}localStorage.removeItem(CURRENT_USER_KEY);updateAuthHeaderUI();showScreen('home')}
@@ -3907,8 +3908,23 @@ function warithSyncStartRealtime(){
     .subscribe(status=>console.log('Warith sync realtime:',status));
 }
 async function initWarithCloudSync(){
+  if(!window.warithSupabase)return;
+  if(warithSyncReady){warithSyncStartRealtime();return;}
   await warithSyncInitial();
   if(warithSyncReady)warithSyncStartRealtime();
+}
+if(window.warithSupabase?.auth){
+  window.warithSupabase.auth.onAuthStateChange((event,session)=>{
+    if(session?.user){
+      setTimeout(()=>initWarithCloudSync(),0);
+    }else{
+      warithSyncReady=false;
+      if(warithSyncChannel){
+        try{warithSyncChannel.unsubscribe();}catch(e){}
+        warithSyncChannel=null;
+      }
+    }
+  });
 }
 localStorage.setItem=function(key,value){
   warithSyncOriginalSetItem(key,value);
