@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261005-1508';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261005-1512';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -2677,12 +2677,12 @@ function onInventoryAppealChange(){
   document.getElementById('inv-beneficiary').value=a?(a.ownerName||''):'';
   renderInventoryBeneficiaryInfo(a?{name:a.ownerName||'غير محدد',familyCode:a.familyCode,phone:a.ownerPhone,address:a.ownerAddress,landmark:a.ownerLandmark,details:a.notes||''}:null);
   const btn=document.getElementById('inv-open-appeal-btn');
-  if(btn){btn.style.display=(id && currentUser()?.active!==false && canAccessScreen('appeals'))?'block':'none';}
+  if(btn){btn.style.display=(id && currentUser()?.active!==false)?'block':'none';}
 }
 function openSelectedInventoryAppeal(){
   const id=document.getElementById('inv-appeal')?.value||'';
   if(!id)return;
-  if(currentUser()?.active===false||!canAccessScreen('appeals')){alert('ليس لديك صلاحية فتح المناشدات.');return;}
+  if(!currentUser()||currentUser().active===false){alert('يجب تسجيل الدخول أولاً.');return;}
   openAppealFromInventory(id);
 }
 function updateInventoryBeneficiary(){
