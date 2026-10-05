@@ -3836,7 +3836,7 @@ async function warithSyncPullAll(){
       const {data,error}=await window.warithSupabase.from('client_sync_records').select('record_key,data,updated_at,deleted').eq('entity',cfg.entity);if(error)throw error;
       const remote=new Map((data||[]).filter(r=>r.record_key).map(r=>[String(r.record_key),r]));
       const local=Array.isArray(warithSyncArray(cfg.entity))?warithSyncArray(cfg.entity):[];const merged=[];const localMap=new Map(local.map(x=>[cfg.id(x),x]));
-      for(const [key,item] of localMap){const rr=remote.get(String(key));if(!rr){merged.push(item);continue}if(rr.deleted)continue;const lu=Date.parse(item.updatedAt||item.updated_at||item.createdAt||0)||0;const ru=Date.parse(rr.updated_at||rr.data?.updatedAt||rr.data?.updated_at||0)||0;merged.push(ru>lu?rr.data:item)}
+      for(const [key,item] of localMap){const rr=remote.get(String(key));if(!rr){merged.push(item);continue}if(rr.deleted)continue;const shadowItem=warithSyncShadow[cfg.entity]?.get(key);const lu=Date.parse(shadowItem?.updatedAt||item.updatedAt||item.updated_at||item.createdAt||0)||0;const ru=Date.parse(rr.updated_at||rr.data?.updatedAt||rr.data?.updated_at||0)||0;merged.push(ru>lu?rr.data:item)}
       for(const [key,rr] of remote){if(rr.deleted||!rr.data||localMap.has(key))continue;merged.push(rr.data)}
       warithSyncSetArray(cfg.entity,merged);warithSyncLocalSet(cfg,merged);warithSyncShadow[cfg.entity]=new Map(merged.map(x=>[cfg.id(x),x]));warithSyncDeleted[cfg.entity]=new Map();warithSyncRefreshUI(cfg.entity);
       if((data||[]).length===0&&merged.length)warithSyncPending.add(cfg.entity);
