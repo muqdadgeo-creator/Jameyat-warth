@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261005-1355';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261005-1405';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -2776,7 +2776,7 @@ function inventoryAppealPriorityRank(p){
   return p==='عاجلة'?1:p==='مهمة'?2:3;
 }
 function inventoryDeviceAppeals(){
-  return appeals.filter(a=>!isHiddenRecord(a)&&a.type==='أجهزة / أثاث'&&a.assessment==='مستحق'&&a.status!=='مكتملة')
+  return appeals.filter(a=>!isHiddenRecord(a)&&a.type==='أجهزة / أثاث'&&a.assessment==='مستحق'&&(a.status==='مفتوحة'||a.status==='قيد المتابعة'))
     .sort((a,b)=>inventoryAppealPriorityRank(a.priority)-inventoryAppealPriorityRank(b.priority)||String(a.date||'').localeCompare(String(b.date||''))||Number(a.id||0)-Number(b.id||0));
 }
 function renderInventoryAppealPriority(){
