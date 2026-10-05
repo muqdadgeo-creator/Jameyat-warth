@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261005-1500';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261005-1508';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -747,7 +747,7 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <div style="font-weight:700;margin-bottom:8px;color:#0f5c4d">👤 المستفيد من الإخراج</div>
 <div class="formgrid" style="margin:0">
 <label>نوع المستفيد<select class="forminput" id="inv-beneficiary-mode" onchange="toggleInventoryBeneficiaryMode()"><option value="appeal">مناشدة مسجلة</option><option value="new">غير مسجلة</option></select></label>
-<label id="inv-appeal-wrap">رقم المناشدة<select class="forminput" id="inv-appeal" onchange="onInventoryAppealChange()"><option value="">اختر رقم المناشدة</option></select></label>
+<div id="inv-appeal-wrap"><label>رقم المناشدة<div style="display:flex;gap:7px;align-items:center"><select class="forminput" id="inv-appeal" onchange="onInventoryAppealChange()" style="flex:1"><option value="">اختر رقم المناشدة</option></select><button type="button" id="inv-open-appeal-btn" class="action primary" onclick="openSelectedInventoryAppeal()" style="display:none;white-space:nowrap;padding:9px 12px">فتح المناشدة</button></div></label></div>
 <label id="inv-new-head-wrap" style="display:none">اسم المستفيد<input class="forminput" id="inv-new-head" placeholder="اكتب اسم المستفيد / رب الأسرة"/></label>
 <div id="inv-beneficiary-info" style="grid-column:1/-1"></div>
 <label style="grid-column:1/-1">توثيق الإخراج
@@ -2676,6 +2676,14 @@ function onInventoryAppealChange(){
   const id=document.getElementById('inv-appeal')?.value||''; const a=id?appeals.find(x=>String(x.id)===String(id)):null;
   document.getElementById('inv-beneficiary').value=a?(a.ownerName||''):'';
   renderInventoryBeneficiaryInfo(a?{name:a.ownerName||'غير محدد',familyCode:a.familyCode,phone:a.ownerPhone,address:a.ownerAddress,landmark:a.ownerLandmark,details:a.notes||''}:null);
+  const btn=document.getElementById('inv-open-appeal-btn');
+  if(btn){btn.style.display=(id && currentUser()?.active!==false && canAccessScreen('appeals'))?'block':'none';}
+}
+function openSelectedInventoryAppeal(){
+  const id=document.getElementById('inv-appeal')?.value||'';
+  if(!id)return;
+  if(currentUser()?.active===false||!canAccessScreen('appeals')){alert('ليس لديك صلاحية فتح المناشدات.');return;}
+  openAppealFromInventory(id);
 }
 function updateInventoryBeneficiary(){
   const mode=document.getElementById('inv-beneficiary-mode')?.value||'appeal';
@@ -2777,7 +2785,7 @@ function inventoryAppealPriorityRank(p){
   return p==='عاجلة'?1:p==='مهمة'?2:3;
 }
 function inventoryDeviceAppeals(){
-  return appeals.filter(a=>!isHiddenRecord(a)&&a.type==='أجهزة / أثاث'&&(a.assessment==='مستحق'||a.assessment==='مستحقة')&&(a.status==='مفتوحة'||a.status==='قيد المتابعة'))
+  return appeals.filter(a=>!isHiddenRecord(a)&&a.type==='أجهزة / أثاث'&&a.assessment==='مستحق'&&(a.status==='مفتوحة'||a.status==='قيد المتابعة'))
     .sort((a,b)=>inventoryAppealPriorityRank(a.priority)-inventoryAppealPriorityRank(b.priority)||String(a.date||'').localeCompare(String(b.date||''))||Number(a.id||0)-Number(b.id||0));
 }
 function renderInventoryAppealPriority(){
