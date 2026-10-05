@@ -1780,6 +1780,7 @@ async function saveUserEditor(){
   const role=roleMap[document.getElementById('ue-role').value]||'inspection';
   const password=document.getElementById('ue-password').value.trim();
   if(!name||(!id&&!password)){alert('أدخل اسم المستخدم والرمز');return}
+  if(password&&password.length<6){alert('الرمز يجب أن يكون 6 أحرف أو أرقام على الأقل');return}
   try{
     const body=id?{action:'update',id,display_name:name,username:name,role,password}:{action:'create',display_name:name,username:name,role,password};
     const {data,error}=await window.warithSupabase.functions.invoke('manage-app-user',{body});
