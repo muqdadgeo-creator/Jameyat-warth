@@ -1,0 +1,125 @@
+name: Repair sync reliability
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Patch sync
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+
+          s = s.replace("warith-v-20261005-1425", "warith-v-20261005-1510")
+
+          old = """function warithSyncStartRealtime(){
+  if(!window.warithSupabase||warithSyncChannel)return;
+  warithSyncChannel=window.warithSupabase.channel('warith-client-sync')
+    .on('postgres_changes',{event:'*',schema:'public',table:'client_sync_records'},warithSyncApplyRealtime)
+    .subscribe(status=>console.log('Warith sync realtime:',status));
+}"""
+          new = """let warithSyncReconnectTimer=null;
+let warithSyncLastRealtimeStatus='';
+
+function warithSyncStopRealtime(){
+  if(warithSyncReconnectTimer){clearTimeout(warithSyncReconnectTimer);warithSyncReconnectTimer=null;}
+  if(warithSyncChannel){
+    try{warithSyncChannel.unsubscribe();}catch(e){}
+    warithSyncChannel=null;
+  }
+}
+
+function warithSyncScheduleReconnect(){
+  if(warithSyncReconnectTimer||!window.warithSupabase||!warithSyncReady)return;
+  warithSyncReconnectTimer=setTimeout(()=>{
+    warithSyncReconnectTimer=null;
+    warithSyncStartRealtime(true);
+  },3000);
+}
+
+function warithSyncStartRealtime(force=false){
+  if(!window.warithSupabase||!warithSyncReady)return;
+  if(warithSyncChannel&&!force)return;
+  if(force)warithSyncStopRealtime();
+  warithSyncChannel=window.warithSupabase.channel('warith-client-sync-'+Date.now())
+    .on('postgres_changes',{event:'*',schema:'public',table:'client_sync_records'},warithSyncApplyRealtime)
+    .subscribe((status,err)=>{
+      warithSyncLastRealtimeStatus=status;
+      console.log('Warith sync realtime:',status,err||'');
+      if(status==='SUBSCRIBED')return;
+      if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+        warithSyncChannel=null;
+        warithSyncScheduleReconnect();
+      }
+    });
+}"""
+          if old not in s:
+              raise SystemExit("old realtime block not found")
+          s = s.replace(old, new, 1)
+
+          marker = """if(window.warithSupabase?.auth){
+  window.warithSupabase.auth.onAuthStateChange((event,session)=>{"""
+          if marker not in s:
+              raise SystemExit("auth marker not found")
+
+          old_logout = """    }else{
+      warithSyncReady=false;
+      if(warithSyncChannel){
+        try{warithSyncChannel.unsubscribe();}catch(e){}
+        warithSyncChannel=null;
+      }
+    }"""
+          new_logout = """    }else{
+      warithSyncReady=false;
+      warithSyncStopRealtime();
+    }"""
+          if old_logout not in s:
+              raise SystemExit("logout block not found")
+          s = s.replace(old_logout, new_logout, 1)
+
+          insert_after = """window.addEventListener('load',()=>setTimeout(initWarithCloudSync,250));"""
+          extra = """window.addEventListener('load',()=>setTimeout(initWarithCloudSync,250));
+
+/* فحص خفيف دوري: إذا انقطعت Realtime تبقى المزامنة ترجع تلقائياً */
+setInterval(async()=>{
+  if(!window.warithSupabase||!warithSyncReady||warithSyncPulling)return;
+  try{
+    const {data}=await window.warithSupabase.auth.getSession();
+    if(!data?.session?.user){warithSyncReady=false;warithSyncStopRealtime();return;}
+    if(!warithSyncChannel)warithSyncStartRealtime();
+    for(const cfg of Object.values(WARITH_SYNC_CONFIG)){
+      if(warithSyncPending[cfg.entity]){
+        warithSyncPending[cfg.entity]=false;
+        await warithSyncPushEntity(cfg.entity);
+      }
+    }
+  }catch(e){console.warn('Warith sync heartbeat:',e);}
+},30000);"""
+          if insert_after not in s:
+              raise SystemExit("load marker not found")
+          s = s.replace(insert_after, extra, 1)
+
+          p.write_text(s, encoding="utf-8")
+      - name: Commit repair and remove helper
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/repair-sync.yml
+          git add index.html .github/workflows/repair-sync.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "إصلاح استمرارية مزامنة الجمعية"
+          git push
