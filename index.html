@@ -3,9 +3,13 @@
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="utf-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
+<script>(()=>{try{const v='warith-v-20261005-1333';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -997,7 +1001,8 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <button data-perm="users-settings" onclick="openSettings();closeMenu()">⚙️ المستخدمون والصلاحيات</button>
 <button id="menuLoginButton" onclick="openLogin();closeMenu()">🔐 تسجيل الدخول</button>
 </div></div>
-<script>/* مرجع رموز العنوان المستخرج من ملف جرد العوائل المرفوع للجمعية. */
+<script>
+/* مرجع رموز العنوان المستخرج من ملف جرد العوائل المرفوع للجمعية. */
 const ADDRESS_CODE_GROUPS={
   1:['عويسيان'],
   2:['ابو الجوزي','البهادرية','محولة الزهير'],
@@ -1996,7 +2001,8 @@ function sortProgramFamiliesByAddressCode(list){
     const acA=programAddressCodeValue(fa), acB=programAddressCodeValue(fb);
     if(acA===null && acB!==null)return 1;
     if(acA!==null && acB===null)return -1;
-    if(acA!==null && acB!==null && acA!==acB)return acA-acB;    return Number(a.familyCode)-Number(b.familyCode);
+    if(acA!==null && acB!==null && acA!==acB)return acA-acB;
+    return Number(a.familyCode)-Number(b.familyCode);
   });
 }
 function getProgramExportRows(){
@@ -2995,7 +3001,8 @@ function renderProgramFilterMenus(){
     job:[...new Set(families.map(f=>normalizeProgramFilterValue(f.j)))].sort(),
     social:[...new Set(families.map(f=>normalizeProgramFilterValue(f.social)))].sort(),
     student:['نعم','لا']
-  };  Object.keys(vals).forEach(k=>buildProgramFilterMenu(k,vals[k],k));
+  };
+  Object.keys(vals).forEach(k=>buildProgramFilterMenu(k,vals[k],k));
 }
 function renderProgramFilterLabels(){
   const st=programFilterCommitted;
@@ -3909,7 +3916,7 @@ localStorage.setItem=function(key,value){
   const cfg=Object.values(WARITH_SYNC_CONFIG).find(x=>x.key===key||x.entity===key);
   if(cfg)warithSyncSchedule(cfg.entity);
 };
-window.addEventListener('load',()=>setTimeout(initWarithCloudSync,1400));
+window.addEventListener('load',()=>setTimeout(initWarithCloudSync,250));
 
 </script>
 </html>
