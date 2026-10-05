@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261005-1512';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261005-2115';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -335,12 +335,13 @@ textarea.forminput{height:80px;resize:vertical}
  body.printing-report .family-report-info .info.is-empty{min-height:0!important;padding-top:3px!important;padding-bottom:3px!important}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* WARITH_SUPABASE_CLIENT */
 window.WARITH_SUPABASE_URL="https://zbmqgmmckabyfzecbdzh.supabase.co";
 window.WARITH_SUPABASE_PUBLISHABLE_KEY="sb_publishable_IfFTn1Vpyd5rkEa-EtATdg_xraN4vLc";
-window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,window.WARITH_SUPABASE_PUBLISHABLE_KEY);
+window.warithSupabase=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(window.WARITH_SUPABASE_URL,window.WARITH_SUPABASE_PUBLISHABLE_KEY):null;
+window.addEventListener('load',()=>{try{if(!window.warithSupabase&&window.supabase?.createClient)window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,window.WARITH_SUPABASE_PUBLISHABLE_KEY)}catch(e){console.warn('Supabase init skipped',e)}});
 </script>
 </head>
 <body>
@@ -762,7 +763,7 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <label>المصدر<input class="forminput" id="inv-source"/></label>
 <label>ملاحظات<textarea class="forminput" id="inv-notes"></textarea></label>
 </div>
-<button class="action primary" onclick="saveInventoryMovement()" style="width:100%;margin-top:10px">حفظ الحركة</button>
+<button id="inv-save-btn" class="action primary" onclick="saveInventoryMovement()" style="width:100%;margin-top:10px">حفظ الحركة</button>
 </section>
 <section class="screen" id="appeals">
 <div class="top">
@@ -997,4 +998,3 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <button data-perm="files-center" onclick="openFilesCenter();closeMenu()">📁 الملفات والتوثيق</button>
 <button data-perm="activities" onclick="showScreen('activities');closeMenu()">🎯 النشاطات</button>
 <button data-perm="inventory" onclick="showScreen('inventory');closeMenu()">📦 المخزن</button>
-<button data-perm="reports" onclick="showScreen('reports');closeMenu()">📊 التقارير</button>
