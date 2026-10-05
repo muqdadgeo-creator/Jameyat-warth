@@ -335,13 +335,12 @@ textarea.forminput{height:80px;resize:vertical}
  body.printing-report .family-report-info .info.is-empty{min-height:0!important;padding-top:3px!important;padding-bottom:3px!important}
 }
 </style>
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* WARITH_SUPABASE_CLIENT */
 window.WARITH_SUPABASE_URL="https://zbmqgmmckabyfzecbdzh.supabase.co";
 window.WARITH_SUPABASE_PUBLISHABLE_KEY="sb_publishable_IfFTn1Vpyd5rkEa-EtATdg_xraN4vLc";
-window.warithSupabase=(window.supabase&&window.supabase.createClient)?window.supabase.createClient(window.WARITH_SUPABASE_URL,window.WARITH_SUPABASE_PUBLISHABLE_KEY):null;
-window.addEventListener('load',()=>{try{if(!window.warithSupabase&&window.supabase?.createClient)window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,window.WARITH_SUPABASE_PUBLISHABLE_KEY)}catch(e){console.warn('Supabase init skipped',e)}});
+window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,window.WARITH_SUPABASE_PUBLISHABLE_KEY);
 </script>
 </head>
 <body>
@@ -763,7 +762,7 @@ window.addEventListener('load',()=>{try{if(!window.warithSupabase&&window.supaba
 <label>المصدر<input class="forminput" id="inv-source"/></label>
 <label>ملاحظات<textarea class="forminput" id="inv-notes"></textarea></label>
 </div>
-<button id="inv-save-btn" class="action primary" onclick="saveInventoryMovement()" style="width:100%;margin-top:10px">حفظ الحركة</button>
+<button class="action primary" onclick="saveInventoryMovement()" style="width:100%;margin-top:10px">حفظ الحركة</button>
 </section>
 <section class="screen" id="appeals">
 <div class="top">
@@ -998,3 +997,4 @@ window.addEventListener('load',()=>{try{if(!window.warithSupabase&&window.supaba
 <button data-perm="files-center" onclick="openFilesCenter();closeMenu()">📁 الملفات والتوثيق</button>
 <button data-perm="activities" onclick="showScreen('activities');closeMenu()">🎯 النشاطات</button>
 <button data-perm="inventory" onclick="showScreen('inventory');closeMenu()">📦 المخزن</button>
+<button data-perm="reports" onclick="showScreen('reports');closeMenu()">📊 التقارير</button>
