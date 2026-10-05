@@ -997,8 +997,7 @@ window.warithSupabase=window.supabase.createClient(window.WARITH_SUPABASE_URL,wi
 <button data-perm="files-center" onclick="openFilesCenter();closeMenu()">📁 الملفات والتوثيق</button>
 <button data-perm="activities" onclick="showScreen('activities');closeMenu()">🎯 النشاطات</button>
 <button data-perm="inventory" onclick="showScreen('inventory');closeMenu()">📦 المخزن</button>
-<button data-perm="reports" onclick="showScreen('reports');closeMenu()">📊 التقارير</button>
-<button data-perm="users-settings" onclick="openSettings();closeMenu()">⚙️ المستخدمون والصلاحيات</button>
+<button data-perm="reports" onclick="showScreen('reports');closeMenu()">📊 التقارير</button><button data-perm="users-settings" onclick="openSettings();closeMenu()">⚙️ المستخدمون والصلاحيات</button>
 <button id="menuLoginButton" onclick="openLogin();closeMenu()">🔐 تسجيل الدخول</button>
 </div></div>
 <script>
@@ -1997,8 +1996,7 @@ function programAddressCodeValue(f){
 }
 function sortProgramFamiliesByAddressCode(list){
   return [...list].sort((a,b)=>{
-    const fa=families.find(z=>Number(z.c)===Number(a.familyCode));
-    const fb=families.find(z=>Number(z.c)===Number(b.familyCode));
+    const fa=families.find(z=>Number(z.c)===Number(a.familyCode));    const fb=families.find(z=>Number(z.c)===Number(b.familyCode));
     const acA=programAddressCodeValue(fa), acB=programAddressCodeValue(fb);
     if(acA===null && acB!==null)return 1;
     if(acA!==null && acB===null)return -1;
@@ -2677,12 +2675,13 @@ function onInventoryAppealChange(){
   document.getElementById('inv-beneficiary').value=a?(a.ownerName||''):'';
   renderInventoryBeneficiaryInfo(a?{name:a.ownerName||'غير محدد',familyCode:a.familyCode,phone:a.ownerPhone,address:a.ownerAddress,landmark:a.ownerLandmark,details:a.notes||''}:null);
   const btn=document.getElementById('inv-open-appeal-btn');
-  if(btn){btn.style.display=(id && currentUser()?.active!==false)?'block':'none';}
+  // يظهر زر فتح المناشدة فقط للمستخدم الفعّال الذي يملك صلاحية تعديل المناشدات.
+  if(btn){btn.style.display=(id && hasAction('edit','appeals'))?'inline-flex':'none';}
 }
 function openSelectedInventoryAppeal(){
   const id=document.getElementById('inv-appeal')?.value||'';
   if(!id)return;
-  if(!currentUser()||currentUser().active===false){alert('يجب تسجيل الدخول أولاً.');return;}
+  if(!hasAction('edit','appeals')){alert('ليس لديك صلاحية فتح وتعديل المناشدات.');return;}
   openAppealFromInventory(id);
 }
 function updateInventoryBeneficiary(){
@@ -2796,6 +2795,7 @@ function renderInventoryAppealPriority(){
   box.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px"><thead><tr><th style="padding:10px;text-align:right">الأولوية</th><th style="padding:10px;text-align:right">رقم المناشدة</th><th style="padding:10px;text-align:right">المستفيد</th><th style="padding:10px;text-align:right">العائلة</th><th style="padding:10px;text-align:right">الهاتف</th><th style="padding:10px;text-align:right">التفاصيل</th><th style="padding:10px;text-align:right">التاريخ</th><th style="padding:10px;text-align:right">الحالة</th><th style="padding:10px;text-align:right">إجراء</th></tr></thead><tbody>${list.map(a=>`<tr><td style="padding:9px;border-top:1px solid #edf1ef;font-weight:900">${priorityLabel(a.priority)}</td><td style="padding:9px;border-top:1px solid #edf1ef">#${escapeHtml(a.id)}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.ownerName||'غير محدد')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${a.familyCode?'#'+escapeHtml(a.familyCode):'غير مسجلة'}</td><td style="padding:9px;border-top:1px solid #edf1ef">${a.ownerPhone?`<a href="tel:${escapeHtml(a.ownerPhone)}" title="اتصال بالمستفيد" style="font-size:21px;text-decoration:none">📞</a>`:'—'}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.notes||'—')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.date||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef">${escapeHtml(a.status||'')}</td><td style="padding:9px;border-top:1px solid #edf1ef"><button class="action primary" onclick="openAppealFromInventory(${Number(a.id)})">عرض</button><button class="action" style="margin-inline-start:5px" onclick="openInventoryForAppeal(${Number(a.id)})">إخراج</button></td></tr>`).join('')}</tbody></table></div>`;
 }
 function openAppealFromInventory(id){
+  if(!hasAction('edit','appeals')){alert('ليس لديك صلاحية فتح وتعديل المناشدات.');return;}
   const i=appeals.findIndex(a=>Number(a.id)===Number(id)); if(i<0)return;
   openAppeal(i);
 }
@@ -2997,8 +2997,7 @@ function exportSelectedProgramFamilies(){
   const name=(document.getElementById('a-program-name')?.value||'برنامج').trim().replace(/[\\/:*?"<>|]+/g,'_');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='سجل_برنامج_'+name+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-  alert('تم تصدير '+rows.length+' عائلة مرتبة حسب رمز العنوان ✓');
+  const a=document.createElement('a');a.href=url;a.download='سجل_برنامج_'+name+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);  alert('تم تصدير '+rows.length+' عائلة مرتبة حسب رمز العنوان ✓');
 }
 function renderProgramFilterMenus(){
   const vals={
