@@ -2532,10 +2532,10 @@ function renderDonations(){
       <td>${escapeHtml(beneficiary)}</td>
       <td class="donation-amount">${escapeHtml(amount)}</td>
       <td class="donation-date">${escapeHtml(d.date||'')}</td>
-      <td class="donation-action"><button class="donation-edit-btn" onclick="editDonation(${realIndex})">✏️ تعديل</button></td>
+      <td class="donation-action"><button class="donation-edit-btn" onclick="editDonation(${realIndex})">✏️ تعديل</button> <button class="donation-edit-btn" onclick="hideRecord('donations',${realIndex},'التبرع')">🚫 حجب</button></td>
     </tr>`;
   }).join('');
-  box.innerHTML=rows?`<div class="donation-table-wrap"><table class="donation-table"><thead><tr><th class="donation-no">ت</th><th>رمز المتبرع</th><th>اسم المتبرع</th><th>اسم المستفيد</th><th>المبلغ</th><th>التاريخ</th><th class="donation-action">تعديل</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">لا توجد تبرعات بعد</div>';
+  box.innerHTML=rows?`<div class="donation-table-wrap"><table class="donation-table"><thead><tr><th class="donation-no">ت</th><th>رمز المتبرع</th><th>اسم المتبرع</th><th>اسم المستفيد</th><th>المبلغ</th><th>التاريخ</th><th class="donation-action">إجراء</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">لا توجد تبرعات بعد</div>';
 }
 
 function saveFamily(){const _edit=!!editingFamilyCode; if(!hasAction(_edit?'edit':'add','families')){alert('ليس لديك صلاحية هذه العملية.');return}
