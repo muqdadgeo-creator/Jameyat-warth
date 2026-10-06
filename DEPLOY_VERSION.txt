@@ -1,0 +1,3 @@
+warith unpaid donations register deployment check
+2026-10-06 20:20 +03:00
+Latest app commit: 86ed427051f94a99ad5366fecf0734b00c28a64a
