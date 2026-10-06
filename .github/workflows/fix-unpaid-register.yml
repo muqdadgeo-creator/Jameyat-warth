@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -13,5 +13,31 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Repair unpaid register IDs
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          s2 = s.replace("unpaidDonorList", "unpaidDonationList")
+          s2 = s2.replace("unpaidTotalCount", "unpaidDonationCount")
+          s2 = s2.replace("warith-v-20261006-0046", "warith-v-20261006-0047")
+          if s2 != s:
+              p.write_text(s2, encoding="utf-8")
+
+      - name: Commit unpaid register repair
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No unpaid register repair needed."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Fix unpaid register table IDs"
+          git push
+
       - name: Validate index
         run: test -s index.html
