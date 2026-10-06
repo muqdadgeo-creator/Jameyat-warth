@@ -2131,7 +2131,7 @@ function doExportPrint(){
     const ds=Array.isArray(window.donations)?window.donations:[];
     const dr=Array.isArray(window.donors)?window.donors:[];
     const map=new Map();
-    ds.filter(d=>!isHiddenRecord(d)&&['لا','غير مستلم','غير مسدد'].includes(String(d.paymentStatus||d.payment_status||'').trim()))
+    ds.filter(d=>!isHiddenRecord(d)&&String(d.paid||'').trim()==='لا')
       .forEach(d=>{
         const did=String(d.donorId??'');
         const donor=dr.find(x=>String(x.id)===did);
@@ -2179,7 +2179,7 @@ function doExportPrint(){
   window.openUnpaidDonor=function(donorId){
     const box=document.getElementById('unpaidModal'),body=document.getElementById('unpaidModalBody'),title=document.getElementById('unpaidModalTitle');if(!box||!body)return;
     const ds=Array.isArray(window.donations)?window.donations:[],dr=Array.isArray(window.donors)?window.donors:[];
-    const rows=ds.filter(d=>!isHiddenRecord(d)&&['لا','غير مستلم','غير مسدد'].includes(String(d.paymentStatus||d.payment_status||'').trim())&&String(d.donorId??'')===String(donorId));
+    const rows=ds.filter(d=>!isHiddenRecord(d)&&String(d.paid||'').trim()==='لا'&&String(d.donorId??'')===String(donorId));
     const donor=dr.find(x=>String(x.id)===String(donorId));
     const name=donor?.name||rows[0]?.donorName||'المتبرع';
     title.textContent='تبرعات '+name;
