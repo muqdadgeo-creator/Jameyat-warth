@@ -3202,25 +3202,30 @@ async function persistHiddenRecordToCloud(entity,item){
   try{
     const sb=window.warithSupabase;
     const cfg=warithSyncCfg(entity);
-    if(!sb||!cfg||!item)return;
+    if(!sb||!cfg||!item)throw new Error('مزامنة السحابة غير مهيأة');
     const sessionResult=await sb.auth.getSession();
-    if(!sessionResult?.data?.session?.user)return;
+    if(!sessionResult?.data?.session?.user)throw new Error('لا توجد جلسة Supabase صالحة');
     const key=cfg.id(item);
-    if(!key||key==='undefined'||key==='null')return;
-    const ts=item.updatedAt||new Date().toISOString();
+    if(!key||key==='undefined'||key==='null')throw new Error('مفتاح السجل غير صالح');
+    const rawTs=item.updatedAt||item.updated_at;
+    const parsedTs=typeof rawTs==='number'?new Date(rawTs):new Date(String(rawTs||''));
+    const ts=Number.isNaN(parsedTs.getTime())?new Date().toISOString():parsedTs.toISOString();
+    item.updatedAt=ts;
     const {error}=await sb.from('client_sync_records').upsert(
       {entity,record_key:key,data:item,updated_at:ts,deleted:false},
       {onConflict:'entity,record_key'}
     );
     if(error)throw error;
-    if(warithSyncShadow[entity])warithSyncShadow[entity].set(key,item);
+    if(warithSyncShadow[entity])warithSyncShadow[entity].set(key,{...item});
     if(warithSyncDeleted[entity])warithSyncDeleted[entity].delete(key);
+    return true;
   }catch(e){
     console.error('حفظ الحجب سحابياً فشل:',e);
-    alert('تم حجب السجل محلياً، لكن تعذر تثبيت الحجب على السحابة. تأكد من الاتصال ثم أعد المحاولة.');
+    alert('تم الحجب محلياً، لكن تعذر تثبيته على السحابة. سيتم إعادة المحاولة عند الاتصال.\n'+(e?.message||e));
+    return false;
   }
 }
-function hideRecord(collectionName,index,label){
+async function hideRecord(collectionName,index,label){
   const collections={families,donors,donations,appeals,helps,programs,expenses,inventoryMovements};
   const arr=collections[collectionName];
   if(!Array.isArray(arr)||!arr[index]) return;
@@ -3230,23 +3235,29 @@ function hideRecord(collectionName,index,label){
   const clean=String(reason).trim();
   if(!clean){alert('سبب الحجب مطلوب.');return;}
   if(!confirm('سيختفي هذا السجل من القوائم والحسابات، لكنه سيبقى محفوظاً ضمن تقرير المحجوبات. هل تريد المتابعة؟'))return;
-  x.hidden=true;x.hiddenAt=new Date().toISOString();x.hiddenBy='المستخدم الحالي';x.hiddenReason=clean;
+  const ts=new Date().toISOString();
+  x.hidden=true;x.hiddenAt=ts;x.hiddenBy='المستخدم الحالي';x.hiddenReason=clean;x.updatedAt=ts;
   const keys={families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'};
   const entities={families:'families',donors:'donors',donations:'donations',appeals:'appeals',helps:'help',programs:'programs',expenses:'expenses',inventoryMovements:'inventory'};
   const key=keys[collectionName];
   if(key)localStorage.setItem(key,JSON.stringify(arr));
   if(collectionName==='families')localStorage.setItem('warith_families',JSON.stringify(arr));
   const entity=entities[collectionName];
-  if(entity)persistHiddenRecordToCloud(entity,x);
+  const cloudOk=entity?await persistHiddenRecordToCloud(entity,x):true;
   refreshAllViews();
+  return cloudOk;
 }
-function unhideRecord(collectionName,index){
+async function unhideRecord(collectionName,index){
   const collections={families,donors,donations,appeals,helps,programs,expenses,inventoryMovements};
   const arr=collections[collectionName]; if(!Array.isArray(arr)||!arr[index])return;
-  arr[index].hidden=false;arr[index].unhiddenAt=new Date().toISOString();
+  const x=arr[index],ts=new Date().toISOString();
+  x.hidden=false;x.unhiddenAt=ts;x.updatedAt=ts;
   const keys={families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'};
+  const entities={families:'families',donors:'donors',donations:'donations',appeals:'appeals',helps:'help',programs:'programs',expenses:'expenses',inventoryMovements:'inventory'};
   const key=keys[collectionName];if(key)localStorage.setItem(key,JSON.stringify(arr));
   if(collectionName==='families')localStorage.setItem('warith_families',JSON.stringify(arr));
+  const entity=entities[collectionName];
+  if(entity)await persistHiddenRecordToCloud(entity,x);
   refreshAllViews();
 }
 
