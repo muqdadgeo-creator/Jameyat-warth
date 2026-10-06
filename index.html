@@ -2082,6 +2082,147 @@ function doExportPrint(){
   w.document.write(`<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>تقرير - جمعية وارث الخيرية</title><style>
   *{box-sizing:border-box}body{margin:0;background:#fff;color:#1e2d29;font-family:Arial,"Tahoma",sans-serif} .export-paper{padding:6mm 8mm 8mm;direction:rtl}.export-head{text-align:center;margin-bottom:7mm}.export-logo{width:54px;height:76px;border-radius:0;background:transparent;color:inherit;display:inline-grid;place-items:center;font-weight:900;font-size:22px;margin-bottom:5px}.export-org{font-size:20px;font-weight:900;color:#0f5c4d}.export-title{font-size:17px;font-weight:900;margin-top:4px}.export-meta{font-size:10px;color:#667772;margin-top:5px}.export-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:10px}.export-table th,.export-table td{border:1px solid #8e9b97;padding:5px 4px;vertical-align:middle;text-align:right;line-height:1.45}.export-table th{background:#edf3f1;color:#173b33;font-weight:900;white-space:nowrap}.export-table .num{text-align:center;width:28px}.export-table tbody tr:nth-child(even){background:#fafcfb}.export-table thead{display:table-header-group}.export-table tr{page-break-inside:avoid}.export-foot{display:flex;justify-content:space-between;gap:10px;margin-top:5mm;padding-top:3mm;border-top:1px solid #cbd6d2;font-size:9px;color:#667772}@page{size:A4 landscape;margin:7mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   </style></head><body>${html}</body>
+
+<style>
+.unpaid-summary{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 10px}
+.unpaid-summary .us{background:#fff;border-radius:13px;padding:10px;box-shadow:0 2px 10px #0000000b}
+.unpaid-summary .us small{display:block;color:#71857f;font-size:9px}
+.unpaid-summary .us b{display:block;margin-top:4px;font-size:16px;color:#9a2f2f}
+.unpaid-note{background:#fff8f0;border:1px solid #ead8b5;border-radius:10px;padding:9px 10px;font-size:9px;color:#735d2a;line-height:1.7;margin-bottom:9px}
+.unpaid-card{background:#fff;border-radius:14px;padding:11px;margin-bottom:8px;box-shadow:0 2px 10px #0000000b;border-right:4px solid #b43b3b}
+.unpaid-head{display:flex;align-items:center;gap:9px}
+.unpaid-avatar{width:42px;height:42px;border-radius:12px;background:#fbeaea;color:#a13030;display:grid;place-items:center;font-weight:900;font-size:16px;flex:0 0 42px}
+.unpaid-main{flex:1;min-width:0}
+.unpaid-name{font-size:14px;font-weight:900}
+.unpaid-phone,.unpaid-address{font-size:9px;color:#71857f;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unpaid-amount{font-size:15px;font-weight:900;color:#a13030;white-space:nowrap}
+.unpaid-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+.unpaid-meta>div{background:#f7f8f7;border-radius:9px;padding:7px;font-size:9px;color:#61756f}
+.unpaid-meta b{display:block;color:#304f48;font-size:11px;margin-top:2px}
+.unpaid-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.unpaid-actions button{border:0;border-radius:10px;padding:9px 5px;font:inherit;font-size:9px;font-weight:900;cursor:pointer}
+.unpaid-call{background:#e8f5ef;color:#0f5c4d}
+.unpaid-wa{background:#e9f5e9;color:#26713a}
+.unpaid-open{background:#eef2f1;color:#34564e}
+.unpaid-modal{position:fixed;inset:0;background:#0007;z-index:60;display:none;padding:18px;align-items:center;justify-content:center}
+.unpaid-modal.open{display:flex}
+.unpaid-modal-card{width:min(520px,100%);max-height:82vh;overflow:auto;background:#fff;border-radius:18px;padding:14px}
+.unpaid-modal-head{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.unpaid-modal-title{font-size:17px;font-weight:900;flex:1}
+.unpaid-detail-row{display:flex;justify-content:space-between;gap:10px;padding:9px;border-bottom:1px solid #e7eeeb;font-size:10px}
+.unpaid-detail-row b{color:#0f5c4d}
+.unpaid-close{border:0;background:#eef3f1;color:#34564e;border-radius:10px;padding:8px 11px;font:inherit;font-weight:900}
+@media(max-width:520px){.unpaid-actions button{font-size:8px}.unpaid-amount{font-size:13px}}
+</style>
+<script>
+(function(){
+  function unpaidPhone(v){
+    let s=String(v||'').replace(/[^0-9+]/g,'');
+    if(s.startsWith('00'))s='+'+s.slice(2);
+    if(s.startsWith('07'))s='+964'+s.slice(1);
+    else if(s.startsWith('964'))s='+'+s;
+    else if(s.startsWith('+964')){}
+    return s;
+  }
+  function unpaidWa(v){const p=unpaidPhone(v).replace(/\+/g,'');return p?('https://wa.me/'+p):''}
+  function unpaidMap(address){return address?('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(address)) : ''}
+  function unpaidEsc(v){return typeof escapeHtml==='function'?escapeHtml(String(v??'')):String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+  function unpaidRowsFromLocal(){
+    const ds=Array.isArray(window.donations)?window.donations:[];
+    const dr=Array.isArray(window.donors)?window.donors:[];
+    const map=new Map();
+    ds.filter(d=>!isHiddenRecord(d)&&['لا','غير مستلم','غير مسدد'].includes(String(d.paymentStatus||d.payment_status||'').trim()))
+      .forEach(d=>{
+        const did=String(d.donorId??'');
+        const donor=dr.find(x=>String(x.id)===did);
+        const key=did||String(d.donorName||'غير محدد').trim().toLowerCase();
+        if(!map.has(key))map.set(key,{donor_id:d.donorId,donor_name:d.donorName||donor?.name||'غير محدد',phone:donor?.phone||d.phone||'',address:donor?.address||d.address||'',donation_count:0,unpaid_total:0,items:[]});
+        const x=map.get(key);x.donation_count++;x.unpaid_total+=Number(d.amount||0);x.items.push(d);
+      });
+    return [...map.values()].sort((a,b)=>Number(b.unpaid_total)-Number(a.unpaid_total));
+  }
+  async function renderUnpaidDonations(){
+    const box=document.getElementById('unpaidDonationList'); if(!box)return;
+    let rows=[];
+    try{
+      if(window.warithSupabase){
+        const {data,error}=await window.warithSupabase.from('unpaid_donations_summary').select('donor_id,donor_name,phone,address,donation_count,unpaid_total').order('unpaid_total',{ascending:false});
+        if(!error)rows=(data||[]).map(x=>({...x,donation_count:Number(x.donation_count||0),unpaid_total:Number(x.unpaid_total||0)}));
+      }
+    }catch(e){console.warn('unpaid donations cloud read failed',e)}
+    if(!rows.length)rows=unpaidRowsFromLocal();
+    const total=rows.reduce((n,x)=>n+Number(x.unpaid_total||0),0);
+    const count=rows.length;
+    const donationsCount=rows.reduce((n,x)=>n+Number(x.donation_count||0),0);
+    const sum=document.getElementById('unpaidTotalAmount'),cnt=document.getElementById('unpaidDonorCount'),dc=document.getElementById('unpaidDonationCount');
+    if(sum)sum.textContent=total.toLocaleString('en-US')+' د.ع';
+    if(cnt)cnt.textContent=count.toLocaleString('en-US');
+    if(dc)dc.textContent=donationsCount.toLocaleString('en-US');
+    if(!rows.length){box.innerHTML='<div class="empty">لا توجد تبرعات غير مستلمة حالياً ✓</div>';return}
+    box.innerHTML=rows.map((x,i)=>{
+      const phone=String(x.phone||'').trim(), addr=String(x.address||'').trim(), name=String(x.donor_name||'غير محدد');
+      return '<div class="unpaid-card">'+
+        '<div class="unpaid-head"><div class="unpaid-avatar">'+unpaidEsc(name.charAt(0)||'م')+'</div>'+
+        '<div class="unpaid-main"><div class="unpaid-name">'+unpaidEsc(name)+'</div>'+
+        '<div class="unpaid-phone">'+(phone?('📱 '+unpaidEsc(phone)):'📱 لا يوجد رقم مسجل')+'</div>'+
+        '<div class="unpaid-address">'+(addr?('📍 '+unpaidEsc(addr)):'📍 لا يوجد عنوان مسجل')+'</div></div>'+
+        '<div class="unpaid-amount">'+Number(x.unpaid_total||0).toLocaleString('en-US')+'<br><small>د.ع</small></div></div>'+
+        '<div class="unpaid-meta"><div>عدد التبرعات<b>'+Number(x.donation_count||0).toLocaleString('en-US')+'</b></div><div>الحالة<b>غير مستلم</b></div></div>'+
+        '<div class="unpaid-actions">'+
+        (phone?'<button class="unpaid-call" onclick="window.location.href=\'tel:'+unpaidEsc(unpaidPhone(phone))+'\'">📞 اتصال</button>':'<button class="unpaid-call" disabled>📞 اتصال</button>')+
+        (phone?'<button class="unpaid-wa" onclick="window.open(\''+unpaidWa(phone)+'\',\'_blank\')">💬 واتساب</button>':'<button class="unpaid-wa" disabled>💬 واتساب</button>')+
+        '<button class="unpaid-open" onclick="openUnpaidDonor('+JSON.stringify(String(x.donor_id||''))+')">📋 فتح التبرعات</button>'+
+        '</div></div>';
+    }).join('');
+  }
+  window.renderUnpaidDonations=renderUnpaidDonations;
+  window.openUnpaidDonor=function(donorId){
+    const box=document.getElementById('unpaidModal'),body=document.getElementById('unpaidModalBody'),title=document.getElementById('unpaidModalTitle');if(!box||!body)return;
+    const ds=Array.isArray(window.donations)?window.donations:[],dr=Array.isArray(window.donors)?window.donors:[];
+    const rows=ds.filter(d=>!isHiddenRecord(d)&&['لا','غير مستلم','غير مسدد'].includes(String(d.paymentStatus||d.payment_status||'').trim())&&String(d.donorId??'')===String(donorId));
+    const donor=dr.find(x=>String(x.id)===String(donorId));
+    const name=donor?.name||rows[0]?.donorName||'المتبرع';
+    title.textContent='تبرعات '+name;
+    body.innerHTML=rows.length?rows.map((d,i)=>{
+      const amt=d.type==='مالي'?Number(d.amount||0).toLocaleString('en-US')+' د.ع':(Number(d.qty||0).toLocaleString('en-US')+' × '+(d.item||'تبرع عيني'));
+      return '<div class="unpaid-detail-row"><span>#'+(i+1)+' · '+unpaidEsc(d.type||'')+'</span><b>'+unpaidEsc(amt)+'</b></div>';
+    }).join(''):'<div class="empty">لا توجد تفاصيل محلية لهذا المتبرع. السجل السحابي مجمّع حسب المتبرع.</div>';
+    box.classList.add('open');
+  };
+  window.closeUnpaidModal=function(){document.getElementById('unpaidModal')?.classList.remove('open')};
+  window.switchDonationTab=function(tab){
+    const donorsTab=document.getElementById('donorsTab'),recordsTab=document.getElementById('recordsTab'),unpaidTab=document.getElementById('unpaidDonationsTab');
+    const td=document.getElementById('tabDonors'),tr=document.getElementById('tabRecords'),tu=document.getElementById('tabUnpaid');
+    [donorsTab,recordsTab,unpaidTab].forEach(x=>{if(x)x.style.display='none'});
+    [td,tr,tu].forEach(x=>{if(x)x.classList.remove('active')});
+    if(tab==='unpaid'){if(unpaidTab)unpaidTab.style.display='block';if(tu)tu.classList.add('active');renderUnpaidDonations();}
+    else if(tab==='records'){if(recordsTab)recordsTab.style.display='block';if(tr)tr.classList.add('active');if(typeof renderDonations==='function')renderDonations();}
+    else{if(donorsTab)donorsTab.style.display='block';if(td)td.classList.add('active');if(typeof renderDonors==='function')renderDonors();}
+  };
+  function installUnpaidUI(){
+    const tabs=document.querySelector('.donation-tabs');
+    if(!tabs||document.getElementById('tabUnpaid'))return;
+    const b=document.createElement('button');b.className='donation-tab';b.id='tabUnpaid';b.textContent='🔴 غير المستلمة';b.onclick=()=>switchDonationTab('unpaid');tabs.appendChild(b);
+    const records=document.getElementById('recordsTab');
+    if(!records)return;
+    const panel=document.createElement('div');panel.id='unpaidDonationsTab';panel.style.display='none';
+    panel.innerHTML='<div class="unpaid-note">هذا السجل يجمع كل التبرعات غير المستلمة حسب المتبرع، لذلك لا يتكرر الاسم حتى لو عنده أكثر من تبرع.</div>'+
+      '<div class="unpaid-summary"><div class="us"><small>المبلغ غير المستلم</small><b id="unpaidTotalAmount">0 د.ع</b></div><div class="us"><small>عدد المتبرعين</small><b id="unpaidDonorCount">0</b></div></div>'+
+      '<div class="section"><b>المتابعة</b><span class="count" id="unpaidDonationCount">0</span></div><div id="unpaidDonationList"></div>';
+    records.parentNode.insertBefore(panel,records.nextSibling);
+    const modal=document.createElement('div');modal.className='unpaid-modal';modal.id='unpaidModal';
+    modal.innerHTML='<div class="unpaid-modal-card"><div class="unpaid-modal-head"><div class="unpaid-modal-title" id="unpaidModalTitle">تفاصيل التبرعات</div><button class="unpaid-close" onclick="closeUnpaidModal()">إغلاق</button></div><div id="unpaidModalBody"></div></div>';
+    document.body.appendChild(modal);
+  }
+  const oldRefresh=window.warithSyncRefreshUI;
+  if(typeof oldRefresh==='function'&&!oldRefresh.__unpaidWrapped){
+    const wrapped=function(entity){oldRefresh(entity);if(entity==='donations'||entity==='donors')setTimeout(renderUnpaidDonations,0)};
+    wrapped.__unpaidWrapped=true;window.warithSyncRefreshUI=wrapped;
+  }
+  document.addEventListener('DOMContentLoaded',()=>{installUnpaidUI();setTimeout(renderUnpaidDonations,300)});
+  setTimeout(()=>{installUnpaidUI();renderUnpaidDonations()},500);
+})();
+</script>
 </html>`);w.document.close();w.focus();setTimeout(()=>w.print(),450);
 }
 
