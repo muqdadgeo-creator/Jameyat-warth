@@ -1,39 +1,17 @@
-name: Fix unpaid donations register
+name: Validate and deploy app
+
 on:
   push:
     branches: [main]
+
 permissions:
-  contents: write
+  contents: read
+
 jobs:
-  patch:
-    if: github.actor != 'github-actions[bot]'
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Patch unpaid register
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-          old=s
-          start=s.find('async function renderUnpaidDonations(){')
-          end=s.find('function openUnpaidDonorDetails', start)
-          if start<0 or end<0:
-              raise SystemExit('unpaid renderer not found')
-          new=r'''async function renderUnpaidDonations(){const box=document.getElementById('unpaidDonorList');if(!box)return;box.innerHTML='<div class="empty">جارِ قراءة سجل غير المستلمة…</div>';try{let gs=[];try{gs=await getUnpaidCloudData();}catch(e){console.warn('Unpaid cloud read failed, using local data',e);}if(!gs.length&&Array.isArray(donations)){const dm=new Map((Array.isArray(donors)?donors:[]).map(d=>[String(d.id),d]));const gm=new Map();donations.forEach(d=>{if(String(d.paid||'').trim()!=='لا')return;const id=d.donorId!=null?String(d.donorId):'',dn=dm.get(id)||{},key=id||('name:'+String(d.donorName||dn.name||'').trim().toLowerCase());if(!gm.has(key))gm.set(key,{name:dn.name||d.donorName||'غير مسجل',phone:dn.phone||'',address:dn.address||'',donations:[]});const g=gm.get(key);if(!g.phone)g.phone=dn.phone||'';if(!g.address)g.address=dn.address||'';g.donations.push(d);});gs=[...gm.values()].map(g=>({...g,count:g.donations.length,total:g.donations.reduce((a,d)=>a+(Number(d.amount)||0),0)})).sort((a,b)=>b.total-a.total);}unpaidDonationsCache=gs;const totalAmount=gs.reduce((s,g)=>s+g.total,0),totalCount=gs.reduce((s,g)=>s+g.count,0);const a=document.getElementById('unpaidTotalAmount'),c=document.getElementById('unpaidTotalCount'),n=document.getElementById('unpaidDonorCount');if(a)a.textContent=totalAmount.toLocaleString('en-US');if(c)c.textContent=totalCount.toLocaleString('en-US');if(n)n.textContent=gs.length.toLocaleString('en-US');if(!gs.length){box.innerHTML='<div class="empty">لا توجد تبرعات غير مستلمة حالياً ✓</div>';return;}box.innerHTML=gs.map((g,i)=>{const p=String(g.phone||'').replace(/[^0-9+]/g,''),w=p.replace(/^00/,'').replace(/\D/g,'');return `<div class="card"><div class="row"><div class="avatar">م</div><div class="grow"><div class="name">${unpaidEsc(g.name)}</div><div class="sub">📞 ${unpaidEsc(g.phone||'غير مسجل')}</div><div class="sub">📍 ${unpaidEsc(g.address||'غير مسجل')}</div></div><span class="badge">${g.count} تبرع</span></div><div class="donor-grid" style="margin-top:9px"><div class="donor-stat">💰 المجموع غير المستلم<b>${unpaidMoney(g.total)}</b></div><div class="donor-stat">🧾 عدد التبرعات<b>${g.count}</b></div></div><div class="member-actions">${p?`<button class="action" type="button" onclick="location.href='tel:${p}'">📞 اتصال</button>`:''}${w?`<button class="action" type="button" onclick="window.open('https://wa.me/${w}','_blank')">💬 واتساب</button>`:''}<button class="action primary" type="button" onclick="openUnpaidDonorDetails(${i})">📋 فتح التبرعات</button></div></div>`}).join('');}catch(e){console.error('renderUnpaidDonations failed',e);box.innerHTML='<div class="empty">تعذر عرض سجل غير المستلمة. اضغط تحديث من السحابة للمحاولة مرة أخرى.</div>';}}
-'''
-          s=s[:start]+new+s[end:]
-          s=s.replace("warith-v-20261006-0043","warith-v-20261006-0044")
-          if s==old:
-              raise SystemExit('no changes')
-          p.write_text(s,encoding='utf-8')
-          PY
-      - name: Commit patch
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html
-          git diff --cached --quiet && exit 0
-          git commit -m 'Fix unpaid donations register rendering'
-          git push
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate index
+        run: test -s index.html
