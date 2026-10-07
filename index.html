@@ -1526,6 +1526,7 @@ function renderHomeFollowAppeals(visibleAppeals){
       <div class="appeal-line"><span class="appeal-label">رقم المناشدة</span><span class="appeal-value">${escapeHtml(a.id)}</span></div>
       <div class="appeal-line"><span class="appeal-label">نوع المناشدة</span><span class="appeal-value">${escapeHtml(a.type||'غير محدد')}</span></div>
       <div class="appeal-line"><span class="appeal-label">المبلغ المطلوب</span><span class="appeal-value">${(fx.required||0).toLocaleString('en-US')} د.ع</span></div>
+      <div class="appeal-line"><span class="appeal-label">مجموع التبرعات</span><span class="appeal-value">${(fx.donationTotal||0).toLocaleString('en-US')} د.ع</span></div>
       <div class="appeal-line"><span class="appeal-label">المبلغ المتبقي</span><span class="appeal-value">${(fx.remaining||0).toLocaleString('en-US')} د.ع</span></div>
       <button class="appeal-donate-btn" onclick="donateToAppeal(appeals.find(x=>Number(x.id)===Number(${Number(a.id)||0})))">تبرع الآن</button>
     </div>`;
