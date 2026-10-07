@@ -2157,13 +2157,29 @@ function fallbackCopyExportText(textValue,done){
  const ta=document.createElement('textarea');ta.value=textValue;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
  try{document.execCommand('copy');done();}catch(e){alert('تعذر النسخ، حاول مرة أخرى.');}ta.remove();
 }
+async function saveExportCardPng(title,textValue){
+ const card=document.createElement('div');
+ card.style.cssText='position:fixed;left:-10000px;top:0;width:720px;padding:34px;background:#fff;direction:rtl;font-family:Tahoma,Arial,sans-serif;color:#193a33;border:1px solid #dce8e4;border-radius:24px;box-sizing:border-box;';
+ card.innerHTML='<div style="text-align:center;border-bottom:2px solid #c8a96b;padding-bottom:16px;margin-bottom:18px"><div style="font-size:24px;font-weight:900;color:#0b5b4f">جمعية وارث الخيرية</div><div style="font-size:17px;font-weight:800;margin-top:6px">'+escapeHtml(title)+'</div></div><div style="white-space:pre-wrap;line-height:2.05;font-size:17px;color:#23463e">'+escapeHtml(textValue)+'</div>';
+ document.body.appendChild(card);
+ try{
+   if(typeof html2canvas!=='undefined'){
+     const canvas=await html2canvas(card,{backgroundColor:'#fff',scale:2,useCORS:true});
+     const a=document.createElement('a');a.download=(title||'بطاقة')+'.png';a.href=canvas.toDataURL('image/png');a.click();
+   }else{
+     const svg='<svg xmlns="http://www.w3.org/2000/svg" width="720" height="900"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Tahoma,Arial,sans-serif;direction:rtl;padding:34px;background:white;color:#193a33;white-space:pre-wrap;font-size:17px;line-height:2">'+escapeHtml(textValue)+'</div></foreignObject></svg>';
+     const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});const url=URL.createObjectURL(blob);const img=new Image();
+     img.onload=()=>{const c=document.createElement('canvas');c.width=1440;c.height=1800;c.getContext('2d').drawImage(img,0,0,1440,1800);const a=document.createElement('a');a.download=(title||'بطاقة')+'.png';a.href=c.toDataURL('image/png');a.click();URL.revokeObjectURL(url);};img.src=url;
+   }
+ }catch(e){alert('تعذر حفظ البطاقة كصورة PNG.');}finally{card.remove();}
+}
 function showExportCard(title,textValue){
  let back=document.getElementById('exportCardBackdrop');
  if(!back){back=document.createElement('div');back.id='exportCardBackdrop';back.style.cssText='position:fixed;inset:0;background:#0008;z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px';document.body.appendChild(back);}
  back.innerHTML='<div style="width:min(500px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:16px;direction:rtl;box-shadow:0 10px 40px #0005">'+
  '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px"><b style="font-size:16px">'+escapeHtml(title)+'</b><button class="more" onclick="document.getElementById(\'exportCardBackdrop\')?.remove()">✕</button></div>'+
  '<div id="exportCardText" style="border:1px solid #dce8e4;border-radius:16px;padding:15px;white-space:pre-wrap;line-height:1.9;font-size:12px;color:#23463e;background:#f8fbfa">'+escapeHtml(textValue)+'</div>'+
- '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="action primary" onclick="copyExportText(document.getElementById(\'exportCardText\').textContent,\'النص\')">📋 نسخ النص</button><button class="action" onclick="window.print()">🖨️ طباعة</button></div></div>';
+ '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px"><button class="action primary" onclick="copyExportText(document.getElementById(\'exportCardText\').textContent,\'النص\')">📋 نسخ النص</button><button class="action" onclick="saveExportCardPng('${escapeHtml(title)}',document.getElementById(\'exportCardText\').textContent)">📥 حفظ PNG</button><button class="action" onclick="window.print()">🖨️ طباعة</button></div></div>';
 }
 function exportFamilyText(){const x=getFamily();if(x)copyExportText(familyExportText(x),'سجل العائلة');}
 function exportFamilyCard(){const x=getFamily();if(x)showExportCard('بطاقة سجل العائلة',familyExportText(x));}
