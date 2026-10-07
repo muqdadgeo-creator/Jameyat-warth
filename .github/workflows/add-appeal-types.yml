@@ -1,12 +1,9 @@
 name: Add appeal types
-
 on:
   push:
     branches: [main]
-
 permissions:
   contents: write
-
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -20,42 +17,27 @@ jobs:
           p=Path("index.html")
           s=p.read_text(encoding="utf-8")
           if "باب رزق" in s and "تعليمية" in s:
-              print("Types already exist; nothing to do.")
+              print("Types already exist")
           else:
-              labels=[m.start() for m in re.finditer(r"نوع\s*المناشدة", s)]
-              if not labels:
-                  raise SystemExit("Could not locate نوع المناشدة")
+              labels=[m.start() for m in re.finditer(r"نوع\s*المناشدة",s)]
               changed=False
               for pos in labels:
                   tail=s[pos:pos+12000]
-                  m=re.search(r"<select\\b[^>]*>([\\s\\S]*?)</select>", tail, re.I)
-                  if not m:
-                      continue
+                  m=re.search(r"<select\b[^>]*>([\s\S]*?)</select>",tail,re.I)
+                  if not m: continue
                   block=m.group(0)
-                  if "باب رزق" in block or "تعليمية" in block:
-                      continue
-                  options=re.findall(r"<option\\b[^>]*>", block, re.I)
-                  if not options:
-                      continue
+                  if not re.search(r"<option\b",block,re.I): continue
                   insert_at=pos+m.start(1)
-                  addition='\\n<option value="باب رزق">باب رزق</option>\\n<option value="تعليمية">تعليمية</option>'
+                  addition='\n<option value="باب رزق">باب رزق</option>\n<option value="تعليمية">تعليمية</option>'
                   s=s[:insert_at]+addition+s[insert_at:]
                   changed=True
                   break
-              if not changed:
-                  raise SystemExit("Could not safely locate the appeal type select")
+              if not changed: raise SystemExit("Could not safely locate the appeal type select")
               p.write_text(s,encoding="utf-8")
           PY
-      - name: Commit and remove helper
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          if git diff --cached --quiet; then
-            git rm -f .github/workflows/add-appeal-types.yml
-            git commit -m "Remove temporary appeal type updater"
-          else
-            git rm -f .github/workflows/add-appeal-types.yml
-            git commit -m "Add appeal types باب رزق and تعليمية"
-          fi
+          git rm -f .github/workflows/add-appeal-types.yml
+          git commit -m "Add appeal types باب رزق and تعليمية"
           git push
