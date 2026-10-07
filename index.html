@@ -3207,16 +3207,20 @@ async function persistHiddenRecordToCloud(entity,item){
     if(!sessionResult?.data?.session?.user)throw new Error('لا توجد جلسة Supabase صالحة');
     const key=cfg.id(item);
     if(!key||key==='undefined'||key==='null')throw new Error('مفتاح السجل غير صالح');
-    const rawTs=item.updatedAt||item.updated_at;
+    const hiddenItem={...item,hidden:true};
+    const rawTs=hiddenItem.updatedAt||hiddenItem.updated_at;
     const parsedTs=typeof rawTs==='number'?new Date(rawTs):new Date(String(rawTs||''));
     const ts=Number.isNaN(parsedTs.getTime())?new Date().toISOString():parsedTs.toISOString();
-    item.updatedAt=ts;
-    const {error}=await sb.from('client_sync_records').upsert(
-      {entity,record_key:key,data:item,updated_at:ts,deleted:false},
+    hiddenItem.updatedAt=ts;
+    const {data,error}=await sb.from('client_sync_records').upsert(
+      {entity,record_key:key,data:hiddenItem,updated_at:ts,deleted:false},
       {onConflict:'entity,record_key'}
-    );
+    ).select('entity,record_key,data,updated_at,deleted').single();
     if(error)throw error;
-    if(warithSyncShadow[entity])warithSyncShadow[entity].set(key,{...item});
+    if(!data?.data?.hidden)throw new Error('تم الحفظ لكن حالة الحجب لم تثبت في السحابة');
+    item.hidden=true;
+    item.updatedAt=ts;
+    if(warithSyncShadow[entity])warithSyncShadow[entity].set(key,{...hiddenItem});
     if(warithSyncDeleted[entity])warithSyncDeleted[entity].delete(key);
     return true;
   }catch(e){
