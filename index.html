@@ -1719,19 +1719,9 @@ async function performLogin(){
     const uiRole=normalizeRole(profile.role);
     localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,role:uiRole,name:profile.display_name||profile.username,active:true,permissions:profile.permissions||ROLE_PERMISSIONS[uiRole]||[],actions:profile.actions||ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}}));
     if(err)err.textContent='';
-    /* لا نعرض لوحة فارغة بعد الدخول؛ اسحب بيانات السحابة أولاً ثم حدّث الواجهة. */
-    try{
-      await initWarithCloudSync();
-      if(!warithSyncReady)throw new Error('تعذر تهيئة مزامنة السحابة');
-      renderHomeDashboard();
-    }catch(syncErr){
-      console.warn('Warith cloud sync after login failed:',syncErr);
-      if(err)err.textContent='تم تسجيل الدخول، لكن تعذر تحميل بيانات الجمعية. تحقق من الاتصال ثم أعد المحاولة.';
-      return;
-    }
     document.getElementById('loginBackdrop').style.display='none';
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();showScreen('home');
-    renderHomeDashboard();
+    setTimeout(()=>initWarithCloudSync(),100);
   }catch(e){if(err)err.textContent='تعذر تسجيل الدخول: '+(e?.message||'تحقق من البيانات');}
 }
 async function logoutSupabaseUser(){try{if(window.warithSupabase)await window.warithSupabase.auth.signOut({scope:'local'})}catch(e){}localStorage.removeItem(CURRENT_USER_KEY);updateAuthHeaderUI();showScreen('home')}
@@ -1863,15 +1853,7 @@ async function initUsersPermissions(){
     if(!sb)throw new Error('Supabase client unavailable');
     const {data:sessionData,error:sessionError}=await sb.auth.getSession();
     if(sessionError)throw sessionError;
-    if(!sessionData?.session?.user){
-      localStorage.removeItem(CURRENT_USER_KEY);
-      applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
-      /* إذا لم توجد بيانات محلية، لا نعرض لوحة أصفار توهم المستخدم بأن السجلات اختفت. */
-      const hasLocalData=(Array.isArray(families)&&families.length)||(Array.isArray(donors)&&donors.length)||(Array.isArray(donations)&&donations.length)||(Array.isArray(appeals)&&appeals.length)||(Array.isArray(helps)&&helps.length)||(Array.isArray(expenses)&&expenses.length);
-      try{renderHomeDashboard()}catch(e){}
-      if(!hasLocalData)setTimeout(()=>openLogin(),0);
-      return
-    }
+    if(!sessionData?.session?.user){localStorage.removeItem(CURRENT_USER_KEY);applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();return}
     const {data:profileData,error:profileError}=await sb.rpc('get_my_app_user');
     if(profileError)throw profileError;
     const profile=Array.isArray(profileData)?profileData[0]:profileData;
@@ -1882,7 +1864,7 @@ async function initUsersPermissions(){
     if(uiRole==='المالك')await migrateLegacyUsersToAuth();
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
     if(document.getElementById('usersTable'))renderUsers();
-    try{await initWarithCloudSync();renderHomeDashboard()}catch(e){setTimeout(()=>{try{renderHomeDashboard()}catch(_e){}},500)};
+    setTimeout(()=>initWarithCloudSync(),0);
   }catch(e){
     /* خطأ شبكة/سوبابيس مؤقت لا يسجّل المستخدم خروجاً؛ تبقى الجلسة والواجهة محلياً. */
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
