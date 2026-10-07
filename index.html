@@ -1408,7 +1408,7 @@ function openAppeal(i){
       <div class="grow"><div class="code">مناشدة #${escapeHtml(a.id)}</div><div class="name">${escapeHtml(a.ownerName)}</div><div class="sub">${escapeHtml(a.type)}</div></div>
       <span class="appeal-status ${appealStatusClass(a.status)}">${escapeHtml(a.status)}</span>
     </div>
-    <button class="action primary" style="width:100%;margin-top:9px" onclick="addDonationForAppeal(${Number(a.id)})">＋ تسجيل تبرع لهذه المناشدة</button>
+    <button class="action primary" style="width:100%;margin-top:9px" onclick="addDonationForAppeal(${Number(a.id)})">＋ تسجيل تبرع لهذه المناشدة</button><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px"><button class="action" type="button" onclick="exportAppealText()">📋 نسخ السجل</button><button class="action" type="button" onclick="exportAppealCard()">🪪 بطاقة المناشدة</button></div>
   </div>
   <div class="detail-grid">
     <div class="info"><small>صاحب الحالة</small><b>${a.familyCode?'عائلة مسجلة':'حالة جديدة'}</b></div>
@@ -2108,6 +2108,67 @@ function renderFamilies(){
   document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button type="button" class="more" onclick="event.preventDefault();event.stopPropagation();hideFamilyByCode(${x.c})">🚫</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>🔢 رمز العنوان: ${x.addressCode||"—"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للفلاتر أو البحث</div>'}
 
 function openFamily(code){selectedFamilyCode=Number(code);showScreen('family-detail');}
+function familyExportText(x){
+ if(!x)return '';
+ const members=x.membersList||[];
+ return 'سجل العائلة - جمعية وارث الخيرية\n'+
+ 'رقم العائلة: #'+(x.c||'—')+'\n'+
+ 'رب الأسرة: '+(x.head||x.n||'—')+'\n'+
+ 'عدد أفراد العائلة: '+(members.length||x.m||0)+'\n'+
+ 'رقم الهاتف: '+(x.phone||'غير مسجل')+'\n'+
+ 'الحالة الاجتماعية: '+(x.social||'غير محدد')+'\n'+
+ 'المهنة: '+(x.j||'غير محدد')+'\n'+
+ 'الراتب: '+(x.s||'غير محدد')+'\n'+
+ 'هل لديه راتب: '+(x.hasSalary||'غير محدد')+'\n'+
+ 'الجهة المانحة: '+(x.salarySource||'لا توجد')+'\n'+
+ 'السكن: '+(x.h||'غير محدد')+'\n'+
+ 'العنوان: '+(x.address||'غير مسجل')+'\n'+
+ 'أقرب نقطة دالة: '+(x.landmark||'غير مسجلة')+'\n'+
+ 'الموقف من الحقوق: '+(x.r||'غير محدد')+'\n'+
+ 'حالة العائلة: '+(x.st||'غير محدد');
+}
+function appealExportText(a){
+ if(!a)return '';
+ const family=a.familyCode?families.find(f=>Number(f.c)===Number(a.familyCode)):null;
+ const fx=appealFinancialSummary(a);
+ return 'سجل المناشدة - جمعية وارث الخيرية\n'+
+ 'رقم المناشدة: #'+(a.id||'—')+'\n'+
+ 'صاحب الحالة: '+(a.ownerName||'—')+'\n'+
+ 'رقم العائلة: '+(a.familyCode?'#'+a.familyCode:'غير مضافة')+'\n'+
+ 'نوع المناشدة: '+(a.type||'غير محدد')+'\n'+
+ 'الحالة: '+(a.status||'غير محددة')+'\n'+
+ 'الأولوية: '+(a.priority||'غير محددة')+'\n'+
+ 'التاريخ: '+(a.date||'غير محدد')+'\n'+
+ 'المبلغ المطلوب: '+fx.required.toLocaleString('en-US')+' د.ع\n'+
+ 'مجموع التبرعات: '+fx.donationTotal.toLocaleString('en-US')+' د.ع\n'+
+ 'المبلغ المتبقي: '+fx.remaining.toLocaleString('en-US')+' د.ع\n'+
+ 'التبرعات المستلمة: '+fx.receivedTotal.toLocaleString('en-US')+' د.ع\n'+
+ 'التبرعات غير المستلمة: '+fx.pledgedTotal.toLocaleString('en-US')+' د.ع\n'+
+ 'العنوان: '+(a.ownerAddress||family?.address||'غير مسجل')+'\n'+
+ 'رقم الهاتف: '+(a.ownerPhone||'غير مسجل')+'\n'+
+ 'الملاحظات: '+(a.notes||'—');
+}
+function copyExportText(textValue,label){
+ const done=()=>alert('تم نسخ '+label+' ✓');
+ if(navigator.clipboard?.writeText)navigator.clipboard.writeText(textValue).then(done).catch(()=>fallbackCopyExportText(textValue,done));
+ else fallbackCopyExportText(textValue,done);
+}
+function fallbackCopyExportText(textValue,done){
+ const ta=document.createElement('textarea');ta.value=textValue;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+ try{document.execCommand('copy');done();}catch(e){alert('تعذر النسخ، حاول مرة أخرى.');}ta.remove();
+}
+function showExportCard(title,textValue){
+ let back=document.getElementById('exportCardBackdrop');
+ if(!back){back=document.createElement('div');back.id='exportCardBackdrop';back.style.cssText='position:fixed;inset:0;background:#0008;z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px';document.body.appendChild(back);}
+ back.innerHTML='<div style="width:min(500px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:16px;direction:rtl;box-shadow:0 10px 40px #0005">'+
+ '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px"><b style="font-size:16px">'+escapeHtml(title)+'</b><button class="more" onclick="document.getElementById(\'exportCardBackdrop\')?.remove()">✕</button></div>'+
+ '<div id="exportCardText" style="border:1px solid #dce8e4;border-radius:16px;padding:15px;white-space:pre-wrap;line-height:1.9;font-size:12px;color:#23463e;background:#f8fbfa">'+escapeHtml(textValue)+'</div>'+
+ '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="action primary" onclick="copyExportText(document.getElementById(\'exportCardText\').textContent,\'النص\')">📋 نسخ النص</button><button class="action" onclick="window.print()">🖨️ طباعة</button></div></div>';
+}
+function exportFamilyText(){const x=getFamily();if(x)copyExportText(familyExportText(x),'سجل العائلة');}
+function exportFamilyCard(){const x=getFamily();if(x)showExportCard('بطاقة سجل العائلة',familyExportText(x));}
+function exportAppealText(){const a=appeals[selectedAppealIndex];if(a)copyExportText(appealExportText(a),'سجل المناشدة');}
+function exportAppealCard(){const a=appeals[selectedAppealIndex];if(a)showExportCard('بطاقة سجل المناشدة',appealExportText(a));}
 function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
 function renderFamilyAttachments(){const x=getFamily();if(!x)return;const list=x.attachments||[];const html=list.map((a,i)=>`<div class="attachment"><div>📄</div><div class="grow"><button type="button" class="file-link" onclick="openAttachment(${i})">${escapeHtml(a.name||'ملف')}</button><div class="fmeta">${escapeHtml(a.type||'ملف')} · ${formatFileSize(a.size||0)}</div></div><button type="button" class="more" title="فتح الملف" onclick="openAttachment(${i})">👁️</button><button type="button" class="more" title="حذف المرفق" onclick="deleteAttachment(${i})">🗑</button></div>`).join('')||'<div class="empty" style="padding:15px">لا توجد مرفقات</div>';const box=document.getElementById('familyAttachments');if(box)box.innerHTML=html;const tabBox=document.getElementById('familyAttachmentsTabList');if(tabBox)tabBox.innerHTML=html;}
 function addFamilyAttachment(input){const x=getFamily();const file=input?.files?.[0];if(!x||!file)return;if(file.size>5*1024*1024){alert('حجم الملف أكبر من 5 MB.');input.value='';return}const category=prompt('تصنيف المرفق: شخصية / طبية / مالية / توثيقية / ملفات','ملفات');if(category===null)return;const allowed=['شخصية','طبية','مالية','توثيقية','ملفات'];const cat=allowed.includes(category.trim())?category.trim():'ملفات';const reader=new FileReader();reader.onload=()=>{if(!x.attachments)x.attachments=[];x.attachments.push({name:file.name,type:file.type,size:file.size,data:reader.result,category:cat});try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);renderFamilyAttachments();const box=document.getElementById('new-family-attachments');if(box)box.innerHTML='<div class="sub">تمت إضافة المرفق وسيظهر ضمن سجل العائلة.</div>';alert('تم حفظ المرفق بنجاح ✓');}catch(e){x.attachments.pop();alert('تعذر حفظ المرفق. قد تكون مساحة التخزين غير كافية.');}input.value='';};reader.readAsDataURL(file);}
@@ -2127,7 +2188,7 @@ function closeFileViewer(){const back=document.getElementById('fileViewerBackdro
 function openAttachment(i){const x=getFamily();const a=x?.attachments?.[i];openFileViewer(a);}
 
 function deleteAttachment(i){if(!hasAction('delete','files-center')){alert('ليس لديك صلاحية حذف المرفقات.');return}const x=getFamily();if(!x||!x.attachments?.[i])return;if(!confirm('حذف هذا المرفق؟'))return;x.attachments.splice(i,1);localStorage.setItem('warith_families_v2',JSON.stringify(families));localStorage.setItem('warith_families',JSON.stringify(families));renderFamilyAttachments();}
-function renderFamilyDetail(){const x=getFamily();if(!x){showScreen('families');return}const members=x.membersList||[];document.getElementById('familyDetailContent').innerHTML=`<div class="card"><div class="row"><div class="avatar">${(x.head||'ع').charAt(0)}</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div><div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap"><a class="action primary" style="text-decoration:none;padding:8px 10px" href="tel:${x.phone||''}">📞 اتصال</a><a class="action" style="text-decoration:none;padding:8px 10px" href="https://wa.me/${(x.phone||'').replace(/^0/,'964').replace(/\D/g,'')}" target="_blank">💬 واتساب</a><a class="action" style="text-decoration:none;padding:8px 10px" href="sms:${x.phone||''}">✉️ SMS</a></div></div><span class="badge">${x.st}</span></div></div><div class="detail-grid"><div class="info"><small>عدد الأفراد</small><b>${members.length||x.m}</b></div><div class="info"><small>الراتب</small><b>${x.s||'0 د.ع'}</b></div><div class="info"><small>هل لديه راتب؟</small><b>${x.hasSalary||'غير محدد'}</b></div><div class="info"><small>الجهة المانحة</small><b>${x.salarySource||'لا توجد'}</b></div><div class="info"><small>السكن</small><b>${x.h||'غير محدد'}</b></div><div class="info"><small>الحقوق</small><b>${x.r||'غير محدد'}</b></div><div class="info"><small>المهنة</small><b>${x.j||'غير محدد'}</b></div><div class="info"><small>الحالة الاجتماعية</small><b>${x.social||'غير محدد'}</b></div></div><div class="card"><b>📎 مرفقات العائلة</b><div id="familyAttachments" class="attachments"></div><div class="attach-row"><label class="action primary" style="flex:1;text-align:center;cursor:pointer">＋ إضافة مرفق<input type="file" id="detail-attachment-input" onchange="addFamilyAttachment(this)"></label></div></div><div class="tabs"><button id="familyTabData" class="tab active" onclick="showFamilyTab('data')">البيانات</button><button class="tab" onclick="showScreen('family-members')">الأفراد (${members.length})</button><button id="familyTabHelps" class="tab" onclick="showFamilyTab('helps')">المساعدات</button><button id="familyTabAppeals" class="tab" onclick="showFamilyTab('appeals')">المناشدات</button><button id="familyTabDevices" class="tab" onclick="showFamilyTab('devices')">الأجهزة المسلّمة</button><button id="familyTabAttachments" class="tab" onclick="showFamilyTab('attachments')">المرفقات</button></div><div id="familyHelpsBox" style="display:none"></div><div id="familyAppealsBox" style="display:none"></div><div id="familyDevicesBox" style="display:none"></div><div id="familyAttachmentsBox" style="display:none"><div class="card"><b>📎 مرفقات العائلة</b><div class="sub" style="margin:6px 0 10px">اضغط على اسم الملف لفتحه، أو 🗑 لحذفه.</div><div id="familyAttachmentsTabList" class="attachments"></div><div class="attach-row"><label class="action primary" style="flex:1;text-align:center;cursor:pointer">＋ إضافة مرفق<input type="file" id="tab-attachment-input" onchange="addFamilyAttachment(this)"></label></div></div></div><div id="familyDataBox"><div class="card"><b>عنوان السكن</b><div class="sub">${x.address||'العنوان غير مسجل'}</div><div style="margin-top:8px"><b>أقرب نقطة دالة</b><div class="sub">${x.landmark||'غير مسجلة'}</div></div>${x.map?`<a class="action" style="display:inline-block;margin-top:10px;text-decoration:none" href="${x.map}" target="_blank">📍 فتح الموقع</a>`:''}</div></div><div id="familyAppealsData"></div>`}
+function renderFamilyDetail(){const x=getFamily();if(!x){showScreen('families');return}const members=x.membersList||[];document.getElementById('familyDetailContent').innerHTML=`<div class="card"><div class="row"><div class="avatar">${(x.head||'ع').charAt(0)}</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div><div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap"><a class="action primary" style="text-decoration:none;padding:8px 10px" href="tel:${x.phone||''}">📞 اتصال</a><a class="action" style="text-decoration:none;padding:8px 10px" href="https://wa.me/${(x.phone||'').replace(/^0/,'964').replace(/\D/g,'')}" target="_blank">💬 واتساب</a><button class="action" type="button" onclick="event.stopPropagation();exportFamilyText()">📋 نسخ السجل</button><button class="action" type="button" onclick="event.stopPropagation();exportFamilyCard()">🪪 بطاقة</button><a class="action" style="text-decoration:none;padding:8px 10px" href="sms:${x.phone||''}">✉️ SMS</a></div></div><span class="badge">${x.st}</span></div></div><div class="detail-grid"><div class="info"><small>عدد الأفراد</small><b>${members.length||x.m}</b></div><div class="info"><small>الراتب</small><b>${x.s||'0 د.ع'}</b></div><div class="info"><small>هل لديه راتب؟</small><b>${x.hasSalary||'غير محدد'}</b></div><div class="info"><small>الجهة المانحة</small><b>${x.salarySource||'لا توجد'}</b></div><div class="info"><small>السكن</small><b>${x.h||'غير محدد'}</b></div><div class="info"><small>الحقوق</small><b>${x.r||'غير محدد'}</b></div><div class="info"><small>المهنة</small><b>${x.j||'غير محدد'}</b></div><div class="info"><small>الحالة الاجتماعية</small><b>${x.social||'غير محدد'}</b></div></div><div class="card"><b>📎 مرفقات العائلة</b><div id="familyAttachments" class="attachments"></div><div class="attach-row"><label class="action primary" style="flex:1;text-align:center;cursor:pointer">＋ إضافة مرفق<input type="file" id="detail-attachment-input" onchange="addFamilyAttachment(this)"></label></div></div><div class="tabs"><button id="familyTabData" class="tab active" onclick="showFamilyTab('data')">البيانات</button><button class="tab" onclick="showScreen('family-members')">الأفراد (${members.length})</button><button id="familyTabHelps" class="tab" onclick="showFamilyTab('helps')">المساعدات</button><button id="familyTabAppeals" class="tab" onclick="showFamilyTab('appeals')">المناشدات</button><button id="familyTabDevices" class="tab" onclick="showFamilyTab('devices')">الأجهزة المسلّمة</button><button id="familyTabAttachments" class="tab" onclick="showFamilyTab('attachments')">المرفقات</button></div><div id="familyHelpsBox" style="display:none"></div><div id="familyAppealsBox" style="display:none"></div><div id="familyDevicesBox" style="display:none"></div><div id="familyAttachmentsBox" style="display:none"><div class="card"><b>📎 مرفقات العائلة</b><div class="sub" style="margin:6px 0 10px">اضغط على اسم الملف لفتحه، أو 🗑 لحذفه.</div><div id="familyAttachmentsTabList" class="attachments"></div><div class="attach-row"><label class="action primary" style="flex:1;text-align:center;cursor:pointer">＋ إضافة مرفق<input type="file" id="tab-attachment-input" onchange="addFamilyAttachment(this)"></label></div></div></div><div id="familyDataBox"><div class="card"><b>عنوان السكن</b><div class="sub">${x.address||'العنوان غير مسجل'}</div><div style="margin-top:8px"><b>أقرب نقطة دالة</b><div class="sub">${x.landmark||'غير مسجلة'}</div></div>${x.map?`<a class="action" style="display:inline-block;margin-top:10px;text-decoration:none" href="${x.map}" target="_blank">📍 فتح الموقع</a>`:''}</div></div><div id="familyAppealsData"></div>`}
 renderFamilyAttachments();
 renderFamilyAppeals();
 function showFamilyTab(tab){
