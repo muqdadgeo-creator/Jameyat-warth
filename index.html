@@ -1722,6 +1722,7 @@ async function performLogin(){
     /* لا نعرض لوحة فارغة بعد الدخول؛ اسحب بيانات السحابة أولاً ثم حدّث الواجهة. */
     try{
       await initWarithCloudSync();
+      if(!warithSyncReady)throw new Error('تعذر تهيئة مزامنة السحابة');
       renderHomeDashboard();
     }catch(syncErr){
       console.warn('Warith cloud sync after login failed:',syncErr);
