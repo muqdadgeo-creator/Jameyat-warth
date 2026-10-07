@@ -2194,7 +2194,7 @@ function familyCardHtml(f){
  return '<div id="familyPngCard" style="width:100%;background:#f3f6f5;border:1px solid #c8a96b;border-radius:24px;padding:18px;box-sizing:border-box;direction:rtl;font-family:Tahoma,Arial,sans-serif;color:#193a33">'+
    '<div style="background:linear-gradient(135deg,#0b5b4f,#0f6b5d);color:#fff;border-radius:20px;padding:18px 16px;margin-bottom:12px">'+
      '<div style="font-size:13px;font-weight:700;opacity:.9">جمعية وارث الخيرية</div>'+
-     '<div style="font-size:24px;font-weight:900;margin-top:5px">بطاقة سجل العائلة</div>'+
+     '<div style="font-size:24px;font-weight:900;margin-top:5px">بطاقة عائلة</div>'+
      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px">'+
        '<div><div style="font-size:11px;opacity:.85">رقم العائلة</div><div style="font-size:20px;font-weight:900">#'+esc(f.c)+'</div></div>'+
        '<div style="background:#ffffff22;border:1px solid #ffffff44;border-radius:12px;padding:8px 12px;font-weight:900">'+esc(f.st||'غير محددة')+'</div>'+
@@ -2224,7 +2224,7 @@ function familyCardHtml(f){
        '<div style="background:#f5f8f7;border-radius:10px;padding:9px"><div style="font-size:10px;color:#71857f">الموقع</div><div style="font-size:12px;font-weight:800;margin-top:4px">'+(f.map?'📍 محفوظ':'غير مضاف')+'</div></div>'+
      '</div>'+
    '</div>'+
-   '<div style="text-align:center;color:#78908a;font-size:9px;margin-top:14px">بطاقة سجل العائلة — جمعية وارث الخيرية</div>'+
+   '<div style="text-align:center;color:#78908a;font-size:9px;margin-top:14px">بطاقة عائلة — جمعية وارث الخيرية</div>'+
  '</div>';
 }
 function showFamilyExportCard(){
@@ -2233,7 +2233,7 @@ function showFamilyExportCard(){
  if(!back){back=document.createElement('div');back.id='familyExportCardBackdrop';back.style.cssText='position:fixed;inset:0;background:#0009;z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px;direction:rtl';document.body.appendChild(back);}
  const card=familyCardHtml(f);
  back.innerHTML='<div style="width:min(520px,100%);max-height:95vh;overflow:auto;background:#fff;border-radius:22px;padding:12px;box-shadow:0 10px 40px #0006">'+
- '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px"><b style="font-size:16px">بطاقة سجل العائلة</b><button class="more" onclick="document.getElementById(\'familyExportCardBackdrop\')?.remove()">✕</button></div>'+
+ '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px"><b style="font-size:16px">بطاقة عائلة</b><button class="more" onclick="document.getElementById(\'familyExportCardBackdrop\')?.remove()">✕</button></div>'+
  card+
  '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:10px"><button class="action" onclick="copyExportText(familyExportText(getFamily()),\'السجل\')">📋 نسخ السجل</button><button class="action primary" onclick="downloadFamilyCardPng()">📥 حفظ PNG</button><button class="action" onclick="window.print()">🖨️ طباعة</button></div></div>';
 }
@@ -2255,7 +2255,7 @@ async function downloadFamilyCardPng(){
  svg+='<rect width="'+W+'" height="'+H+'" fill="#f3f6f5"/><rect x="14" y="14" width="'+(W-28)+'" height="'+(H-28)+'" rx="30" fill="#fff" stroke="#c8a96b" stroke-width="2"/>';
  svg+='<rect x="'+pad+'" y="'+y+'" width="'+(W-pad*2)+'" height="190" rx="25" fill="#0f6b5d"/>';
  svg+='<text x="'+(W-pad-20)+'" y="'+(y+42)+'" fill="#dceee9" font-size="22" font-family="Arial,Tahoma" text-anchor="end">جمعية وارث الخيرية</text>';
- svg+='<text x="'+(W-pad-20)+'" y="'+(y+82)+'" fill="#fff" font-size="36" font-weight="700" font-family="Arial,Tahoma" text-anchor="end">بطاقة سجل العائلة</text>';
+ svg+='<text x="'+(W-pad-20)+'" y="'+(y+82)+'" fill="#fff" font-size="36" font-weight="700" font-family="Arial,Tahoma" text-anchor="end">بطاقة عائلة</text>';
  svg+='<text x="'+(W-pad-20)+'" y="'+(y+132)+'" fill="#dceee9" font-size="18" font-family="Arial,Tahoma" text-anchor="end">رقم العائلة</text>';
  svg+='<text x="'+(W-pad-20)+'" y="'+(y+166)+'" fill="#fff" font-size="28" font-weight="700" font-family="Arial,Tahoma" text-anchor="end">#'+esc(f.c)+'</text>';
  svg+='<rect x="'+(pad+20)+'" y="'+(y+125)+'" width="150" height="42" rx="12" fill="#ffffff22" stroke="#ffffff55"/><text x="'+(pad+95)+'" y="'+(y+153)+'" fill="#fff" font-size="18" font-family="Arial,Tahoma" text-anchor="middle">'+esc(f.st||'غير محددة')+'</text>';
@@ -2277,7 +2277,7 @@ async function downloadFamilyCardPng(){
  const addr=textLines(f.address||'غير مسجل',48);
  addr.slice(0,3).forEach((line,i)=>svg+='<text x="'+(W-pad-20)+'" y="'+(y+58+i*24)+'" fill="#193a33" font-size="17" font-weight="700" font-family="Arial,Tahoma" text-anchor="end">'+esc(line)+'</text>');
  svg+='<text x="'+(W-pad-20)+'" y="'+(y+126)+'" fill="#71857f" font-size="14" font-family="Arial,Tahoma" text-anchor="end">أقرب نقطة: '+esc(f.landmark||'غير مسجلة')+'   |   الموقع: '+(f.map?'محفوظ':'غير مضاف')+'</text>';
- svg+='<text x="'+(W/2)+'" y="'+(H-28)+'" fill="#78908a" font-size="13" font-family="Arial,Tahoma" text-anchor="middle">بطاقة سجل العائلة — جمعية وارث الخيرية</text></svg>';
+ svg+='<text x="'+(W/2)+'" y="'+(H-28)+'" fill="#78908a" font-size="13" font-family="Arial,Tahoma" text-anchor="middle">بطاقة عائلة — جمعية وارث الخيرية</text></svg>';
  const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
  const url=URL.createObjectURL(blob);
  try{
@@ -2285,7 +2285,7 @@ async function downloadFamilyCardPng(){
    const canvas=document.createElement('canvas');canvas.width=W*2;canvas.height=H*2;
    const ctx=canvas.getContext('2d');ctx.fillStyle='#f3f6f5';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,W*2,H*2);
    const png=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG conversion failed')),'image/png'));
-   const dl=URL.createObjectURL(png),a=document.createElement('a');a.href=dl;a.download=('بطاقة سجل العائلة #'+(f.c||'')).replace(/[\\/:*?"<>|]/g,'_')+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(dl),2000);
+   const dl=URL.createObjectURL(png),a=document.createElement('a');a.href=dl;a.download=('بطاقة عائلة #'+(f.c||'')).replace(/[\\/:*?"<>|]/g,'_')+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(dl),2000);
  }catch(e){console.error(e);alert('تعذر حفظ بطاقة العائلة كصورة PNG. حاول مرة أخرى.')}finally{URL.revokeObjectURL(url)}
 }
 function exportFamilyText(){const x=getFamily();if(x)copyExportText(familyExportText(x),'سجل العائلة');}
@@ -2299,7 +2299,7 @@ function appealCardHtml(a){
  const field=(label,value)=>'<div style="background:#fff;border:1px solid #dfe8e5;border-radius:12px;padding:11px 12px;min-height:58px"><div style="font-size:11px;color:#71857f;margin-bottom:5px">'+esc(label)+'</div><div style="font-size:14px;font-weight:900;color:#193a33;word-break:break-word">'+esc(value||'غير محدد')+'</div></div>';
  return '<div id="appealPngCard" style="width:100%;background:#f3f6f5;border:1px solid #c8a96b;border-radius:24px;padding:18px;box-sizing:border-box;direction:rtl;font-family:Tahoma,Arial,sans-serif;color:#193a33">'+
  '<div style="background:linear-gradient(135deg,#0b5b4f,#0f6b5d);color:#fff;border-radius:20px;padding:18px 16px;margin-bottom:12px">'+
- '<div style="font-size:13px;font-weight:700;opacity:.9">جمعية وارث الخيرية</div><div style="font-size:24px;font-weight:900;margin-top:5px">بطاقة سجل المناشدة</div>'+
+ '<div style="font-size:13px;font-weight:700;opacity:.9">جمعية وارث الخيرية</div><div style="font-size:24px;font-weight:900;margin-top:5px">بطاقة مناشدة</div>'+
  '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px">'+
  '<div><div style="font-size:11px;opacity:.85">رقم المناشدة</div><div style="font-size:20px;font-weight:900">#'+esc(a.id)+'</div></div>'+
  '<div style="background:#ffffff22;border:1px solid #ffffff44;border-radius:12px;padding:8px 12px;font-weight:900">'+esc(a.status||'غير محددة')+'</div></div></div>'+
@@ -2321,14 +2321,14 @@ function appealCardHtml(a){
  '<div style="background:#fff;border:1px solid #dfe8e5;border-radius:14px;padding:12px;margin-top:10px">'+
  '<div style="font-size:11px;color:#71857f">العنوان</div><div style="font-size:13px;font-weight:800;margin-top:5px;line-height:1.7">'+esc(a.ownerAddress||family?.address||'غير مسجل')+'</div>'+
  '<div style="font-size:11px;color:#71857f;margin-top:9px">الملاحظات</div><div style="font-size:13px;font-weight:700;margin-top:4px;line-height:1.7;white-space:pre-wrap">'+esc(a.notes||'لا توجد ملاحظات')+'</div>'+
- '</div><div style="text-align:center;color:#78908a;font-size:10px;margin-top:12px">بطاقة سجل المناشدة — جمعية وارث الخيرية</div></div>';
+ '</div><div style="text-align:center;color:#78908a;font-size:10px;margin-top:12px">بطاقة مناشدة — جمعية وارث الخيرية</div></div>';
 }
 function showAppealExportCard(){
  const a=appeals[selectedAppealIndex]; if(!a)return;
  let back=document.getElementById('appealExportCardBackdrop');
  if(!back){back=document.createElement('div');back.id='appealExportCardBackdrop';back.style.cssText='position:fixed;inset:0;background:#0009;z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px;direction:rtl';document.body.appendChild(back);}
  back.innerHTML='<div style="width:min(520px,100%);max-height:95vh;overflow:auto;background:#fff;border-radius:22px;padding:12px;box-shadow:0 10px 40px #0006">'+
- '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px"><b style="font-size:16px">بطاقة سجل المناشدة</b><button class="more" onclick="document.getElementById(\'appealExportCardBackdrop\')?.remove()">✕</button></div>'+
+ '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px"><b style="font-size:16px">بطاقة مناشدة</b><button class="more" onclick="document.getElementById(\'appealExportCardBackdrop\')?.remove()">✕</button></div>'+
  appealCardHtml(a)+
  '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:10px"><button class="action" onclick="copyExportText(appealExportText(appeals[selectedAppealIndex]),\'السجل\')">📋 نسخ السجل</button><button class="action primary" onclick="downloadAppealCardPng()">📥 حفظ PNG</button><button class="action" onclick="window.print()">🖨️ طباعة</button></div></div>';
 }
@@ -2346,7 +2346,7 @@ async function downloadAppealCardPng(){
  let svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">';
  svg+='<rect width="'+W+'" height="'+H+'" fill="#f3f6f5"/><rect x="14" y="14" width="'+(W-28)+'" height="'+(H-28)+'" rx="30" fill="#fff" stroke="#c8a96b" stroke-width="2"/>';
  svg+='<rect x="'+pad+'" y="'+pad+'" width="'+(W-pad*2)+'" height="190" rx="25" fill="#0f6b5d"/>';
- svg+='<text x="'+(W-pad-20)+'" y="'+(pad+42)+'" fill="#dceee9" font-size="22" font-family="Arial,Tahoma" text-anchor="end">جمعية وارث الخيرية</text><text x="'+(W-pad-20)+'" y="'+(pad+82)+'" fill="#fff" font-size="36" font-weight="700" font-family="Arial,Tahoma" text-anchor="end">بطاقة سجل المناشدة</text>';
+ svg+='<text x="'+(W-pad-20)+'" y="'+(pad+42)+'" fill="#dceee9" font-size="22" font-family="Arial,Tahoma" text-anchor="end">جمعية وارث الخيرية</text><text x="'+(W-pad-20)+'" y="'+(pad+82)+'" fill="#fff" font-size="36" font-weight="700" font-family="Arial,Tahoma" text-anchor="end">بطاقة مناشدة</text>';
  svg+='<text x="'+(W-pad-20)+'" y="'+(pad+132)+'" fill="#dceee9" font-size="18" font-family="Arial,Tahoma" text-anchor="end">رقم المناشدة</text><text x="'+(W-pad-20)+'" y="'+(pad+166)+'" fill="#fff" font-size="28" font-weight="700" font-family="Arial,Tahoma" text-anchor="end">#'+esc(a.id)+'</text>';
  svg+='<rect x="'+(pad+20)+'" y="'+(pad+125)+'" width="170" height="42" rx="12" fill="#ffffff22" stroke="#ffffff55"/><text x="'+(pad+105)+'" y="'+(pad+153)+'" fill="#fff" font-size="18" font-family="Arial,Tahoma" text-anchor="middle">'+esc(a.status||'غير محددة')+'</text>';
  let y=pad+210;
@@ -2359,9 +2359,9 @@ async function downloadAppealCardPng(){
  const addr=wrap(a.ownerAddress||family?.address||'غير مسجل',48);addr.slice(0,3).forEach((line,i)=>svg+='<text x="'+(W-pad-20)+'" y="'+(y+58+i*24)+'" fill="#193a33" font-size="17" font-weight="700" font-family="Arial,Tahoma" text-anchor="end">'+esc(line)+'</text>');
  svg+='<text x="'+(W-pad-20)+'" y="'+(y+106)+'" fill="#71857f" font-size="16" font-family="Arial,Tahoma" text-anchor="end">الملاحظات</text>';
  const notes=wrap(a.notes||'لا توجد ملاحظات',70);notes.slice(0,2).forEach((line,i)=>svg+='<text x="'+(W-pad-20)+'" y="'+(y+136+i*22)+'" fill="#193a33" font-size="15" font-weight="700" font-family="Arial,Tahoma" text-anchor="end">'+esc(line)+'</text>');
- svg+='<text x="'+(W/2)+'" y="'+(H-28)+'" fill="#78908a" font-size="13" font-family="Arial,Tahoma" text-anchor="middle">بطاقة سجل المناشدة — جمعية وارث الخيرية</text></svg>';
+ svg+='<text x="'+(W/2)+'" y="'+(H-28)+'" fill="#78908a" font-size="13" font-family="Arial,Tahoma" text-anchor="middle">بطاقة مناشدة — جمعية وارث الخيرية</text></svg>';
  const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
- try{const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('SVG load failed'));im.src=url});const canvas=document.createElement('canvas');canvas.width=W*2;canvas.height=H*2;const ctx=canvas.getContext('2d');ctx.fillStyle='#f3f6f5';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,W*2,H*2);const png=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG conversion failed')),'image/png'));const dl=URL.createObjectURL(png),link=document.createElement('a');link.href=dl;link.download=('بطاقة سجل المناشدة #'+(a.id||'')).replace(/[\\/:*?"<>|]/g,'_')+'.png';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(dl),2000)}catch(e){console.error(e);alert('تعذر حفظ بطاقة المناشدة كصورة PNG. حاول مرة أخرى.')}finally{URL.revokeObjectURL(url)}
+ try{const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('SVG load failed'));im.src=url});const canvas=document.createElement('canvas');canvas.width=W*2;canvas.height=H*2;const ctx=canvas.getContext('2d');ctx.fillStyle='#f3f6f5';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,W*2,H*2);const png=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG conversion failed')),'image/png'));const dl=URL.createObjectURL(png),link=document.createElement('a');link.href=dl;link.download=('بطاقة مناشدة #'+(a.id||'')).replace(/[\\/:*?"<>|]/g,'_')+'.png';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(dl),2000)}catch(e){console.error(e);alert('تعذر حفظ بطاقة المناشدة كصورة PNG. حاول مرة أخرى.')}finally{URL.revokeObjectURL(url)}
 }
 
 function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
