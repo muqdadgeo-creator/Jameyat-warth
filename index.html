@@ -2343,7 +2343,7 @@ function renderDonors(){const q=(document.getElementById('donorQ')?.value||'').t
 function openDonationSearch(type){var id=type==='donor'?'dn-donor-search':'dn-beneficiary-search';var e=document.getElementById(id);if(e)e.focus();}
 function filterDonationDonorOptions(){var q=(document.getElementById('dn-donor-search')?.value||'').trim().toLowerCase(),s=document.getElementById('dn-donor');if(!s)return;[...s.options].forEach(o=>o.hidden=!!q&&!o.textContent.toLowerCase().includes(q));s.size=Math.min(8,Math.max(1,[...s.options].filter(o=>!o.hidden).length));}
 function filterDonationBeneficiaryOptions(){var q=(document.getElementById('dn-beneficiary-search')?.value||'').trim().toLowerCase(),s=document.getElementById('dn-beneficiary');if(!s)return;[...s.options].forEach(o=>o.hidden=!!q&&!o.textContent.toLowerCase().includes(q));s.size=Math.min(8,Math.max(1,[...s.options].filter(o=>!o.hidden).length));}
-function syncDonationSearch(type){var s=document.getElementById(type==='donor'?'dn-donor':'dn-beneficiary'),i=document.getElementById(type==='donor'?'dn-donor-search':'dn-beneficiary-search');if(s&&i){i.value=s.selectedOptions[0]?.textContent||'';s.size=1;}}
+function syncDonationSearch(type){var s=document.getElementById(type==='donor'?'dn-donor':'dn-beneficiary'),i=document.getElementById(type==='donor'?'dn-donor-search':'dn-beneficiary-search');if(s&&i){i.value='';s.size=1;}}
 function populateDonors(selectedId=''){
   const sel=document.getElementById('dn-donor');if(!sel)return;
   const currentId=selectedId==null?'':String(selectedId);
