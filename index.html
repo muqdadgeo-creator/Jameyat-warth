@@ -1868,6 +1868,7 @@ async function initUsersPermissions(){
       applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
       /* إذا لم توجد بيانات محلية، لا نعرض لوحة أصفار توهم المستخدم بأن السجلات اختفت. */
       const hasLocalData=(Array.isArray(families)&&families.length)||(Array.isArray(donors)&&donors.length)||(Array.isArray(donations)&&donations.length)||(Array.isArray(appeals)&&appeals.length)||(Array.isArray(helps)&&helps.length)||(Array.isArray(expenses)&&expenses.length);
+      try{renderHomeDashboard()}catch(e){}
       if(!hasLocalData)setTimeout(()=>openLogin(),0);
       return
     }
@@ -1881,7 +1882,7 @@ async function initUsersPermissions(){
     if(uiRole==='المالك')await migrateLegacyUsersToAuth();
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
     if(document.getElementById('usersTable'))renderUsers();
-    setTimeout(()=>initWarithCloudSync(),0);
+    try{await initWarithCloudSync();renderHomeDashboard()}catch(e){setTimeout(()=>{try{renderHomeDashboard()}catch(_e){}},500)};
   }catch(e){
     /* خطأ شبكة/سوبابيس مؤقت لا يسجّل المستخدم خروجاً؛ تبقى الجلسة والواجهة محلياً. */
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
