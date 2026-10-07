@@ -1844,31 +1844,63 @@ function migrateUsersPermissions(){
 }
 async function initUsersPermissions(){
   renderUserOptions();
-  const login=document.getElementById('loginBackdrop');if(login)login.style.display='none';
+  const login=document.getElementById('loginBackdrop');
   updateAuthHeaderUI();
   const cached=currentUser();
-  if(cached){applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();}
+  if(cached){
+    if(login)login.style.display='none';
+    applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
+  }
   try{
     const sb=await window.warithSupabaseReady;
     if(!sb)throw new Error('Supabase client unavailable');
-    const {data:sessionData,error:sessionError}=await sb.auth.getSession();
-    if(sessionError)throw sessionError;
-    if(!sessionData?.session?.user){localStorage.removeItem(CURRENT_USER_KEY);applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();return}
+
+    // بعد Refresh قد تحتاج جلسة Supabase لحظات حتى تستقر؛ لا نعتبر المستخدم خارج الحساب مباشرة.
+    let sessionData=null,sessionError=null;
+    for(let attempt=0;attempt<4;attempt++){
+      const result=await sb.auth.getSession();
+      sessionData=result.data;sessionError=result.error;
+      if(sessionError)throw sessionError;
+      if(sessionData?.session?.user)break;
+      if(attempt<3)await new Promise(resolve=>setTimeout(resolve,500));
+    }
+
+    if(!sessionData?.session?.user){
+      localStorage.removeItem(CURRENT_USER_KEY);
+      if(login)login.style.display='';
+      applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
+      return;
+    }
+
     const {data:profileData,error:profileError}=await sb.rpc('get_my_app_user');
     if(profileError)throw profileError;
     const profile=Array.isArray(profileData)?profileData[0]:profileData;
     if(!profile)throw new Error('تعذر قراءة ملف المستخدم');
-    if(profile.is_active===false){await sb.auth.signOut({scope:'local'});localStorage.removeItem(CURRENT_USER_KEY);applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();return}
+    if(profile.is_active===false){
+      await sb.auth.signOut({scope:'local'});
+      localStorage.removeItem(CURRENT_USER_KEY);
+      if(login)login.style.display='';
+      applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
+      return;
+    }
+
     const uiRole=normalizeRole(profile.role);
     localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,name:profile.display_name||profile.username,role:uiRole,active:true,permissions:profile.permissions||ROLE_PERMISSIONS[uiRole]||[],actions:profile.actions||ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}}));
+    if(login)login.style.display='none';
     if(uiRole==='المالك')await migrateLegacyUsersToAuth();
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
     if(document.getElementById('usersTable'))renderUsers();
     setTimeout(()=>initWarithCloudSync(),0);
   }catch(e){
-    /* خطأ شبكة/سوبابيس مؤقت لا يسجّل المستخدم خروجاً؛ تبقى الجلسة والواجهة محلياً. */
-    applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
-    if(cached){setTimeout(()=>initWarithCloudSync(),500)}
+    // خطأ مؤقت بالشبكة/سوبابيس لا يمسح جلسة المستخدم ولا يخرجه من الحساب.
+    if(cached){
+      if(login)login.style.display='none';
+      applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
+      setTimeout(()=>initWarithCloudSync(),500);
+    }else{
+      if(login)login.style.display='';
+      applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
+    }
   }
 }
 let warithAuthRefreshTimer=null;
