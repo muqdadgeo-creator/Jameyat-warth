@@ -2173,13 +2173,14 @@ async function saveExportCardPng(title,textValue){
    }
  }catch(e){alert('تعذر حفظ البطاقة كصورة PNG.');}finally{card.remove();}
 }
+function downloadCurrentExportPng(){const t=document.getElementById('exportCardText')?.textContent||'';const h=document.querySelector('#exportCardBackdrop b')?.textContent||'بطاقة';if(t)saveExportCardPng(h,t);}
 function showExportCard(title,textValue){
  let back=document.getElementById('exportCardBackdrop');
  if(!back){back=document.createElement('div');back.id='exportCardBackdrop';back.style.cssText='position:fixed;inset:0;background:#0008;z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px';document.body.appendChild(back);}
  back.innerHTML='<div style="width:min(500px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:16px;direction:rtl;box-shadow:0 10px 40px #0005">'+
  '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px"><b style="font-size:16px">'+escapeHtml(title)+'</b><button class="more" onclick="document.getElementById(\'exportCardBackdrop\')?.remove()">✕</button></div>'+
  '<div id="exportCardText" style="border:1px solid #dce8e4;border-radius:16px;padding:15px;white-space:pre-wrap;line-height:1.9;font-size:12px;color:#23463e;background:#f8fbfa">'+escapeHtml(textValue)+'</div>'+
- '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px"><button class="action primary" onclick="copyExportText(document.getElementById(\'exportCardText\').textContent,\'النص\')">📋 نسخ النص</button><button class="action" onclick="saveExportCardPng('${escapeHtml(title)}',document.getElementById(\'exportCardText\').textContent)">📥 حفظ PNG</button><button class="action" onclick="window.print()">🖨️ طباعة</button></div></div>';
+ '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px"><button class="action primary" onclick="copyExportText(document.getElementById(\'exportCardText\').textContent,\'النص\')">📋 نسخ النص</button><button class="action" onclick="downloadCurrentExportPng()">📥 حفظ PNG</button><button class="action" onclick="window.print()">🖨️ طباعة</button></div></div>';
 }
 function exportFamilyText(){const x=getFamily();if(x)copyExportText(familyExportText(x),'سجل العائلة');}
 function exportFamilyCard(){const x=getFamily();if(x)showExportCard('بطاقة سجل العائلة',familyExportText(x));}
