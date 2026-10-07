@@ -2844,7 +2844,7 @@ function inventoryAppealPriorityRank(p){
   return p==='عاجلة'?1:p==='مهمة'?2:3;
 }
 function inventoryDeviceAppeals(){
-  return appeals.filter(a=>!isHiddenRecord(a)&&a.type==='أجهزة / أثاث'&&a.assessment==='مستحق'&&(a.status==='مفتوحة'||a.status==='قيد المتابعة'))
+  return appeals.filter(a=>!isHiddenRecord(a)&&a.type==='أجهزة / أثاث'&&a.assessment==='مستحقة'&&(a.status==='مفتوحة'||a.status==='قيد المتابعة'))
     .sort((a,b)=>inventoryAppealPriorityRank(a.priority)-inventoryAppealPriorityRank(b.priority)||String(a.date||'').localeCompare(String(b.date||''))||Number(a.id||0)-Number(b.id||0));
 }
 function renderInventoryAppealPriority(){
