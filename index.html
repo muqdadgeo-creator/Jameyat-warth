@@ -2187,8 +2187,73 @@ function showExportCard(title,textValue){
  '<div id="exportCardText" style="border:1px solid #dce8e4;border-radius:16px;padding:15px;white-space:pre-wrap;line-height:1.9;font-size:12px;color:#23463e;background:#f8fbfa">'+escapeHtml(textValue)+'</div>'+
  '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px"><button class="action primary" onclick="copyExportText(document.getElementById(\'exportCardText\').textContent,\'النص\')">📋 نسخ النص</button><button class="action" onclick="downloadCurrentExportPng()">📥 حفظ PNG</button><button class="action" onclick="window.print()">🖨️ طباعة</button></div></div>';
 }
+function familyCardHtml(f){
+ const members=f.membersList||[];
+ const esc=v=>escapeHtml(v??'—');
+ const field=(label,value)=>'<div style="background:#fff;border:1px solid #dfe8e5;border-radius:12px;padding:11px 12px;min-height:58px"><div style="font-size:11px;color:#71857f;margin-bottom:5px">'+esc(label)+'</div><div style="font-size:14px;font-weight:900;color:#193a33;word-break:break-word">'+esc(value||'غير محدد')+'</div></div>';
+ return '<div id="familyPngCard" style="width:100%;background:#f3f6f5;border:1px solid #c8a96b;border-radius:24px;padding:18px;box-sizing:border-box;direction:rtl;font-family:Tahoma,Arial,sans-serif;color:#193a33">'+
+   '<div style="background:linear-gradient(135deg,#0b5b4f,#0f6b5d);color:#fff;border-radius:20px;padding:18px 16px;margin-bottom:12px">'+
+     '<div style="font-size:13px;font-weight:700;opacity:.9">جمعية وارث الخيرية</div>'+
+     '<div style="font-size:24px;font-weight:900;margin-top:5px">بطاقة سجل العائلة</div>'+
+     '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px">'+
+       '<div><div style="font-size:11px;opacity:.85">رقم العائلة</div><div style="font-size:20px;font-weight:900">#'+esc(f.c)+'</div></div>'+
+       '<div style="background:#ffffff22;border:1px solid #ffffff44;border-radius:12px;padding:8px 12px;font-weight:900">'+esc(f.st||'غير محددة')+'</div>'+
+     '</div>'+
+   '</div>'+
+   '<div style="background:#fff;border-radius:18px;padding:15px;border:1px solid #dce8e4;margin-bottom:12px">'+
+     '<div style="font-size:11px;color:#71857f">رب الأسرة</div>'+
+     '<div style="font-size:22px;font-weight:900;color:#0f5c4d;margin-top:4px">'+esc(f.head||f.n||'غير مسجل')+'</div>'+
+     '<div style="font-size:11px;color:#71857f;margin-top:6px">المعرف: '+esc(f.i||'غير مسجل')+'</div>'+
+   '</div>'+
+   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">'+
+     field('عدد أفراد العائلة',members.length||f.m||0)+
+     field('رقم الهاتف',f.phone||'غير مسجل')+
+     field('الحالة الاجتماعية',f.social||'غير محدد')+
+     field('المهنة',f.j||'غير محددة')+
+     field('الراتب',f.s||'غير محدد')+
+     field('هل لديه راتب؟',f.hasSalary||'غير محدد')+
+     field('الجهة المانحة',f.salarySource||'لا توجد')+
+     field('نوع السكن',f.h||'غير محدد')+
+     field('الموقف من الحقوق',f.r||'غير محدد')+
+     field('حالة العائلة',f.st||'غير محددة')+
+   '</div>'+
+   '<div style="background:#fff;border:1px solid #dfe8e5;border-radius:14px;padding:12px;margin-top:10px">'+
+     '<div style="font-size:11px;color:#71857f">عنوان السكن</div><div style="font-size:13px;font-weight:800;margin-top:5px;line-height:1.7">'+esc(f.address||'غير مسجل')+'</div>'+
+     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px">'+
+       '<div style="background:#f5f8f7;border-radius:10px;padding:9px"><div style="font-size:10px;color:#71857f">أقرب نقطة دالة</div><div style="font-size:12px;font-weight:800;margin-top:4px">'+esc(f.landmark||'غير مسجلة')+'</div></div>'+
+       '<div style="background:#f5f8f7;border-radius:10px;padding:9px"><div style="font-size:10px;color:#71857f">الموقع</div><div style="font-size:12px;font-weight:800;margin-top:4px">'+(f.map?'📍 محفوظ':'غير مضاف')+'</div></div>'+
+     '</div>'+
+   '</div>'+
+   '<div style="text-align:center;color:#78908a;font-size:9px;margin-top:14px">بطاقة سجل العائلة — جمعية وارث الخيرية</div>'+
+ '</div>';
+}
+function showFamilyExportCard(){
+ const f=getFamily(); if(!f)return;
+ let back=document.getElementById('familyExportCardBackdrop');
+ if(!back){back=document.createElement('div');back.id='familyExportCardBackdrop';back.style.cssText='position:fixed;inset:0;background:#0009;z-index:9999;display:flex;align-items:center;justify-content:center;padding:12px;direction:rtl';document.body.appendChild(back);}
+ const card=familyCardHtml(f);
+ back.innerHTML='<div style="width:min(520px,100%);max-height:95vh;overflow:auto;background:#fff;border-radius:22px;padding:12px;box-shadow:0 10px 40px #0006">'+
+ '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px"><b style="font-size:16px">بطاقة سجل العائلة</b><button class="more" onclick="document.getElementById(\'familyExportCardBackdrop\')?.remove()">✕</button></div>'+
+ card+
+ '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:10px"><button class="action" onclick="copyExportText(familyExportText(getFamily()),\'السجل\')">📋 نسخ السجل</button><button class="action primary" onclick="downloadFamilyCardPng()">📥 حفظ PNG</button><button class="action" onclick="window.print()">🖨️ طباعة</button></div></div>';
+}
+async function downloadFamilyCardPng(){
+ const f=getFamily(); if(!f)return;
+ const safe='بطاقة سجل العائلة #'+(f.c||'');
+ const html=familyCardHtml(f);
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" xmlns:xhtml="http://www.w3.org/1999/xhtml" width="760" height="940" viewBox="0 0 760 940"><foreignObject x="0" y="0" width="760" height="940">'+html+'</foreignObject></svg>';
+ const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+ try{
+   const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(new Error('PNG render failed'));im.src=url});
+   const canvas=document.createElement('canvas'),scale=2;canvas.width=760*scale;canvas.height=940*scale;
+   const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Canvas unavailable');
+   ctx.fillStyle='#f3f6f5';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+   const png=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG conversion failed')),'image/png'));
+   const dl=URL.createObjectURL(png),a=document.createElement('a');a.href=dl;a.download=safe.replace(/[\\/:*?"<>|]/g,'_')+'.png';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(dl),1500);
+ }catch(e){console.error('downloadFamilyCardPng failed',e);alert('تعذر حفظ بطاقة العائلة كصورة PNG. حاول مرة أخرى.')}finally{URL.revokeObjectURL(url)}
+}
 function exportFamilyText(){const x=getFamily();if(x)copyExportText(familyExportText(x),'سجل العائلة');}
-function exportFamilyCard(){const x=getFamily();if(x)showExportCard('بطاقة سجل العائلة',familyExportText(x));}
+function exportFamilyCard(){showFamilyExportCard();}
 function exportAppealText(){const a=appeals[selectedAppealIndex];if(a)copyExportText(appealExportText(a),'سجل المناشدة');}
 function exportAppealCard(){const a=appeals[selectedAppealIndex];if(a)showExportCard('بطاقة سجل المناشدة',appealExportText(a));}
 function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
