@@ -2827,9 +2827,9 @@ function renderInKindDonations(){
       <div class="in-kind-items"><div class="in-kind-item-row"><div class="item-head"><span>🎁 ${escapeHtml(item)}</span><b>الكمية: ${qty}</b></div><div class="item-meta">التاريخ: ${escapeHtml(d.date||'—')} · النوع: ${escapeHtml(d.type||'—')} · الحالة: ${escapeHtml(status)}</div>${d.notes?'<div class="item-meta">ملاحظات: '+escapeHtml(d.notes)+'</div>':''}</div></div>
       <div class="in-kind-actions">
         <button class="in-kind-receive-btn" type="button" onclick="markInKindReceived(${JSON.stringify(d.id)})">✅ تسجيل الاستلام</button>
-        ${phone?'<a class="in-kind-contact-btn" href="tel:'+escapeHtml(phone)+'" title="اتصال">📞</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\\'رقم هاتف المتبرع غير مسجل.\\')" title="اتصال">📞</button>'}
-        ${wa?'<a class="in-kind-contact-btn" href="https://wa.me/'+escapeHtml(wa)+'" target="_blank" rel="noopener noreferrer" title="واتساب">💬</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\\'رقم هاتف المتبرع غير مسجل.\\')" title="واتساب">💬</button>'}
-        ${mapUrl?'<a class="in-kind-contact-btn" href="'+escapeHtml(mapUrl)+'" target="_blank" rel="noopener noreferrer" title="موقع">📍</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\\'موقع المتبرع غير مسجل.\\')" title="موقع">📍</button>'}
+        ${phone?'<a class="in-kind-contact-btn" href="tel:'+escapeHtml(phone)+'" title="اتصال">📞</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\'رقم هاتف المتبرع غير مسجل.\')" title="اتصال">📞</button>'}
+        ${wa?'<a class="in-kind-contact-btn" href="https://wa.me/'+escapeHtml(wa)+'" target="_blank" rel="noopener noreferrer" title="واتساب">💬</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\'رقم هاتف المتبرع غير مسجل.\')" title="واتساب">💬</button>'}
+        ${mapUrl?'<a class="in-kind-contact-btn" href="'+escapeHtml(mapUrl)+'" target="_blank" rel="noopener noreferrer" title="موقع">📍</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\'موقع المتبرع غير مسجل.\')" title="موقع">📍</button>'}
         <button class="action" type="button" onclick="editInKindDonationById(${JSON.stringify(d.id)})">✏️ تعديل</button>
       </div>
     </div>`;
