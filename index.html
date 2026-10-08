@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261008-0130';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261008-0145';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -88,6 +88,38 @@ main{padding:12px 12px 65px}.screen{display:none!important}.screen.active{displa
 .attach-row{display:flex;gap:7px;align-items:center;margin-top:8px}.attach-row input{display:none}
 .attachments{margin-top:10px}.attachment{background:#f4f7f6;border-radius:10px;padding:9px;margin-top:7px;display:flex;align-items:center;gap:8px}
 .attachment .grow{min-width:0}.attachment .fname{font-size:11px;font-weight:bold;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.attachment .fmeta{font-size:9px;color:#7a8985;margin-top:2px}
+
+/* ===== التبرعات العينية ===== */
+.in-kind-tabs{display:flex;gap:7px;margin-bottom:12px}
+.in-kind-tab{flex:1;border:0;background:#fff;border-radius:13px;padding:11px;color:#41635b;font:inherit;font-size:11px;font-weight:bold;box-shadow:0 2px 8px #00000008}
+.in-kind-tab.active{background:#0f5c4d;color:#fff}
+.in-kind-contact-card{background:#fff;border-radius:15px;padding:12px;margin-bottom:9px;box-shadow:0 2px 10px #0000000b;border-right:4px solid #c8a96b}
+.in-kind-contact-head{display:flex;align-items:center;gap:9px}
+.in-kind-avatar{width:44px;height:44px;border-radius:13px;background:#e9f5f0;color:#0f5c4d;display:grid;place-items:center;font-weight:900;flex:0 0 44px}
+.in-kind-contact-main{flex:1;min-width:0}
+.in-kind-name{font-size:14px;font-weight:900}
+.in-kind-contact-line{font-size:9px;color:#71857f;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.in-kind-badge{border-radius:20px;padding:5px 8px;font-size:9px;white-space:nowrap}
+.in-kind-badge.pending{background:#fff4dc;color:#8a6517}
+.in-kind-badge.received{background:#e9f5f0;color:#0f5c4d}
+.in-kind-items{margin-top:9px;border-top:1px solid #e6eeeb;padding-top:8px}
+.in-kind-item-row{background:#f6f8f7;border-radius:9px;padding:8px;margin-top:5px;font-size:10px}
+.in-kind-item-row .item-head{display:flex;justify-content:space-between;gap:8px;font-weight:900}
+.in-kind-item-row .item-meta{font-size:9px;color:#71857f;margin-top:3px;line-height:1.6}
+.in-kind-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:9px}
+.in-kind-actions button{border:0;border-radius:10px;padding:9px 5px;font:inherit;font-size:9px;font-weight:900;cursor:pointer}
+.in-kind-contact-btn{background:#eef5f2;color:#0f5c4d}
+.in-kind-receive-btn{background:#0f5c4d;color:#fff}
+.in-kind-reopen-btn{background:#fff4dc;color:#8a6517}
+.in-kind-contact-modal{position:fixed;inset:0;background:#0008;z-index:85;display:none;align-items:center;justify-content:center;padding:18px}
+.in-kind-contact-modal.open{display:flex}
+.in-kind-contact-modal-card{width:min(420px,100%);background:#fff;border-radius:18px;padding:15px;box-shadow:0 12px 35px #0003}
+.in-kind-contact-modal-head{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.in-kind-contact-modal-title{font-size:17px;font-weight:900;flex:1}
+.in-kind-contact-option{width:100%;border:0;border-radius:12px;padding:12px;margin-top:7px;background:#f3f7f5;color:#24473f;font:inherit;font-size:11px;font-weight:900;text-align:right;cursor:pointer}
+.in-kind-contact-option.primary{background:#0f5c4d;color:#fff}
+.in-kind-contact-option:disabled{opacity:.45;cursor:not-allowed}
+.in-kind-close{border:0;background:#eef3f1;color:#34564e;border-radius:10px;padding:8px 10px;font:inherit}
 
 .drawer{position:fixed;inset:0;background:#0006;z-index:20;display:none}.drawer.open{display:block}.menu{width:84%;max-width:360px;height:100%;background:#fff;padding:18px;box-shadow:5px 0 20px #0002}.menu button{width:100%;border:0;background:#fff;text-align:right;padding:13px;border-radius:10px;font:inherit;color:#274a42}.menu button:hover{background:#eef5f2}
 
@@ -474,6 +506,7 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <button class="donation-tab active" id="tabDonors" onclick="switchDonationTab('donors')">👤 المتبرعون</button>
 <button class="donation-tab" id="tabRecords" onclick="switchDonationTab('records')">📋 سجل التبرعات</button>
 <button class="donation-tab" id="tabUnpaid" onclick="switchDonationTab('unpaid')">🔴 غير المستلمة</button>
+<button class="donation-tab" id="tabInKind" onclick="showScreen('in-kind-donations')">🎁 التبرعات العينية</button>
 </div>
 <div id="donorsTab">
 <div class="actions">
@@ -509,6 +542,21 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div class="section"><b>كشف التبرعات</b><span class="count" id="donationCount"></span></div>
 <div id="donationList"></div>
 </div>
+</section>
+<section class="screen" id="in-kind-donations">
+<div class="top"><button class="back" onclick="showScreen('donations')">← رجوع</button><div class="screen-title">التبرعات العينية</div></div>
+<div class="stats">
+<div class="stat">📦 <b id="inKindAllCount">0</b><span>إجمالي العينية</span></div>
+<div class="stat">⏳ <b id="inKindPendingCount">0</b><span>غير المستلمة</span></div>
+<div class="stat">✅ <b id="inKindReceivedCount">0</b><span>المستلمة</span></div>
+<div class="stat">🔢 <b id="inKindQuantityTotal">0</b><span>إجمالي الكميات</span></div>
+</div>
+<div class="in-kind-tabs">
+<button class="in-kind-tab active" id="inKindPendingTab" onclick="switchInKindTab('pending')">⏳ سجل التبرعات غير المستلمة</button>
+<button class="in-kind-tab" id="inKindReceivedTab" onclick="switchInKindTab('received')">✅ سجل التبرعات المستلمة</button>
+</div>
+<div class="search"><span>🔎</span><input id="inKindQ" oninput="renderInKindDonations()" placeholder="ابحث باسم المتبرع أو نوع التبرع"/></div>
+<div id="inKindDonationList"></div>
 </section>
 <section class="screen" id="unpaidDonationsTab" style="display:none"><div class="unpaid-summary-stats"><div class="stat">💰 <b id="unpaidTotalAmount">0</b><span>المبلغ غير المستلم</span></div><div class="stat">🧾 <b id="unpaidDonationCount">0</b><span>عدد التبرعات</span></div><div class="stat">👤 <b id="unpaidDonorCount">0</b><span>عدد المتبرعين</span></div></div><div class="unpaid-divider"></div><div id="unpaidDonationList"></div></section>
 <section class="screen" id="add-donor">
@@ -549,6 +597,7 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div><label class="fl">الكمية</label><input class="forminput" id="dn-qty" min="1" type="number" value="1"/></div>
 <div id="deviceStatusWrap"><label class="fl">حالة الجهاز</label><select class="forminput" id="dn-status"><option>شغال</option><option>عاطل</option><option>مستهلك</option></select></div>
 </div>
+<label class="fl">حالة الاستلام</label><select class="forminput" id="dn-received"><option value="لا">غير مستلم</option><option value="نعم">تم الاستلام</option></select>
 </div>
 <label class="fl">رقم الوصل / الإيصال</label><input class="forminput" id="dn-receipt" placeholder="رقم الوصل إن وجد"/>
 <label class="fl">التاريخ</label><input class="forminput" id="dn-date" type="date"/>
@@ -2619,6 +2668,82 @@ function toggleDonationSortDirection(){
   renderDonations();
 }
 async function ensureDonationCloudVisible(){try{const sb=window.warithSupabase||await window.warithSupabaseReady;if(!sb)return;window.warithSupabase=sb;const {data:sessionData}=await sb.auth.getSession();if(!sessionData?.session?.user)return;for(const entity of ['donors','donations']){const rows=[];for(let from=0;;from+=1000){const {data,error}=await sb.from('client_sync_records').select('record_key,data,updated_at,deleted').eq('entity',entity).eq('deleted',false).range(from,from+999);if(error)throw error;rows.push(...(data||[]));if(!data||data.length<1000)break;}const arr=rows.filter(r=>r?.data).map(r=>r.data);if(entity==='donors'){donors=arr;warithSyncLocalSet(warithSyncCfg('donors'),donors);warithSyncShadow.donors=new Map(arr.map(x=>[String(x.id),x]));}else{donations=arr;warithSyncLocalSet(warithSyncCfg('donations'),donations);warithSyncShadow.donations=new Map(arr.map(x=>[String(x.id),x]));}}}catch(e){console.warn('Donation records cloud refresh failed:',e)}}
+let inKindDonationTab='pending';
+let inKindDonationsCache=[];
+function normalizeWhatsAppNumber(phone){
+  let p=String(phone||'').replace(/[^0-9]/g,'');
+  if(p.startsWith('00'))p=p.slice(2);
+  if(p.startsWith('0'))p='964'+p.slice(1);
+  if(!p.startsWith('964')&&p.length===10)p='964'+p;
+  return p;
+}
+function openInKindContact(i){
+  const g=inKindDonationsCache[i]; if(!g)return;
+  const old=document.getElementById('inKindContactModal'); if(old)old.remove();
+  const phone=String(g.phone||'').trim();
+  const wa=normalizeWhatsAppNumber(phone);
+  const mapQuery=String(g.address||'').trim();
+  const m=document.createElement('div');
+  m.id='inKindContactModal';m.className='in-kind-contact-modal open';
+  m.innerHTML=`<div class="in-kind-contact-modal-card">
+    <div class="in-kind-contact-modal-head"><div class="in-kind-contact-modal-title">التواصل مع المتبرع</div><button class="in-kind-close" type="button" onclick="this.closest('#inKindContactModal').remove()">✕</button></div>
+    <div class="card" style="margin:0;background:#f5f8f7"><div class="name">${escapeHtml(g.name||'غير مسجل')}</div><div class="sub">📞 ${escapeHtml(phone||'غير مسجل')}</div><div class="sub">📍 ${escapeHtml(mapQuery||'العنوان غير مسجل')}</div></div>
+    <button class="in-kind-contact-option" type="button" ${mapQuery?'':'disabled'} onclick="window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(${JSON.stringify(mapQuery)}),'_blank')">📍 موقع</button>
+    <button class="in-kind-contact-option" type="button" ${phone?'':'disabled'} onclick="location.href='tel:'+${JSON.stringify(phone)}">📞 اتصال</button>
+    <button class="in-kind-contact-option primary" type="button" ${wa?'':'disabled'} onclick="window.open('https://wa.me/'+${JSON.stringify(wa)},'_blank')">💬 واتساب</button>
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m)m.remove()});
+}
+function inKindIsReceived(d){return String(d?.received||'لا')==='نعم'}
+function getInKindCloudData(){
+  const local=Array.isArray(donations)?donations:[];
+  return local.filter(d=>!isHiddenRecord(d)&&d.type!=='مالي');
+}
+function switchInKindTab(tab){
+  inKindDonationTab=tab;
+  document.getElementById('inKindPendingTab')?.classList.toggle('active',tab==='pending');
+  document.getElementById('inKindReceivedTab')?.classList.toggle('active',tab==='received');
+  renderInKindDonations();
+}
+function renderInKindDonations(){
+  const box=document.getElementById('inKindDonationList'); if(!box)return;
+  const all=getInKindCloudData();
+  const pending=all.filter(d=>!inKindIsReceived(d));
+  const received=all.filter(d=>inKindIsReceived(d));
+  document.getElementById('inKindAllCount').textContent=all.length.toLocaleString('en-US');
+  document.getElementById('inKindPendingCount').textContent=pending.length.toLocaleString('en-US');
+  document.getElementById('inKindReceivedCount').textContent=received.length.toLocaleString('en-US');
+  document.getElementById('inKindQuantityTotal').textContent=all.reduce((n,d)=>n+Number(d.qty||0),0).toLocaleString('en-US');
+  const q=(document.getElementById('inKindQ')?.value||'').trim().toLowerCase();
+  const list=(inKindDonationTab==='pending'?pending:received).filter(d=>(String(d.donorName||'')+' '+String(d.item||'')+' '+String(d.type||'')+' '+String(d.date||'')).toLowerCase().includes(q)).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  if(!list.length){box.innerHTML='<div class="empty">لا توجد تبرعات في هذا السجل حالياً</div>';inKindDonationsCache=[];return;}
+  inKindDonationsCache=list;
+  box.innerHTML=list.map((d,i)=>{
+    const donor=donors.find(x=>String(x.id)===String(d.donorId));
+    const name=d.donorName||donor?.name||'غير مسجل';
+    const phone=d.phone||donor?.phone||'';
+    const address=d.address||donor?.address||'';
+    const item=d.item||'تبرع عيني';
+    const qty=Number(d.qty||0).toLocaleString('en-US');
+    const status=d.type==='جهاز'?(d.status||'غير محدد'):'مواد';
+    const received=inKindIsReceived(d);
+    return `<div class="in-kind-contact-card">
+      <div class="in-kind-contact-head"><div class="in-kind-avatar">${escapeHtml(name.charAt(0)||'م')}</div><div class="in-kind-contact-main"><div class="in-kind-name">${escapeHtml(name)}</div><div class="in-kind-contact-line">📞 ${escapeHtml(phone||'غير مسجل')}</div><div class="in-kind-contact-line">📍 ${escapeHtml(address||'غير مسجل')}</div></div><span class="in-kind-badge ${received?'received':'pending'}">${received?'تم الاستلام':'غير مستلم'}</span></div>
+      <div class="in-kind-items"><div class="in-kind-item-row"><div class="item-head"><span>🎁 ${escapeHtml(item)}</span><b>الكمية: ${qty}</b></div><div class="item-meta">التاريخ: ${escapeHtml(d.date||'—')} · النوع: ${escapeHtml(d.type||'—')} · الحالة: ${escapeHtml(status)}</div>${d.notes?'<div class="item-meta">ملاحظات: '+escapeHtml(d.notes)+'</div>':''}</div></div>
+      <div class="in-kind-actions">${!received?'<button class="in-kind-receive-btn" type="button" onclick="markInKindReceived('+d.id+')">✅ تسجيل الاستلام</button>':'<button class="in-kind-reopen-btn" type="button" onclick="markInKindReceived('+d.id+',true)">↩️ إرجاع لغير المستلم</button>'}<button class="in-kind-contact-btn" type="button" onclick="openInKindContact('+i+')">👤 التواصل مع المتبرع</button><button class="action" type="button" onclick="editDonation('+donations.indexOf(d)+')">✏️ تعديل</button></div>
+    </div>`;
+  }).join('');
+}
+function markInKindReceived(id,reopen=false){
+  if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل التبرعات.');return}
+  const d=donations.find(x=>String(x.id)===String(id)); if(!d||d.type==='مالي')return;
+  d.received=reopen?'لا':'نعم';
+  localStorage.setItem('warith_donations',JSON.stringify(donations));
+  renderInKindDonations();
+  alert(reopen?'تم إرجاع التبرع إلى غير المستلم ✓':'تم تسجيل استلام التبرع العيني ✓');
+}
+
 async function switchDonationTab(tab){const donorsTab=document.getElementById('donorsTab'),recordsTab=document.getElementById('recordsTab'),unpaidTab=document.getElementById('unpaidDonationsTab'),td=document.getElementById('tabDonors'),tr=document.getElementById('tabRecords'),tu=document.getElementById('tabUnpaid');[donorsTab,recordsTab,unpaidTab].forEach(x=>{if(x){x.style.display='none';x.classList.remove('active');}});[td,tr,tu].forEach(x=>{if(x)x.classList.remove('active');});if(tab==='unpaid'){unpaidTab?.classList.add('active');unpaidTab?.style.setProperty('display','block');tu?.classList.add('active');renderUnpaidDonations();return}if(tab==='records'){recordsTab?.classList.add('active');recordsTab?.style.setProperty('display','block');tr?.classList.add('active');await ensureDonationCloudVisible();renderDonations();}else{donorsTab?.classList.add('active');donorsTab?.style.setProperty('display','block');td?.classList.add('active');await ensureDonationCloudVisible();renderDonors();}}
 function filterDonationType(type){donationTypeFilter=type;renderDonations();}
 let unpaidDonationsCache=[];
@@ -2719,6 +2844,7 @@ function resetDonationForm(){
   document.getElementById('dn-payment').value='';
   document.getElementById('dn-allocation').value='خاص';
   document.getElementById('dn-status').value='شغال';
+  document.getElementById('dn-received').value='لا';
   renderTempAttachments('donationAttachmentsList',donationAttachments,'removeDonationAttachment');
 }
 function addDonationForAppeal(appealId){
@@ -2752,6 +2878,7 @@ function saveDonation(){
     item:type!=='مالي'?document.getElementById('dn-item').value.trim():'',
     qty:type!=='مالي'?Number(document.getElementById('dn-qty').value||1):0,
     status:type==='جهاز'?document.getElementById('dn-status').value:'',
+    received:type!=='مالي'?(document.getElementById('dn-received')?.value||'لا'):'',
     receipt:document.getElementById('dn-receipt').value.trim(),
     notes:document.getElementById('dn-notes').value.trim(),
     attachments:donationAttachments
@@ -2782,6 +2909,7 @@ function editDonation(i){
   document.getElementById('dn-item').value=d.item||'';
   document.getElementById('dn-qty').value=d.qty||1;
   document.getElementById('dn-status').value=d.status||'شغال';
+  document.getElementById('dn-received').value=d.type!=='مالي'?(d.received||'لا'):'لا';
   document.getElementById('dn-receipt').value=d.receipt||'';
   document.getElementById('dn-date').value=d.date||'';
   document.getElementById('dn-notes').value=d.notes||'';
