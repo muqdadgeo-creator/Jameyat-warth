@@ -1,0 +1,228 @@
+name: One-time in-kind donations UI layout
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+
+jobs:
+  patch-ui:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Patch in-kind donations layout
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+
+          marker = "/* JAMEYAT-IN-KIND-LAYOUT-V1 */"
+          if marker in s:
+              print("Patch already present; nothing to do.")
+              raise SystemExit(0)
+
+          patch = r"""
+<style>
+/* JAMEYAT-IN-KIND-LAYOUT-V1 */
+.jw-inkind-summary-row{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:12px !important;
+  align-items:stretch !important;
+  width:100% !important;
+}
+.jw-inkind-summary-row > *{
+  min-width:0 !important;
+}
+.jw-inkind-separator{
+  width:100% !important;
+  border-top:2px dashed rgba(100,116,139,.42) !important;
+  margin:18px 0 !important;
+  height:0 !important;
+}
+.jw-inkind-unreceived-actions{
+  display:flex !important;
+  flex-direction:row !important;
+  gap:8px !important;
+  align-items:center !important;
+  justify-content:stretch !important;
+  flex-wrap:wrap !important;
+}
+.jw-inkind-unreceived-actions a,
+.jw-inkind-unreceived-actions button{
+  flex:1 1 0 !important;
+  min-width:110px !important;
+  margin:0 !important;
+}
+@media (max-width:700px){
+  .jw-inkind-summary-row{
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:7px !important;
+  }
+  .jw-inkind-unreceived-actions a,
+  .jw-inkind-unreceived-actions button{
+    min-width:90px !important;
+  }
+}
+</style>
+<script>
+(function(){
+  'use strict';
+
+  function txt(el){
+    return (el && (el.textContent || '')).replace(/\s+/g,' ').trim();
+  }
+
+  function visible(el){
+    if(!el) return false;
+    const st=getComputedStyle(el);
+    return st.display!=='none' && st.visibility!=='hidden';
+  }
+
+  function findExact(text){
+    return Array.from(document.querySelectorAll('body *')).find(el =>
+      visible(el) && txt(el)===text && el.children.length===0
+    );
+  }
+
+  function cardLike(el){
+    let cur=el;
+    for(let i=0;i<7 && cur;i++,cur=cur.parentElement){
+      const c=((cur.className||'')+' '+(cur.id||'')).toString().toLowerCase();
+      if(/card|stat|summary|metric|kpi|tile|panel/.test(c)) return cur;
+    }
+    return el.parentElement || el;
+  }
+
+  function addActionsClass(card){
+    if(!card) return;
+    const nodes=Array.from(card.querySelectorAll('a,button'));
+    const actions=nodes.filter(n=>{
+      const t=txt(n).toLowerCase();
+      const h=(n.getAttribute('href')||'').toLowerCase();
+      return /واتساب|whatsapp|هاتف|اتصال|phone|call/.test(t) ||
+             h.startsWith('tel:') || h.includes('wa.me') || h.includes('whatsapp');
+    });
+    if(actions.length<2) return;
+
+    let box=actions[0].parentElement;
+    while(box && box!==card){
+      const count=Array.from(box.querySelectorAll('a,button')).filter(n=>actions.includes(n)).length;
+      if(count===actions.length) break;
+      box=box.parentElement;
+    }
+    if(box && box!==card) box.classList.add('jw-inkind-unreceived-actions');
+  }
+
+  function apply(){
+    // 1) Remove the "إجمالي الكميات" summary card only.
+    const total=findExact('إجمالي الكميات');
+    let summaryParent=null;
+    if(total){
+      const totalCard=cardLike(total);
+      summaryParent=totalCard.parentElement;
+      totalCard.remove();
+    }
+
+    // 2) Keep the three remaining summary cards in one row.
+    if(summaryParent){
+      const children=Array.from(summaryParent.children).filter(visible);
+      if(children.length>=3){
+        summaryParent.classList.add('jw-inkind-summary-row');
+      }
+    }
+
+    // Fallback: locate the in-kind section and find a compact group of cards.
+    const title=findExact('التبرعات العينية');
+    if(title){
+      let section=title;
+      for(let i=0;i<6 && section.parentElement;i++){
+        const p=section.parentElement;
+        if(p.querySelectorAll('button,a').length>2) { section=p; break; }
+        section=p;
+      }
+      const candidates=Array.from(section.querySelectorAll('div,section')).filter(el=>{
+        if(!visible(el)) return false;
+        const kids=Array.from(el.children).filter(visible);
+        if(kids.length!==3) return false;
+        return kids.every(k=>/card|stat|summary|metric|kpi|tile|panel/i.test(((k.className||'')+'').toString()));
+      });
+      if(candidates.length) candidates[candidates.length-1].classList.add('jw-inkind-summary-row');
+    }
+
+    // 3) Add a dashed separator before the in-kind unreceived area.
+    const un=findExact('التبرعات العينية غير المستلمة') || findExact('غير المستلمة');
+    if(un){
+      let target=cardLike(un);
+      // Prefer the nearest meaningful block containing the heading.
+      for(let i=0;i<4 && target.parentElement;i++){
+        const p=target.parentElement;
+        if(p.querySelectorAll('a,button').length>=2){ target=p; break; }
+      }
+      if(target && !target.previousElementSibling?.classList?.contains('jw-inkind-separator')){
+        const sep=document.createElement('div');
+        sep.className='jw-inkind-separator';
+        target.parentElement && target.parentElement.insertBefore(sep,target);
+      }
+    }
+
+    // 4) Phone + WhatsApp: formatting only, inside unreceived donor cards.
+    Array.from(document.querySelectorAll('body *')).forEach(el=>{
+      const t=txt(el);
+      if(t.includes('غير مستلمة') || t.includes('غير المستلمة')){
+        const c=cardLike(el);
+        addActionsClass(c);
+      }
+    });
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(apply,350));
+  else setTimeout(apply,350);
+
+  // Re-apply after SPA/rerender changes without touching data.
+  let last=0;
+  const mo=new MutationObserver(()=>{
+    const now=Date.now();
+    if(now-last<300) return;
+    last=now;
+    setTimeout(apply,100);
+  });
+  mo.observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+"""
+
+          if "</body>" not in s.lower():
+              raise SystemExit("Could not find </body> in index.html")
+
+          pos=s.lower().rfind("</body>")
+          s=s[:pos]+patch+s[pos:]
+          p.write_text(s,encoding="utf-8")
+          print("Patched index.html successfully.")
+
+      - name: Commit UI patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "تعديل ترتيب نافذة التبرعات العينية"
+          git push origin main
+
+      - name: Remove one-time workflow
+        shell: bash
+        run: |
+          git rm -f .github/workflows/one-time-inkind-layout.yml
+          git commit -m "chore: remove one-time UI patch workflow"
+          git push origin main
