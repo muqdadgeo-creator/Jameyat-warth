@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261008-0145';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261008-0155';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -111,15 +111,7 @@ main{padding:12px 12px 65px}.screen{display:none!important}.screen.active{displa
 .in-kind-contact-btn{background:#eef5f2;color:#0f5c4d}
 .in-kind-receive-btn{background:#0f5c4d;color:#fff}
 .in-kind-reopen-btn{background:#fff4dc;color:#8a6517}
-.in-kind-contact-modal{position:fixed;inset:0;background:#0008;z-index:85;display:none;align-items:center;justify-content:center;padding:18px}
-.in-kind-contact-modal.open{display:flex}
-.in-kind-contact-modal-card{width:min(420px,100%);background:#fff;border-radius:18px;padding:15px;box-shadow:0 12px 35px #0003}
-.in-kind-contact-modal-head{display:flex;align-items:center;gap:9px;margin-bottom:12px}
-.in-kind-contact-modal-title{font-size:17px;font-weight:900;flex:1}
-.in-kind-contact-option{width:100%;border:0;border-radius:12px;padding:12px;margin-top:7px;background:#f3f7f5;color:#24473f;font:inherit;font-size:11px;font-weight:900;text-align:right;cursor:pointer}
-.in-kind-contact-option.primary{background:#0f5c4d;color:#fff}
-.in-kind-contact-option:disabled{opacity:.45;cursor:not-allowed}
-.in-kind-close{border:0;background:#eef3f1;color:#34564e;border-radius:10px;padding:8px 10px;font:inherit}
+
 
 .drawer{position:fixed;inset:0;background:#0006;z-index:20;display:none}.drawer.open{display:block}.menu{width:84%;max-width:360px;height:100%;background:#fff;padding:18px;box-shadow:5px 0 20px #0002}.menu button{width:100%;border:0;background:#fff;text-align:right;padding:13px;border-radius:10px;font:inherit;color:#274a42}.menu button:hover{background:#eef5f2}
 
@@ -2677,23 +2669,21 @@ function normalizeWhatsAppNumber(phone){
   if(!p.startsWith('964')&&p.length===10)p='964'+p;
   return p;
 }
-function openInKindContact(i){
-  const g=inKindDonationsCache[i]; if(!g)return;
-  const old=document.getElementById('inKindContactModal'); if(old)old.remove();
-  const phone=String(g.phone||'').trim();
-  const wa=normalizeWhatsAppNumber(phone);
-  const mapQuery=String(g.address||'').trim();
-  const m=document.createElement('div');
-  m.id='inKindContactModal';m.className='in-kind-contact-modal open';
-  m.innerHTML=`<div class="in-kind-contact-modal-card">
-    <div class="in-kind-contact-modal-head"><div class="in-kind-contact-modal-title">التواصل مع المتبرع</div><button class="in-kind-close" type="button" onclick="this.closest('#inKindContactModal').remove()">✕</button></div>
-    <div class="card" style="margin:0;background:#f5f8f7"><div class="name">${escapeHtml(g.name||'غير مسجل')}</div><div class="sub">📞 ${escapeHtml(phone||'غير مسجل')}</div><div class="sub">📍 ${escapeHtml(mapQuery||'العنوان غير مسجل')}</div></div>
-    <button class="in-kind-contact-option" type="button" ${mapQuery?'':'disabled'} onclick="window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(${JSON.stringify(mapQuery)}),'_blank')">📍 موقع</button>
-    <button class="in-kind-contact-option" type="button" ${phone?'':'disabled'} onclick="location.href='tel:'+${JSON.stringify(phone)}">📞 اتصال</button>
-    <button class="in-kind-contact-option primary" type="button" ${wa?'':'disabled'} onclick="window.open('https://wa.me/'+${JSON.stringify(wa)},'_blank')">💬 واتساب</button>
-  </div>`;
-  document.body.appendChild(m);
-  m.addEventListener('click',e=>{if(e.target===m)m.remove()});
+function getInKindDonorContact(i){
+  const g=inKindDonationsCache[i]; if(!g)return null;
+  const donor=donors.find(x=>String(x.id)===String(g.donorId));
+  return {phone:String(g.phone||donor?.phone||'').trim(),address:String(g.address||donor?.address||'').trim()};
+}
+function callInKindDonor(i){
+  const c=getInKindDonorContact(i); if(c?.phone) location.href='tel:'+c.phone; else alert('رقم هاتف المتبرع غير مسجل.');
+}
+function whatsappInKindDonor(i){
+  const c=getInKindDonorContact(i), wa=normalizeWhatsAppNumber(c?.phone||'');
+  if(wa) window.open('https://wa.me/'+wa,'_blank'); else alert('رقم هاتف المتبرع غير مسجل.');
+}
+function openInKindLocation(i){
+  const c=getInKindDonorContact(i);
+  if(c?.address) window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.address),'_blank'); else alert('عنوان المتبرع غير مسجل.');
 }
 function inKindIsReceived(d){return String(d?.received||'لا')==='نعم'}
 function getInKindCloudData(){
@@ -2731,7 +2721,12 @@ function renderInKindDonations(){
     return `<div class="in-kind-contact-card">
       <div class="in-kind-contact-head"><div class="in-kind-avatar">${escapeHtml(name.charAt(0)||'م')}</div><div class="in-kind-contact-main"><div class="in-kind-name">${escapeHtml(name)}</div><div class="in-kind-contact-line">📞 ${escapeHtml(phone||'غير مسجل')}</div><div class="in-kind-contact-line">📍 ${escapeHtml(address||'غير مسجل')}</div></div><span class="in-kind-badge ${received?'received':'pending'}">${received?'تم الاستلام':'غير مستلم'}</span></div>
       <div class="in-kind-items"><div class="in-kind-item-row"><div class="item-head"><span>🎁 ${escapeHtml(item)}</span><b>الكمية: ${qty}</b></div><div class="item-meta">التاريخ: ${escapeHtml(d.date||'—')} · النوع: ${escapeHtml(d.type||'—')} · الحالة: ${escapeHtml(status)}</div>${d.notes?'<div class="item-meta">ملاحظات: '+escapeHtml(d.notes)+'</div>':''}</div></div>
-      <div class="in-kind-actions">${!received?'<button class="in-kind-receive-btn" type="button" onclick="markInKindReceived('+d.id+')">✅ تسجيل الاستلام</button>':'<button class="in-kind-reopen-btn" type="button" onclick="markInKindReceived('+d.id+',true)">↩️ إرجاع لغير المستلم</button>'}<button class="in-kind-contact-btn" type="button" onclick="openInKindContact('+i+')">👤 التواصل مع المتبرع</button><button class="action" type="button" onclick="editDonation('+donations.indexOf(d)+')">✏️ تعديل</button></div>
+      <div class="in-kind-actions">
+${!received?'<button class="in-kind-receive-btn" type="button" onclick="markInKindReceived('+d.id+')">✅ تسجيل الاستلام</button>':'<button class="in-kind-reopen-btn" type="button" onclick="markInKindReceived('+d.id+',true)">↩️ إرجاع لغير المستلم</button>'}
+<button class="in-kind-contact-btn" type="button" onclick="callInKindDonor('+i+')" title="اتصال">📞</button>
+<button class="in-kind-contact-btn" type="button" onclick="whatsappInKindDonor('+i+')" title="واتساب">💬</button>
+<button class="in-kind-contact-btn" type="button" onclick="openInKindLocation('+i+')" title="موقع">📍</button>
+<button class="action" type="button" onclick="editDonation('+donations.indexOf(d)+')">✏️ تعديل</button></div>
     </div>`;
   }).join('');
 }
