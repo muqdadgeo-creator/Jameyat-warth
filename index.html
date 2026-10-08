@@ -2662,11 +2662,13 @@ function toggleDonationSortDirection(){
 async function ensureDonationCloudVisible(){try{const sb=window.warithSupabase||await window.warithSupabaseReady;if(!sb)return;window.warithSupabase=sb;const {data:sessionData}=await sb.auth.getSession();if(!sessionData?.session?.user)return;for(const entity of ['donors','donations']){const rows=[];for(let from=0;;from+=1000){const {data,error}=await sb.from('client_sync_records').select('record_key,data,updated_at,deleted').eq('entity',entity).eq('deleted',false).range(from,from+999);if(error)throw error;rows.push(...(data||[]));if(!data||data.length<1000)break;}const arr=rows.filter(r=>r?.data).map(r=>r.data);if(entity==='donors'){donors=arr;warithSyncLocalSet(warithSyncCfg('donors'),donors);warithSyncShadow.donors=new Map(arr.map(x=>[String(x.id),x]));}else{donations=arr;warithSyncLocalSet(warithSyncCfg('donations'),donations);warithSyncShadow.donations=new Map(arr.map(x=>[String(x.id),x]));}}}catch(e){console.warn('Donation records cloud refresh failed:',e)}}
 let inKindDonationTab='pending';
 let inKindDonationsCache=[];
-function normalizeWhatsAppNumber(phone){
-  let p=String(phone||'').replace(/[^0-9]/g,'');
+function normalizeInKindPhone(phone){
+  let p=String(phone||'').trim().replace(/[^0-9]/g,'');
+  if(!p)return '';
   if(p.startsWith('00'))p=p.slice(2);
-  if(p.startsWith('0'))p='964'+p.slice(1);
-  if(!p.startsWith('964')&&p.length===10)p='964'+p;
+  if(p.startsWith('964'))return p;
+  if(p.startsWith('0'))return '964'+p.slice(1);
+  if(p.length===10)return '964'+p;
   return p;
 }
 function getInKindDonorContact(i){
@@ -2678,13 +2680,15 @@ function getInKindDonorContact(i){
     donor=donors.find(x=>String(x.name||'').trim().toLowerCase()===donationName)||donor;
   }
   if(!donor&&donationName) donor=donors.find(x=>String(x.name||'').trim().toLowerCase()===donationName);
-  return {phone:String(donor?.phone||'').trim(),address:String(donor?.address||'').trim(),donor};
+  const phone=String(donor?.phone||'').trim();
+  return {phone,address:String(donor?.address||'').trim(),donor};
 }
 function callInKindDonor(i){
-  const c=getInKindDonorContact(i); if(c?.phone) location.href='tel:'+c.phone; else alert('رقم هاتف المتبرع غير مسجل.');
+  const c=getInKindDonorContact(i), phone=String(c?.phone||'').trim();
+  if(phone) location.href='tel:'+phone; else alert('رقم هاتف المتبرع غير مسجل.');
 }
 function whatsappInKindDonor(i){
-  const c=getInKindDonorContact(i), wa=normalizeWhatsAppNumber(c?.phone||'');
+  const c=getInKindDonorContact(i), wa=normalizeInKindPhone(c?.phone||'');
   if(wa) window.open('https://wa.me/'+wa,'_blank'); else alert('رقم هاتف المتبرع غير مسجل.');
 }
 function openDonorLocationById(donorId,fallbackAddress=''){
