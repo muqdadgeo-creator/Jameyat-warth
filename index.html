@@ -3342,6 +3342,20 @@ async function saveInventoryMovement(){const _edit=editingInventoryIndex!==null;
   if(move==='صادر' && mode==='appeal' && !appealId){alert('اختر رقم المناشدة');return}
   if(move==='صادر' && mode==='new' && !manualBeneficiary){alert('اكتب اسم المستفيد');return}
 
+  // لا نسمح بإخراج كمية أكبر من المتوفر، ونحسب المتوفر من سجل الحركات نفسه.
+  // عند تعديل حركة إخراج نستثني الحركة القديمة حتى لا تُحسب مرتين.
+  if(move==='صادر'){
+    const availableMap=inventoryAvailableQty(editingInventoryIndex!==null?editingInventoryIndex:-1);
+    const typeKey=type==='جهاز'?'جهاز':'مواد';
+    const statusKey=typeKey==='جهاز'?(document.getElementById('inv-status')?.value||'شغال'):'مواد';
+    const stockKey=typeKey+'\\u0000'+name+'\\u0000'+statusKey;
+    const available=Number(availableMap[stockKey]||0);
+    if(qty>available){
+      alert('الكمية المطلوبة للإخراج أكبر من المتوفر في المخزن.\\nالمتوفر حالياً: '+available);
+      return;
+    }
+  }
+
   const item={
     id:editingInventoryIndex!==null?inventoryMovements[editingInventoryIndex].id:Date.now(),
     move,type,name,qty,
@@ -3368,14 +3382,32 @@ async function saveInventoryMovement(){const _edit=editingInventoryIndex!==null;
   showScreen('inventory');
 }
 
+function inventoryStockKey(m){
+  const name=(m?.name||'').trim();
+  if(!name)return '';
+  const type=m?.type==='جهاز'?'جهاز':'مواد';
+  const status=type==='جهاز'?(m?.status||'شغال'):'مواد';
+  return type+'\\u0000'+name+'\\u0000'+status;
+}
+function inventoryAvailableQty(excludeIndex=-1){
+  const map={};
+  inventoryMovements.filter((m,i)=>i!==excludeIndex&&!isHiddenRecord(m)).forEach(m=>{
+    const key=inventoryStockKey(m); if(!key)return;
+    const q=Number(m.qty||0);
+    if(m.move==='وارد')map[key]=(map[key]||0)+q;
+    else if(m.move==='صادر')map[key]=(map[key]||0)-q;
+  });
+  return map;
+}
 function inventorySummary(){
   const map={};
   inventoryMovements.filter(m=>!isHiddenRecord(m)).forEach(m=>{
     const name=(m.name||'').trim();
     if(!name)return;
-    const status=m.type==='جهاز'?(m.status||'شغال'):'مواد';
-    const key=name+'\u0000'+status;
-    if(!map[key]) map[key]={name,status,qty:0};
+    const type=m.type==='جهاز'?'جهاز':'مواد';
+    const status=type==='جهاز'?(m.status||'شغال'):'مواد';
+    const key=inventoryStockKey(m);
+    if(!map[key]) map[key]={name,type,status,qty:0};
     if(m.move==='وارد') map[key].qty+=Number(m.qty||0);
     if(m.move==='صادر') map[key].qty-=Number(m.qty||0);
   });
