@@ -2835,13 +2835,39 @@ function renderInKindDonations(){
     </div>`;
   }).join('');
 }
-function markInKindReceived(id,reopen=false){
+async function markInKindReceived(id,reopen=false){
   if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل التبرعات.');return}
   const d=donations.find(x=>String(x.id)===String(id)); if(!d||d.type==='مالي')return;
+  const previous=d.received;
+  const ts=new Date().toISOString();
   d.received=reopen?'لا':'نعم';
+  d.updatedAt=ts;
   localStorage.setItem('warith_donations',JSON.stringify(donations));
-  renderInKindDonations();
-  alert(reopen?'تم إرجاع التبرع إلى غير المستلم ✓':'تم تسجيل استلام التبرع العيني ✓');
+  try{
+    const cfg=warithSyncCfg('donations');
+    const sb=window.warithSupabase||await window.warithSupabaseReady;
+    if(!sb)throw new Error('Supabase غير متاح');
+    window.warithSupabase=sb;
+    const sessionResult=await sb.auth.getSession();
+    if(!sessionResult?.data?.session?.user)throw new Error('لا توجد جلسة Supabase صالحة');
+    const key=cfg.id(d);
+    if(!key||key==='undefined'||key==='null')throw new Error('مفتاح التبرع غير صالح');
+    const {data,error}=await sb.from('client_sync_records').upsert({
+      entity:'donations',record_key:key,data:d,updated_at:ts,deleted:false
+    },{onConflict:'entity,record_key'}).select('entity,record_key,data,updated_at,deleted').single();
+    if(error)throw error;
+    if(!data?.data||String(data.data.received||'لا')!==String(d.received))throw new Error('لم تثبت حالة الاستلام في السحابة');
+    if(warithSyncShadow.donations)warithSyncShadow.donations.set(key,{...d});
+    if(warithSyncDeleted.donations)warithSyncDeleted.donations.delete(key);
+    renderInKindDonations();
+    alert(reopen?'تم إرجاع التبرع إلى غير المستلم ✓':'تم تسجيل استلام التبرع العيني ومزامنته ✓');
+  }catch(e){
+    d.received=previous;
+    localStorage.setItem('warith_donations',JSON.stringify(donations));
+    renderInKindDonations();
+    console.error('حفظ حالة استلام التبرع العيني سحابياً فشل:',e);
+    alert('تعذر حفظ حالة الاستلام على السحابة، لذلك لم يتم تغيير حالة التبرع.\n'+(e?.message||e));
+  }
 }
 
 async function switchDonationTab(tab){const donorsTab=document.getElementById('donorsTab'),recordsTab=document.getElementById('recordsTab'),unpaidTab=document.getElementById('unpaidDonationsTab'),td=document.getElementById('tabDonors'),tr=document.getElementById('tabRecords'),tu=document.getElementById('tabUnpaid');[donorsTab,recordsTab,unpaidTab].forEach(x=>{if(x){x.style.display='none';x.classList.remove('active');}});[td,tr,tu].forEach(x=>{if(x)x.classList.remove('active');});if(tab==='unpaid'){unpaidTab?.classList.add('active');unpaidTab?.style.setProperty('display','block');tu?.classList.add('active');renderUnpaidDonations();return}if(tab==='records'){recordsTab?.classList.add('active');recordsTab?.style.setProperty('display','block');tr?.classList.add('active');await ensureDonationCloudVisible();renderDonations();}else{donorsTab?.classList.add('active');donorsTab?.style.setProperty('display','block');td?.classList.add('active');await ensureDonationCloudVisible();renderDonors();}}
