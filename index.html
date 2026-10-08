@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261008-0155';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261008-0200';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -2672,7 +2672,7 @@ function normalizeWhatsAppNumber(phone){
 function getInKindDonorContact(i){
   const g=inKindDonationsCache[i]; if(!g)return null;
   const donor=donors.find(x=>String(x.id)===String(g.donorId));
-  return {phone:String(g.phone||donor?.phone||'').trim(),address:String(g.address||donor?.address||'').trim()};
+  return {phone:String(donor?.phone||'').trim(),address:String(donor?.address||'').trim()};
 }
 function callInKindDonor(i){
   const c=getInKindDonorContact(i); if(c?.phone) location.href='tel:'+c.phone; else alert('رقم هاتف المتبرع غير مسجل.');
@@ -2712,8 +2712,8 @@ function renderInKindDonations(){
   box.innerHTML=list.map((d,i)=>{
     const donor=donors.find(x=>String(x.id)===String(d.donorId));
     const name=d.donorName||donor?.name||'غير مسجل';
-    const phone=d.phone||donor?.phone||'';
-    const address=d.address||donor?.address||'';
+    const phone=String(donor?.phone||'').trim();
+    const address=String(donor?.address||'').trim();
     const item=d.item||'تبرع عيني';
     const qty=Number(d.qty||0).toLocaleString('en-US');
     const status=d.type==='جهاز'?(d.status||'غير محدد'):'مواد';
