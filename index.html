@@ -2848,31 +2848,40 @@ async function markInKindReceived(id,reopen=false){
   if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل التبرعات.');return}
   const d=donations.find(x=>String(x.id)===String(id)); if(!d||d.type==='مالي')return;
   const previous=d.received;
+  const next=reopen?'لا':'نعم';
   const ts=new Date().toISOString();
-  d.received=reopen?'لا':'نعم';
+  d.received=next;
   d.updatedAt=ts;
-  localStorage.setItem('warith_donations',JSON.stringify(donations));
   try{
     const cfg=warithSyncCfg('donations');
     const sb=window.warithSupabase||await window.warithSupabaseReady;
     if(!sb)throw new Error('Supabase غير متاح');
     window.warithSupabase=sb;
-    const sessionResult=await sb.auth.getSession();
-    if(!sessionResult?.data?.session?.user)throw new Error('لا توجد جلسة Supabase صالحة');
+    if(!warithSyncReady) await initWarithCloudSync();
+    if(!warithSyncReady)throw new Error('مزامنة السحابة غير جاهزة');
     const key=cfg.id(d);
     if(!key||key==='undefined'||key==='null')throw new Error('مفتاح التبرع غير صالح');
-    const {data,error}=await sb.from('client_sync_records').upsert({
-      entity:'donations',record_key:key,data:d,updated_at:ts,deleted:false
-    },{onConflict:'entity,record_key'}).select('entity,record_key,data,updated_at,deleted').single();
+
+    // الحفظ يمر من مسار المزامنة الموحد حتى لا يحدث تعارض مع الحفظ التلقائي.
+    warithSyncLocalSet(cfg,donations);
+    warithSyncShadow.donations.set(key,{...d,updatedAt:ts});
+    await warithSyncPushChanges('donations',true);
+
+    const {data,error}=await sb.from('client_sync_records')
+      .select('entity,record_key,data,updated_at,deleted')
+      .eq('entity','donations').eq('record_key',key).eq('deleted',false).single();
     if(error)throw error;
-    if(!data?.data||String(data.data.received||'لا')!==String(d.received))throw new Error('لم تثبت حالة الاستلام في السحابة');
-    if(warithSyncShadow.donations)warithSyncShadow.donations.set(key,{...d});
-    if(warithSyncDeleted.donations)warithSyncDeleted.donations.delete(key);
+    if(!data?.data||String(data.data.received||'لا')!==String(next)){
+      throw new Error('لم تثبت حالة الاستلام في السحابة');
+    }
+
+    warithSyncDeleted.donations.delete(key);
     renderInKindDonations();
     alert(reopen?'تم إرجاع التبرع إلى غير المستلم ✓':'تم تسجيل استلام التبرع العيني ومزامنته ✓');
   }catch(e){
     d.received=previous;
-    localStorage.setItem('warith_donations',JSON.stringify(donations));
+    d.updatedAt=ts;
+    warithSyncLocalSet(warithSyncCfg('donations'),donations);
     renderInKindDonations();
     console.error('حفظ حالة استلام التبرع العيني سحابياً فشل:',e);
     alert('تعذر حفظ حالة الاستلام على السحابة، لذلك لم يتم تغيير حالة التبرع.\n'+(e?.message||e));
