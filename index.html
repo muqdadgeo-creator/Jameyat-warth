@@ -4102,7 +4102,8 @@ function renderDonorReport(){
 }
 function renderHelpsReport(){
   const box=document.getElementById('reportHelps');
-  const list=sortRecords(helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), 'date', ['familyName','type']);
+  const q=(document.getElementById('reportHelpSearch')?.value||'').trim().toLowerCase();
+  const list=sortRecords(helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)&&(x.familyName+' '+(x.appealId||'')+' '+(x.type||'')+' '+(x.details||'')).toLowerCase().includes(q)), 'date', ['familyName','type']);
   const total=list.reduce((n,x)=>n+Number(x.amount||0),0);
   const dates=list.map(x=>String(x.date||'').slice(0,10)).filter(Boolean).sort();
   const from=document.getElementById('reportFrom')?.value||dates[0]||'';
@@ -4111,13 +4112,14 @@ function renderHelpsReport(){
   const rows=list.map((h,i)=>{
     const f=families.find(x=>Number(x.c)===Number(h.familyCode));
     const family=f?`#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'')}`:(h.familyCode?`#${escapeHtml(h.familyCode)}`:'غير محدد');
-    return `<tr><td style="width:6%">${i+1}</td><td style="width:14%">${escapeHtml(h.date||'')}</td><td style="width:22%">${family}</td><td style="width:15%">${escapeHtml(h.type||'مساعدة')}</td><td style="width:13%" class="report-a4-total">${reportMoney(h.amount)}</td><td>${escapeHtml(h.details||'')}</td></tr>`;
+    return `<tr><td style="width:5%">${i+1}</td><td style="width:19%">${family}</td><td style="width:12%">${escapeHtml(h.appealId||'—')}</td><td style="width:15%">${escapeHtml(h.type||'مساعدة')}</td><td style="width:12%" class="report-a4-total">${reportMoney(h.amount)}</td><td style="width:13%">${escapeHtml(h.date||'')}</td><td>${escapeHtml(h.details||'')}</td></tr>`;
   }).join('');
   const body=`
     <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml(dateText)}</b></div>
     <div class="report-summary-line"><span>عدد المساعدات: ${list.length}</span><span>إجمالي المساعدات: ${reportMoney(total)}</span></div>
-    <div class="report-section-title">تفاصيل المساعدات</div>
-    ${list.length?`<table class="report-a4-table"><thead><tr><th>ت</th><th>التاريخ</th><th>العائلة</th><th>نوع المساعدة</th><th>المبلغ</th><th>التفاصيل</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table>`:`<div class="empty" style="padding:30px;text-align:center">لا توجد مساعدات ضمن الفترة المحددة</div>`}`;
+    <div class="search" style="margin:10px 0"><span>🔎</span><input id="reportHelpSearch" value="${escapeHtml(q)}" oninput="renderHelpsReport()" placeholder="ابحث بالعائلة أو رقم المناشدة أو نوع المساعدة أو التفاصيل"/><button type="button" onclick="document.getElementById('reportHelpSearch').value='';renderHelpsReport()">×</button></div>
+    <div class="report-section-title">آخر المساعدات</div>
+    ${list.length?`<table class="report-a4-table"><thead><tr><th>ت</th><th>العائلة</th><th>رقم المناشدة</th><th>نوع المساعدة</th><th>المبلغ</th><th>التاريخ</th><th>التفاصيل</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td colspan="2"></td></tr></tfoot></table>`:`<div class="empty" style="padding:30px;text-align:center">لا توجد مساعدات ضمن الفترة المحددة</div>`}`;
   box.innerHTML=reportCard('تقرير المساعدات',body);
 }
 function renderDonationsReport(){
