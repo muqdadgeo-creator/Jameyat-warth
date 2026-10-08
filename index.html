@@ -2852,20 +2852,22 @@ async function markInKindReceived(id,reopen=false){
   const ts=new Date().toISOString();
   d.received=next;
   d.updatedAt=ts;
+  const cfg=warithSyncCfg('donations');
+  const sb=window.warithSupabase||await window.warithSupabaseReady;
   try{
-    const cfg=warithSyncCfg('donations');
-    const sb=window.warithSupabase||await window.warithSupabaseReady;
     if(!sb)throw new Error('Supabase غير متاح');
     window.warithSupabase=sb;
 
-    const sessionResult=await sb.auth.getSession();
-    if(!sessionResult?.data?.session?.user)throw new Error('جلسة Supabase غير صالحة');
+    let sessionResult=await sb.auth.getSession();
+    if(!sessionResult?.data?.session?.user){
+      const refreshed=await sb.auth.refreshSession();
+      sessionResult=refreshed;
+    }
+    if(!sessionResult?.data?.session?.user)throw new Error('جلسة Supabase غير صالحة أو منتهية');
 
-    const key=cfg.id(d);
+    const key=String(cfg.id(d)||'');
     if(!key||key==='undefined'||key==='null')throw new Error('مفتاح التبرع غير صالح');
 
-    // نحفظ التبرع الحالي فقط؛ لا نستخدم force sync حتى لا نعيد رفع كل التبرعات
-    // ونسبب تعارضاً مع التبرعات العينية الأخرى.
     const {error}=await sb.from('client_sync_records').upsert({
       entity:'donations',
       record_key:key,
@@ -2876,17 +2878,16 @@ async function markInKindReceived(id,reopen=false){
     if(error)throw error;
 
     warithSyncLocalSet(cfg,donations);
-    warithSyncShadow.donations.set(key,{...d});
-    warithSyncDeleted.donations.delete(key);
+    if(warithSyncShadow.donations)warithSyncShadow.donations.set(key,{...d});
+    if(warithSyncDeleted.donations)warithSyncDeleted.donations.delete(key);
     renderInKindDonations();
     alert(reopen?'تم إرجاع التبرع إلى غير المستلم ✓':'تم تسجيل استلام التبرع العيني ومزامنته ✓');
   }catch(e){
     d.received=previous.received;
     d.updatedAt=previous.updatedAt;
-    warithSyncLocalSet(warithSyncCfg('donations'),donations);
-    renderInKindDonations();
+    try{warithSyncLocalSet(cfg,donations);renderInKindDonations()}catch(_){}
     console.error('حفظ حالة استلام التبرع العيني سحابياً فشل:',e);
-    alert('تعذر حفظ حالة الاستلام في السحابة.\n'+(e?.message||e));
+    alert('تعذر حفظ حالة الاستلام في السحابة.\\n'+(e?.message||e));
   }
 }
 
