@@ -2755,10 +2755,62 @@ function renderInKindDonations(){
   document.getElementById('inKindPendingCount').textContent=pending.length.toLocaleString('en-US');
   document.getElementById('inKindReceivedCount').textContent=received.length.toLocaleString('en-US');
   document.getElementById('inKindQuantityTotal').textContent=all.reduce((n,d)=>n+Number(d.qty||0),0).toLocaleString('en-US');
+
   const q=(document.getElementById('inKindQ')?.value||'').trim().toLowerCase();
-  const list=(inKindDonationTab==='pending'?pending:received).filter(d=>(String(d.donorName||'')+' '+String(d.item||'')+' '+String(d.type||'')+' '+String(d.date||'')).toLowerCase().includes(q)).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-  if(!list.length){box.innerHTML='<div class="empty">لا توجد تبرعات في هذا السجل حالياً</div>';inKindDonationsCache=[];return;}
+  const source=inKindDonationTab==='pending'?pending:received;
+  const list=source.filter(d=>(String(d.donorName||'')+' '+String(d.item||'')+' '+String(d.type||'')+' '+String(d.status||'')+' '+String(d.date||'')).toLowerCase().includes(q))
+    .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+
+  if(!list.length){
+    box.innerHTML='<div class="empty">لا توجد تبرعات في هذا السجل حالياً</div>';
+    inKindDonationsCache=[];
+    return;
+  }
+
   inKindDonationsCache=list;
+
+  // سجل المستلمة: جدول تاريخي مستقل، بدون هاتف أو موقع.
+  if(inKindDonationTab==='received'){
+    box.innerHTML=`
+      <div class="in-kind-history-table-wrap">
+        <table class="in-kind-history-table">
+          <thead><tr>
+            <th>التاريخ</th>
+            <th>المتبرع</th>
+            <th>المادة / الجهاز</th>
+            <th>النوع</th>
+            <th>الحالة</th>
+            <th>الكمية</th>
+            <th>الإجراءات</th>
+          </tr></thead>
+          <tbody>
+            ${list.map(d=>{
+              const name=d.donorName||getInKindDonorByDonation(d)?.name||'غير مسجل';
+              const item=d.item||'تبرع عيني';
+              const qty=Number(d.qty||0).toLocaleString('en-US');
+              const status=d.type==='جهاز'?(d.status||'غير محدد'):'مواد';
+              return `<tr>
+                <td data-label="التاريخ">${escapeHtml(d.date||'—')}</td>
+                <td data-label="المتبرع"><b>${escapeHtml(name)}</b></td>
+                <td data-label="المادة / الجهاز">${escapeHtml(item)}</td>
+                <td data-label="النوع">${escapeHtml(d.type||'—')}</td>
+                <td data-label="الحالة"><span class="in-kind-history-status">${escapeHtml(status)}</span></td>
+                <td data-label="الكمية"><b>${qty}</b></td>
+                <td data-label="الإجراءات">
+                  <div class="in-kind-history-actions">
+                    <button class="action" type="button" onclick="editInKindDonationById(${JSON.stringify(d.id)})">✏️ تعديل</button>
+                    <button class="action" type="button" onclick="markInKindReceived(${JSON.stringify(d.id)},true)">↩️ إرجاع</button>
+                  </div>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    return;
+  }
+
+  // سجل غير المستلمة: يبقى بالبطاقات مع الهاتف والواتساب والموقع.
   box.innerHTML=list.map((d,i)=>{
     const donor=getInKindDonorByDonation(d);
     const name=d.donorName||donor?.name||'غير مسجل';
@@ -2770,16 +2822,16 @@ function renderInKindDonations(){
     const item=d.item||'تبرع عيني';
     const qty=Number(d.qty||0).toLocaleString('en-US');
     const status=d.type==='جهاز'?(d.status||'غير محدد'):'مواد';
-    const received=inKindIsReceived(d);
     return `<div class="in-kind-contact-card">
-      <div class="in-kind-contact-head"><div class="in-kind-avatar">${escapeHtml(name.charAt(0)||'م')}</div><div class="in-kind-contact-main"><div class="in-kind-name">${escapeHtml(name)}</div><div class="in-kind-contact-line">📞 ${escapeHtml(phone||'غير مسجل')}</div><div class="in-kind-contact-line">📍 ${escapeHtml(address||'غير مسجل')}</div></div><span class="in-kind-badge ${received?'received':'pending'}">${received?'تم الاستلام':'غير مستلم'}</span></div>
+      <div class="in-kind-contact-head"><div class="in-kind-avatar">${escapeHtml(name.charAt(0)||'م')}</div><div class="in-kind-contact-main"><div class="in-kind-name">${escapeHtml(name)}</div><div class="in-kind-contact-line">📞 ${escapeHtml(phone||'غير مسجل')}</div><div class="in-kind-contact-line">📍 ${escapeHtml(address||'غير مسجل')}</div></div><span class="in-kind-badge pending">غير مستلم</span></div>
       <div class="in-kind-items"><div class="in-kind-item-row"><div class="item-head"><span>🎁 ${escapeHtml(item)}</span><b>الكمية: ${qty}</b></div><div class="item-meta">التاريخ: ${escapeHtml(d.date||'—')} · النوع: ${escapeHtml(d.type||'—')} · الحالة: ${escapeHtml(status)}</div>${d.notes?'<div class="item-meta">ملاحظات: '+escapeHtml(d.notes)+'</div>':''}</div></div>
       <div class="in-kind-actions">
-${!received?'<button class="in-kind-receive-btn" type="button" onclick="markInKindReceived('+JSON.stringify(d.id)+')">✅ تسجيل الاستلام</button>':'<button class="in-kind-reopen-btn" type="button" onclick="markInKindReceived('+JSON.stringify(d.id)+',true)">↩️ إرجاع لغير المستلم</button>'}
-${phone?'<a class="in-kind-contact-btn" href="tel:'+escapeHtml(phone)+'" title="اتصال">📞</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\'رقم هاتف المتبرع غير مسجل.\')" title="اتصال">📞</button>'}
-${wa?'<a class="in-kind-contact-btn" href="https://wa.me/'+escapeHtml(wa)+'" target="_blank" rel="noopener noreferrer" title="واتساب">💬</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\'رقم هاتف المتبرع غير مسجل.\')" title="واتساب">💬</button>'}
-${mapUrl?'<a class="in-kind-contact-btn" href="'+escapeHtml(mapUrl)+'" target="_blank" rel="noopener noreferrer" title="موقع">📍</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\'موقع المتبرع غير مسجل.\')" title="موقع">📍</button>'}
-<button class="action" type="button" onclick="editInKindDonationById(${JSON.stringify(d.id)})">✏️ تعديل</button></div>
+        <button class="in-kind-receive-btn" type="button" onclick="markInKindReceived(${JSON.stringify(d.id)})">✅ تسجيل الاستلام</button>
+        ${phone?'<a class="in-kind-contact-btn" href="tel:'+escapeHtml(phone)+'" title="اتصال">📞</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\\'رقم هاتف المتبرع غير مسجل.\\')" title="اتصال">📞</button>'}
+        ${wa?'<a class="in-kind-contact-btn" href="https://wa.me/'+escapeHtml(wa)+'" target="_blank" rel="noopener noreferrer" title="واتساب">💬</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\\'رقم هاتف المتبرع غير مسجل.\\')" title="واتساب">💬</button>'}
+        ${mapUrl?'<a class="in-kind-contact-btn" href="'+escapeHtml(mapUrl)+'" target="_blank" rel="noopener noreferrer" title="موقع">📍</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\\'موقع المتبرع غير مسجل.\\')" title="موقع">📍</button>'}
+        <button class="action" type="button" onclick="editInKindDonationById(${JSON.stringify(d.id)})">✏️ تعديل</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -4365,6 +4417,21 @@ try{renderHomeDashboard();}catch(e){}
     .observe(document.body,{childList:true,subtree:true});
 })();
 </script>
+<style>
+/* سجل المستلمة العينية: جدول تاريخي */
+.in-kind-history-table-wrap{width:100%;overflow-x:auto;background:#fff;border-radius:14px;box-shadow:0 2px 10px #0000000b;margin-top:8px}
+.in-kind-history-table{width:100%;min-width:760px;border-collapse:collapse;font-size:10px}
+.in-kind-history-table th{background:#f1f6f4;color:#31574f;font-weight:900;padding:10px 7px;text-align:center;border-bottom:1px solid #dce7e3;white-space:nowrap}
+.in-kind-history-table td{padding:9px 7px;text-align:center;border-bottom:1px solid #edf2f0;vertical-align:middle}
+.in-kind-history-table tbody tr:last-child td{border-bottom:0}
+.in-kind-history-table tbody tr:hover{background:#fafcfb}
+.in-kind-history-status{display:inline-block;background:#e9f5f0;color:#0f5c4d;border-radius:12px;padding:4px 7px;font-size:9px;font-weight:800}
+.in-kind-history-actions{display:flex;gap:5px;justify-content:center;align-items:center}
+.in-kind-history-actions .action{margin:0;padding:6px 7px;font-size:9px;white-space:nowrap}
+@media(max-width:700px){
+  .in-kind-history-table-wrap{overflow-x:auto}
+}
+</style>
 </body>
 <script>
 /* استرجاع حالتي المساعدات المحذوفتين */
