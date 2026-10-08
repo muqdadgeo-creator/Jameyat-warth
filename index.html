@@ -2799,6 +2799,7 @@ function renderInKindDonations(){
                 <td data-label="الإجراءات">
                   <div class="in-kind-history-actions">
                     <button class="action" type="button" onclick="editInKindDonationById(${JSON.stringify(d.id)})">✏️ تعديل</button>
+                    <button class="action" type="button" onclick="hideInKindDonationById(${JSON.stringify(d.id)})">🚫 حجب</button>
                     <button class="action" type="button" onclick="markInKindReceived(${JSON.stringify(d.id)},true)">↩️ إرجاع</button>
                   </div>
                 </td>
@@ -2831,10 +2832,18 @@ function renderInKindDonations(){
         ${wa?'<a class="in-kind-contact-btn" href="https://wa.me/'+escapeHtml(wa)+'" target="_blank" rel="noopener noreferrer" title="واتساب">💬</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\'رقم هاتف المتبرع غير مسجل.\')" title="واتساب">💬</button>'}
         ${mapUrl?'<a class="in-kind-contact-btn" href="'+escapeHtml(mapUrl)+'" target="_blank" rel="noopener noreferrer" title="موقع">📍</a>':'<button class="in-kind-contact-btn" type="button" onclick="alert(\'موقع المتبرع غير مسجل.\')" title="موقع">📍</button>'}
         <button class="action" type="button" onclick="editInKindDonationById(${JSON.stringify(d.id)})">✏️ تعديل</button>
+        <button class="action" type="button" onclick="hideInKindDonationById(${JSON.stringify(d.id)})">🚫 حجب</button>
       </div>
     </div>`;
   }).join('');
 }
+async function hideInKindDonationById(id){
+  if(!hasAction('edit','donations')){alert('ليس لديك صلاحية حجب التبرعات.');return}
+  const idx=donations.findIndex(x=>String(x.id)===String(id));
+  if(idx<0)return;
+  await hideRecord('donations',idx,'التبرع العيني');
+}
+
 async function markInKindReceived(id,reopen=false){
   if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل التبرعات.');return}
   const d=donations.find(x=>String(x.id)===String(id)); if(!d||d.type==='مالي')return;
@@ -3399,6 +3408,12 @@ function inventoryAvailableQty(excludeIndex=-1){
   });
   return map;
 }
+// أرقام العرض تبدأ من 1 فقط، ولا تغيّر معرفات السجلات أو بيانات السحابة.
+function inventoryDisplayNumber(index, visibleList){
+  const pos=visibleList.findIndex(x=>x===inventoryMovements[index]);
+  return pos>=0?pos+1:'';
+}
+
 function inventorySummary(){
   const map={};
   inventoryMovements.filter(m=>!isHiddenRecord(m)).forEach(m=>{
