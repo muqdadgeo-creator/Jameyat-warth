@@ -2671,8 +2671,14 @@ function normalizeWhatsAppNumber(phone){
 }
 function getInKindDonorContact(i){
   const g=inKindDonationsCache[i]; if(!g)return null;
-  const donor=donors.find(x=>String(x.id)===String(g.donorId));
-  return {phone:String(donor?.phone||'').trim(),address:String(donor?.address||'').trim()};
+  const donationName=String(g.donorName||'').trim().toLowerCase();
+  let donor=donors.find(x=>String(x.id)===String(g.donorId));
+  // بعض السجلات القديمة قد تحمل donorId غير مطابق؛ عندها نرجع لسجل المتبرع بالاسم المحفوظ في التبرع.
+  if(donor&&donationName&&String(donor.name||'').trim().toLowerCase()!==donationName){
+    donor=donors.find(x=>String(x.name||'').trim().toLowerCase()===donationName)||donor;
+  }
+  if(!donor&&donationName) donor=donors.find(x=>String(x.name||'').trim().toLowerCase()===donationName);
+  return {phone:String(donor?.phone||'').trim(),address:String(donor?.address||'').trim(),donor};
 }
 function callInKindDonor(i){
   const c=getInKindDonorContact(i); if(c?.phone) location.href='tel:'+c.phone; else alert('رقم هاتف المتبرع غير مسجل.');
@@ -2718,7 +2724,12 @@ function renderInKindDonations(){
   if(!list.length){box.innerHTML='<div class="empty">لا توجد تبرعات في هذا السجل حالياً</div>';inKindDonationsCache=[];return;}
   inKindDonationsCache=list;
   box.innerHTML=list.map((d,i)=>{
-    const donor=donors.find(x=>String(x.id)===String(d.donorId));
+    const donationName=String(d.donorName||'').trim().toLowerCase();
+    let donor=donors.find(x=>String(x.id)===String(d.donorId));
+    if(donor&&donationName&&String(donor.name||'').trim().toLowerCase()!==donationName){
+      donor=donors.find(x=>String(x.name||'').trim().toLowerCase()===donationName)||donor;
+    }
+    if(!donor&&donationName) donor=donors.find(x=>String(x.name||'').trim().toLowerCase()===donationName);
     const name=d.donorName||donor?.name||'غير مسجل';
     const phone=String(donor?.phone||'').trim();
     const address=String(donor?.address||'').trim();
