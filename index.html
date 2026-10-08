@@ -4160,7 +4160,9 @@ function renderDonationsReport(){
 function renderExpensesReport(){
   const box=document.getElementById('reportExpenses');
   if(!box)return;
-  const list=sortRecords(expenses.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)),'date',['details','category']);
+  const search=String(document.getElementById('reportExpenseSearch')?.value||'').trim().toLowerCase();
+  const normalize=v=>String(v||'').toLowerCase().replace(/[أإآٱ]/g,'ا');
+  const list=sortRecords(expenses.filter(x=>{if(isHiddenRecord(x)||!reportDateOk(x.date))return false;if(!search)return true;const category=effectiveExpenseCategory(x);return normalize(category).includes(normalize(search))||normalize(x.details).includes(normalize(search));}),'date',['details','category']);
   const total=list.reduce((n,x)=>n+Number(x.amount||0),0);
   const cats=['انشائية','مواد احتياطية','ايجار','نقل','صيانة','أخرى'];
   const stats={}; cats.forEach(c=>stats[c]=0);
@@ -4182,6 +4184,7 @@ function renderExpensesReport(){
   </tr>`).join('');
   const body=`
     <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml(dateText)}</b></div>
+    <div class="actions" style="margin:10px 0 12px;display:flex;gap:7px;align-items:center"><div class="search" style="flex:1;margin:0"><span>🔎</span><input id="reportExpenseSearch" value="${escapeHtml(search)}" placeholder="ابحث بالصنف أو التفاصيل" onkeydown="if(event.key==='Enter')renderExpensesReport()"/></div><button class="action primary" type="button" onclick="renderExpensesReport()">بحث</button>${search?`<button class="action" type="button" onclick="document.getElementById('reportExpenseSearch').value='';renderExpensesReport()">مسح</button>`:''}</div>
     <div class="report-summary-line"><span>عدد المصروفات: ${list.length}</span><span>إجمالي المصروفات: ${reportMoney(total)}</span></div>
     <div class="report-section-title">المصروفات حسب الصنف</div>
     <div class="detail-grid">${summary}</div>
