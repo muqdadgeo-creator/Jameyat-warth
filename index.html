@@ -4102,7 +4102,15 @@ function renderDonorReport(){
 }
 function renderHelpsReport(){
   const box=document.getElementById('reportHelps');
-  const list=sortRecords(helps.filter(x=>!isHiddenRecord(x)&&reportDateOk(x.date)), 'date', ['familyName','type']);
+  if(!box)return;
+  const search=String(document.getElementById('reportHelpsSearch')?.value||'').trim();
+  const normalize=v=>String(v||'').toLowerCase().replace(/[أإآٱ]/g,'ا');
+  const list=sortRecords(helps.filter(x=>{
+    if(isHiddenRecord(x)||!reportDateOk(x.date))return false;
+    if(!search)return true;
+    const family=families.find(f=>Number(f.c)===Number(x.familyCode));
+    return normalize([x.familyName,x.familyCode,family?.head,family?.n,x.appealId,x.type,x.amount,x.date,x.details].join(' ')).includes(normalize(search));
+  }), 'date', ['familyName','type']);
   const total=list.reduce((n,x)=>n+Number(x.amount||0),0);
   const dates=list.map(x=>String(x.date||'').slice(0,10)).filter(Boolean).sort();
   const from=document.getElementById('reportFrom')?.value||dates[0]||'';
@@ -4115,6 +4123,7 @@ function renderHelpsReport(){
   }).join('');
   const body=`
     <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml(dateText)}</b></div>
+    <div class="actions" style="margin:10px 0 12px;display:flex;gap:7px;align-items:center"><div class="search" style="flex:1;margin:0"><span>🔎</span><input id="reportHelpsSearch" value="${escapeHtml(search)}" placeholder="ابحث بالعائلة أو رقم المناشدة أو النوع أو التفاصيل" onkeydown="if(event.key==='Enter')renderHelpsReport()"/></div><button class="action primary" type="button" onclick="renderHelpsReport()">بحث</button>${search?`<button class="action" type="button" onclick="document.getElementById('reportHelpsSearch').value='';renderHelpsReport()">مسح</button>`:''}</div>
     <div class="report-summary-line"><span>عدد المساعدات: ${list.length}</span><span>إجمالي المساعدات: ${reportMoney(total)}</span></div>
     <div class="report-section-title">تفاصيل المساعدات</div>
     ${list.length?`<table class="report-a4-table"><thead><tr><th>ت</th><th>التاريخ</th><th>العائلة</th><th>نوع المساعدة</th><th>المبلغ</th><th>التفاصيل</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="font-weight:900">الإجمالي</td><td class="report-a4-total">${reportMoney(total)}</td><td></td></tr></tfoot></table>`:`<div class="empty" style="padding:30px;text-align:center">لا توجد مساعدات ضمن الفترة المحددة</div>`}`;
