@@ -3099,7 +3099,9 @@ function renderDonations(){
     const donorObj=donors.find(x=>Number(x.id)===Number(d.donorId));
     const donor=d.donorName||donorObj?.name||'غير محدد';
     const donorCode=donorObj?.donorCode||donorObj?.code||d.donorCode||d.donorId||'—';
-    const beneficiary=d.familyName||(d.familyCode?('عائلة #'+d.familyCode):(String(d.notes||d.details||'').trim()?(String(d.notes||d.details||'').trim()):((d.allocation==='عام'?'عام':'غير محدد'))));
+    const linkedFamily=d.familyCode?families.find(f=>String(f.c)===String(d.familyCode)):null;
+    const savedBeneficiary=String(d.familyName||'').trim();
+    const beneficiary=(savedBeneficiary&&savedBeneficiary!=='غير محدد'?savedBeneficiary:'')||linkedFamily?.n||linkedFamily?.head||String(d.beneficiaryName||d.beneficiary||d.recipientName||'').trim()||String(d.notes||d.details||'').trim()||(d.allocation==='عام'?'عام':(d.familyCode?'عائلة #'+d.familyCode:'غير محدد'));
     const amount=d.type==='مالي'?Number(d.amount||0).toLocaleString('en-US')+' د.ع':(Number(d.qty||0).toLocaleString('en-US')+' × '+(d.item||'تبرع عيني'));
     return `<tr>
       <td class="donation-no">${i+1}</td>
