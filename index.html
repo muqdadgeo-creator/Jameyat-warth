@@ -4188,7 +4188,9 @@ function renderDonorReport(){
   const totalsByAllocation=new Map();
   financial.forEach(x=>{
     const rawAllocation=String(x.allocation||'').trim();
-    const label=rawAllocation==='خاص'?'خاص':getAllocationLabel(x);
+    const normalizedLabel=rawAllocation==='خاص'?'خاص':getAllocationLabel(x);
+    const knownLabels=new Set(['رصيد الجمعية / تبرعات عامة','صناديق الجمعية','خمس السادة','خمس / سهم الإمام','أخرى','خاص']);
+    const label=knownLabels.has(normalizedLabel)?normalizedLabel:'أخرى';
     totalsByAllocation.set(label,(totalsByAllocation.get(label)||0)+Number(x.amount||0));
   });
   const allocationCards=[...totalsByAllocation.entries()]
@@ -4230,7 +4232,7 @@ function renderDonorReport(){
         <thead><tr><th>ت</th><th>المستفيد</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead>
         <tbody>${rows||'<tr><td colspan="5">لا توجد تبرعات ضمن الفترة</td></tr>'}</tbody>
       </table>
-    </div>>`);
+    </div>`);
 }
 function renderHelpsReport(){
   const box=document.getElementById('reportHelps');
