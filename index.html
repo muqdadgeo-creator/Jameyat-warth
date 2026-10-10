@@ -4152,6 +4152,7 @@ function reportDonorSearchRender(){
 }
 function renderDonorReport(){
   const box=document.getElementById('reportDonor');
+  if(!box)return;
   const id=box.dataset.donor||'';
   if(!id){
     reportDonorSearchRender();
@@ -4159,13 +4160,37 @@ function renderDonorReport(){
   }
   const dlist=sortRecords(donations.filter(d=>!isHiddenRecord(d)&&String(d.donorId)===String(id)&&reportDateOk(d.date)), 'date', ['donorName','item']);
   const d=donors.find(x=>String(x.id)===String(id));
-  const getBeneficiary=(x)=>{
-    const fc=x.familyCode??x.familyId??x.beneficiaryFamilyCode??x.beneficiaryFamilyId??x.cFamily??x.c??'';
-    if(fc!==''&&fc!=null) return '#'+String(fc).replace(/^#/,'');
-    return String(x.allocation||x.beneficiary||x.designation||'عام').trim()||'عام';
+  const allocationLabels={
+    'عام':'رصيد الجمعية / تبرعات عامة',
+    'رصيد الجمعية':'رصيد الجمعية / تبرعات عامة',
+    'تبرعات عامة':'رصيد الجمعية / تبرعات عامة',
+    'صناديق':'صناديق الجمعية',
+    'صناديق الجمعية':'صناديق الجمعية',
+    'خمس السادة خمس':'خمس السادة',
+    'خمس السادة':'خمس السادة',
+    'سهم الإمام':'خمس / سهم الإمام',
+    'خمس / سهم الإمام':'خمس / سهم الإمام',
+    'أخرى':'أخرى'
   };
+  const getAllocationLabel=(x)=>{
+    const allocation=String(x.allocation||'').trim();
+    if(allocation==='خاص'){
+      const fc=x.familyCode??x.familyId??x.beneficiaryFamilyCode??x.beneficiaryFamilyId??x.cFamily??x.c??'';
+      return fc!==''&&fc!=null?'#'+String(fc).replace(/^#/,''):'رمز العائلة غير مسجل';
+    }
+    return allocationLabels[allocation]||allocation||'—';
+  };
+  const financial=dlist.filter(x=>x.type==='مالي');
+  const totalsByAllocation=new Map();
+  financial.forEach(x=>{
+    const label=getAllocationLabel(x);
+    totalsByAllocation.set(label,(totalsByAllocation.get(label)||0)+Number(x.amount||0));
+  });
+  const allocationCards=[...totalsByAllocation.entries()]
+    .sort((a,b)=>a[0].localeCompare(b[0],'ar'))
+    .map(([label,amount])=>`<div class="info"><small>${escapeHtml(label)}</small><b>${reportMoney(amount)}</b></div>`).join('');
   const rows=dlist.map((x,i)=>{
-    const beneficiary=getBeneficiary(x);
+    const beneficiary=getAllocationLabel(x);
     return `<tr>
       <td>${i+1}</td>
       <td>${escapeHtml(beneficiary)}</td>
@@ -4174,14 +4199,16 @@ function renderDonorReport(){
       <td>${escapeHtml(x.type==='مالي'?(x.paid||'غير محدد'):'—')}</td>
     </tr>`;
   }).join('');
-  const total=dlist.filter(x=>x.type==='مالي').reduce((n,x)=>n+Number(x.amount||0),0);
+  const total=financial.reduce((n,x)=>n+Number(x.amount||0),0);
   box.innerHTML=reportCard(`👤 ${escapeHtml(d?.name||'المتبرع')}`,`
     <div class="actions"><button class="action" onclick="document.getElementById('reportDonor').dataset.donor='';renderDonorReport()">← سجل المتبرعين</button></div>
     <div class="sub">الهاتف: ${escapeHtml(d?.phone||'غير مسجل')}</div>
     <div style="margin-top:8px;font-weight:900">عدد التبرعات: ${dlist.length} · مجموع التبرعات المالية: ${reportMoney(total)}</div>
+    <div class="report-section-title" style="margin-top:14px">مجموع التبرعات حسب التخصيص</div>
+    <div class="detail-grid">${allocationCards||'<div class="empty">لا توجد تبرعات مالية ضمن الفترة المحددة</div>'}</div>
     <div style="overflow-x:auto;margin-top:12px">
       <table class="report-table" style="width:100%;border-collapse:collapse;text-align:center">
-        <thead><tr><th>ت</th><th>المتبرع</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead>
+        <thead><tr><th>ت</th><th>المستفيد</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead>
         <tbody>${rows||'<tr><td colspan="5">لا توجد تبرعات ضمن الفترة</td></tr>'}</tbody>
       </table>
     </div>`);
