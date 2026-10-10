@@ -4174,23 +4174,28 @@ function renderDonorReport(){
   };
   const getAllocationLabel=(x)=>{
     const allocation=String(x.allocation||'').trim();
+    return allocationLabels[allocation]||allocation||'—';
+  };
+  const getTableBeneficiary=(x)=>{
+    const allocation=String(x.allocation||'').trim();
     if(allocation==='خاص'){
       const fc=x.familyCode??x.familyId??x.beneficiaryFamilyCode??x.beneficiaryFamilyId??x.cFamily??x.c??'';
       return fc!==''&&fc!=null?'#'+String(fc).replace(/^#/,''):'رمز العائلة غير مسجل';
     }
-    return allocationLabels[allocation]||allocation||'—';
+    return getAllocationLabel(x);
   };
   const financial=dlist.filter(x=>x.type==='مالي');
   const totalsByAllocation=new Map();
   financial.forEach(x=>{
-    const label=getAllocationLabel(x);
+    const rawAllocation=String(x.allocation||'').trim();
+    const label=rawAllocation==='خاص'?'خاص':getAllocationLabel(x);
     totalsByAllocation.set(label,(totalsByAllocation.get(label)||0)+Number(x.amount||0));
   });
   const allocationCards=[...totalsByAllocation.entries()]
     .sort((a,b)=>a[0].localeCompare(b[0],'ar'))
-    .map(([label,amount])=>`<div class="info"><small>${escapeHtml(label)}</small><b>${reportMoney(amount)}</b></div>`).join('');
+    .map(([label,amount])=>`<div class="donor-allocation-card"><small>${escapeHtml(label)}</small><b>${reportMoney(amount)}</b></div>`).join('');
   const rows=dlist.map((x,i)=>{
-    const beneficiary=getAllocationLabel(x);
+    const beneficiary=getTableBeneficiary(x);
     return `<tr>
       <td>${i+1}</td>
       <td>${escapeHtml(beneficiary)}</td>
@@ -4219,7 +4224,7 @@ function renderDonorReport(){
     <div class="sub">الهاتف: ${escapeHtml(d?.phone||'غير مسجل')}</div>
     <div style="margin-top:8px;font-weight:900">عدد التبرعات: ${dlist.length} · مجموع التبرعات المالية: ${reportMoney(total)}</div>
     <div class="report-section-title" style="margin-top:14px">مجموع التبرعات حسب التخصيص</div>
-    <div class="donor-allocation-grid">${allocationCards.replace(/<div class="info">/g, '<div class="donor-allocation-card">')||'<div class="empty">لا توجد تبرعات مالية ضمن الفترة المحددة</div>'}</div>
+    <div class="donor-allocation-grid">${allocationCards||'<div class="empty">لا توجد تبرعات مالية ضمن الفترة المحددة</div>'}</div>
     <div class="donor-report-table-wrap">
       <table class="report-table donor-report-table">
         <thead><tr><th>ت</th><th>المستفيد</th><th>التاريخ</th><th>المبلغ</th><th>التسديد</th></tr></thead>
