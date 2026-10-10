@@ -2233,7 +2233,7 @@ function fallbackCopyExportText(textValue,done){
 async function saveExportCardPng(title,textValue){
  const safeTitle=String(title||'بطاقة').trim()||'بطاقة',safeText=String(textValue||'');
  const escapeXml=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
- const wrapLine=(line,max=48)=>{const words=String(line??'').split(/\\s+/).filter(Boolean),out=[];let cur='';if(!words.length)return [''];for(const w of words){if(!cur){cur=w;continue}if((cur+' '+w).length<=max)cur+=' '+w;else{out.push(cur);cur=w}}if(cur)out.push(cur);return out};
+ const wrapLine=(line,max=48)=>{const words=String(line??'').split(/\s+/).filter(Boolean),out=[];let cur='';if(!words.length)return [''];for(const w of words){if(!cur){cur=w;continue}if((cur+' '+w).length<=max)cur+=' '+w;else{out.push(cur);cur=w}}if(cur)out.push(cur);return out};
  const lines=[];safeText.split(/\\r?\\n/).forEach(line=>lines.push(...wrapLine(line)));
  const lineH=42,top=150,bottom=55,height=Math.max(360,top+lines.length*lineH+bottom);
  const textNodes=lines.map((line,i)=>'<text x="680" y="'+(top+i*lineH)+'" text-anchor="end" direction="rtl" unicode-bidi="plaintext" font-family="Tahoma,Arial,sans-serif" font-size="25" fill="#23463e">'+escapeXml(line)+'</text>').join('');
@@ -3071,14 +3071,14 @@ function deleteDonation(i){if(!hasAction('delete','donations')){alert('ليس ل
 function normalizeDonationSearchText(value){
   return String(value==null?'':value)
     .toLowerCase()
-    .replace(/[\\u064B-\\u065F\\u0670\\u0640]/g,'')
+    .replace(/[\u064B-\u065F\u0670\u0640]/g,'')
     .replace(/[أإآٱ]/g,'ا')
     .replace(/ى/g,'ي')
     .replace(/ؤ/g,'و')
     .replace(/ئ/g,'ي')
-    .replace(/[^\\p{L}\\p{N}]+/gu,' ')
+    .replace(/[^\p{L}\p{N}]+/gu,' ')
     .trim()
-    .replace(/\\s+/g,' ');
+    .replace(/\s+/g,' ');
 }
 function donationSearchText(d){
   const donorObj=(typeof donors!=='undefined'?donors:[]).find(x=>String(x.id)===String(d.donorId));
