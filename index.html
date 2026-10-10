@@ -3101,7 +3101,7 @@ function renderDonations(){
     const donorCode=donorObj?.donorCode||donorObj?.code||d.donorCode||d.donorId||'—';
     const linkedFamily=d.familyCode?families.find(f=>String(f.c)===String(d.familyCode)):null;
     const savedBeneficiary=String(d.familyName||'').trim();
-    const beneficiary=(savedBeneficiary&&savedBeneficiary!=='غير محدد'?savedBeneficiary:'')||linkedFamily?.n||linkedFamily?.head||String(d.beneficiaryName||d.beneficiary||d.recipientName||'').trim()||String(d.notes||'').trim()||String(d.allocation||'').trim()||String(d.details||'').trim()||(d.familyCode?'عائلة #'+d.familyCode:'غير محدد');
+    const beneficiary=(savedBeneficiary&&savedBeneficiary!=='غير محدد'?savedBeneficiary:'')||linkedFamily?.n||linkedFamily?.head||String(d.beneficiaryName||d.beneficiary||d.recipientName||'').trim()||String(d.notes||'').trim()||(({ 'عام':'رصيد الجمعية / تبرعات عامة','صناديق':'صناديق الجمعية','خمس السادة خمس':'خمس السادة','سهم الإمام':'خمس / سهم الإمام' })[String(d.allocation||'').trim()]||String(d.allocation||'').trim())||String(d.details||'').trim()||(d.familyCode?'عائلة #'+d.familyCode:'غير محدد');
     const amount=d.type==='مالي'?Number(d.amount||0).toLocaleString('en-US')+' د.ع':(Number(d.qty||0).toLocaleString('en-US')+' × '+(d.item||'تبرع عيني'));
     return `<tr>
       <td class="donation-no">${i+1}</td>
