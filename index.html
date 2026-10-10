@@ -3068,10 +3068,36 @@ function editDonation(i){
 }
 
 function deleteDonation(i){if(!hasAction('delete','donations')){alert('ليس لديك صلاحية حذف التبرعات.');return}if(!donations[i])return;if(!confirm('حذف هذا التبرع؟'))return;donations.splice(i,1);localStorage.setItem('warith_donations',JSON.stringify(donations));renderDonations();}
+function normalizeDonationSearchText(value){
+  return String(value==null?'':value)
+    .toLowerCase()
+    .replace(/[\\u064B-\\u065F\\u0670\\u0640]/g,'')
+    .replace(/[أإآٱ]/g,'ا')
+    .replace(/ى/g,'ي')
+    .replace(/ؤ/g,'و')
+    .replace(/ئ/g,'ي')
+    .replace(/[^\\p{L}\\p{N}]+/gu,' ')
+    .trim()
+    .replace(/\\s+/g,' ');
+}
+function donationSearchText(d){
+  const donorObj=(typeof donors!=='undefined'?donors:[]).find(x=>String(x.id)===String(d.donorId));
+  const linkedFamily=d.familyCode&&typeof families!=='undefined'?families.find(f=>String(f.c)===String(d.familyCode)):null;
+  const allocationLabels={'عام':'رصيد الجمعية / تبرعات عامة','صناديق':'صناديق الجمعية','خمس السادة خمس':'خمس السادة','سهم الإمام':'خمس / سهم الإمام'};
+  const allocation=String(d.allocation||'').trim();
+  return normalizeDonationSearchText([
+    d.id,d.donorName,donorObj?.name,donorObj?.donorCode,donorObj?.code,
+    d.familyName,d.beneficiaryName,d.beneficiary,d.recipientName,
+    linkedFamily?.n,linkedFamily?.head,d.familyCode,
+    d.item,d.type,d.receipt,d.receiptId,d.allocation,allocationLabels[allocation],
+    d.notes,d.details,d.description,d.amount,d.qty,d.date,d.paymentType,d.paid
+  ].filter(v=>v!==undefined&&v!==null).join(' '));
+}
 function renderDonations(){
-  const q=(document.getElementById('donationQ')?.value||'').trim().toLowerCase();
+  const q=normalizeDonationSearchText(document.getElementById('donationQ')?.value||'');
+  const terms=q.split(' ').filter(Boolean);
   const filtered=donations.filter(d=>!isHiddenRecord(d)&&(donationTypeFilter==='الكل'||d.type===donationTypeFilter)&&
-      (String(d.id)+' '+(d.donorName||'')+' '+(d.familyName||'')+' '+(d.item||'')+' '+(d.type||'')+' '+(d.receipt||'')+' '+(d.allocation||'')).toLowerCase().includes(q));
+      terms.every(term=>donationSearchText(d).includes(term)));
   const a=filtered.slice().sort((x,y)=>{
     let c=0;
     if(donationSortKey==='date'){
