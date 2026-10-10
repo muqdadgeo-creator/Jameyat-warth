@@ -4170,7 +4170,7 @@ function renderHelpsReport(){
   const dateText=from||to?`${from||'—'} إلى ${to||'—'}`:'كل الفترات';
   const rows=list.map((h,i)=>{
     const f=families.find(x=>Number(x.c)===Number(h.familyCode));
-    const family=f?`#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'')}`:(h.familyCode?`#${escapeHtml(h.familyCode)}`:'غير محدد');
+    const family=f?`#${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'')}`:(String(h.familyName||'').trim()?escapeHtml(h.familyName):h.familyCode?`#${escapeHtml(h.familyCode)}`:'غير محدد');
     return `<tr><td style="width:6%">${i+1}</td><td style="width:14%">${escapeHtml(h.date||'')}</td><td style="width:22%">${family}</td><td style="width:15%">${escapeHtml(h.type||'مساعدة')}</td><td style="width:13%" class="report-a4-total">${reportMoney(h.amount)}</td><td>${escapeHtml(h.details||'')}</td></tr>`;
   }).join('');
   const body=`
