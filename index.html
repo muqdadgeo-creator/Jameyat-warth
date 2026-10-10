@@ -3868,7 +3868,39 @@ function openProgramDetail(i){
   document.body.appendChild(box);
 }
 function renderProgramDetailView(){const overlay=document.getElementById('programDetailOverlay');if(!overlay)return;const i=programs.findIndex(p=>p===programs.find((_,idx)=>idx===editingActivityIndex));}
-function saveProgramRecipients(i){if(!programs[i])return;programs[i].families=programSelectedFamilies.map(v=>({familyCode:Number(v.familyCode),received:!!v.received}));localStorage.setItem('warith_programs',JSON.stringify(programs));document.getElementById('programDetailOverlay')?.remove();renderActivities();alert('تم حفظ حالة الاستلام ✓');}
+async function saveProgramRecipients(i){
+  const program=programs[i];
+  if(!program)return;
+  const savedFamilies=programSelectedFamilies.map(v=>({familyCode:Number(v.familyCode),received:!!v.received}));
+  program.families=savedFamilies;
+  program.updatedAt=new Date().toISOString();
+  localStorage.setItem('warith_programs',JSON.stringify(programs));
+  try{
+    const sb=await window.warithSupabaseReady;
+    if(!sb)throw new Error('Supabase غير متاح');
+    window.warithSupabase=sb;
+    const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+    if(sessionError)throw sessionError;
+    if(!sessionData?.session?.user)throw new Error('يرجى تسجيل الدخول للمزامنة السحابية');
+    const recordKey=String(program.id??'');
+    if(!recordKey||recordKey==='undefined'||recordKey==='null')throw new Error('معرّف البرنامج غير صالح');
+    const {error}=await sb.from('client_sync_records').upsert({
+      entity:'programs',
+      record_key:recordKey,
+      data:program,
+      updated_at:program.updatedAt,
+      deleted:false
+    },{onConflict:'entity,record_key'});
+    if(error)throw error;
+    if(typeof warithSyncShadow!=='undefined'&&warithSyncShadow.programs)warithSyncShadow.programs.set(recordKey,{...program,families:savedFamilies.map(v=>({...v}))});
+    document.getElementById('programDetailOverlay')?.remove();
+    renderActivities();
+    alert('تم حفظ حالة الاستلام ومزامنتها سحابياً ✓');
+  }catch(e){
+    console.error('حفظ حالة استلام عوائل البرنامج سحابياً فشل:',e);
+    alert('تم حفظ التغيير محلياً، لكن تعذرت مزامنته سحابياً. لا تحدّث الصفحة قبل إعادة المحاولة.\nالسبب: '+(e?.message||'خطأ غير معروف'));
+  }
+}
 
 function expenseCategoryFromDetails(details){const d=String(details||'').toLowerCase().replace(/[أإآٱ]/g,'ا');if(/ايجار/.test(d))return 'ايجار';if(/نقل|نقليات|اجرة نقل|اجور نقل/.test(d))return 'نقل';if(/صيانة|تصليح|تبريد/.test(d)){if(/احتياطية/.test(d))return 'مواد احتياطية';return 'صيانة'}if(/انشائية|انشائية/.test(d))return 'انشائية';if(/احتياطية|مواد احتياطية/.test(d))return 'مواد احتياطية';return 'أخرى'}
 function effectiveExpenseCategory(x){const c=String(x?.category||'').trim();if(c==='إنشائية')return 'انشائية';if(c==='احتياطية')return 'مواد احتياطية';if(c==='مصروفات الجمعية'||!c){return expenseCategoryFromDetails(x?.details)}if(c==='مواد احتياطية')return 'مواد احتياطية';return c}
