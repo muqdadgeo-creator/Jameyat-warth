@@ -498,7 +498,7 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div class="card">
 <div class="sub" style="margin-bottom:9px">يعرض آخر مساعدة مسجلة وآخر برنامج استلام مؤكد لكل عائلة. تاريخ استلام البرنامج يعتمد تاريخ إنشاء البرنامج، ولا يُحتسب إلا إذا كانت حالة العائلة «استلم».</div>
 <div class="search"><span>🔎</span><input id="followupQ" oninput="renderFamilyFollowup()" placeholder="ابحث برقم العائلة أو اسم رب الأسرة"/></div>
-<label class="fl">حالة العائلة</label><select class="forminput" id="followupStatus" onchange="renderFamilyFollowup()"><option value="الكل">كل الحالات</option><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select>
+<label class="fl">حالة العائلة</label><select class="forminput" id="followupStatus" onchange="renderFamilyFollowup()"><option value="الكل">كل الحالات</option><option>مستمر</option><option>مفتوح</option></select>
 <label class="fl" style="margin-top:9px">أنواع آخر مساعدة (يمكن اختيار أكثر من نوع)</label><select class="forminput" id="followupAidTypes" multiple size="4" onchange="renderFamilyFollowup()" style="min-height:90px"></select>
 <label class="fl" style="margin-top:9px">البرنامج المستلم (يمكن اختيار أكثر من برنامج)</label><select class="forminput" id="followupPrograms" multiple size="4" onchange="renderFamilyFollowup()" style="min-height:90px"></select>
 <div style="display:flex;gap:8px;margin-top:10px"><button class="action primary" type="button" onclick="resetFamilyFollowupFilters()">إعادة ضبط الفلاتر</button><button class="action" type="button" id="followupSortBtn" onclick="toggleFamilyFollowupSort()">الترتيب: الأحدث أولاً ↓</button></div>
@@ -2272,7 +2272,7 @@ function renderFamilyFollowup(){
   const status=document.getElementById('followupStatus')?.value||'الكل';
   const selectedAid=new Set(Array.from(document.getElementById('followupAidTypes')?.selectedOptions||[]).map(o=>o.value));
   const selectedPrograms=new Set(Array.from(document.getElementById('followupPrograms')?.selectedOptions||[]).map(o=>o.value));
-  const rows=families.filter(f=>!isHiddenRecord(f)&&(!q||normalizeArabicSearch([f.c,f.n,f.head,f.i].join(' ')).includes(q))&&(status==='الكل'||String(f.st||'')===status)).map(f=>{
+  const rows=families.filter(f=>!isHiddenRecord(f)&&String(f.st||'').trim()!=='مغلق'&&(!q||normalizeArabicSearch([f.c,f.n,f.head,f.i].join(' ')).includes(q))&&(status==='الكل'||String(f.st||'')===status)).map(f=>{
     const aid=followupLatestAid(f.c),program=followupLatestReceivedProgram(f.c);
     return {f,aid,program,lastDate:Math.max(followupDateValue(aid?.date),followupDateValue(program?.date))};
   }).filter(r=>(!selectedAid.size||(r.aid&&selectedAid.has(String(r.aid.type||'').trim())))&&(!selectedPrograms.size||(r.program&&selectedPrograms.has(String(r.program.name||'').trim()))));
