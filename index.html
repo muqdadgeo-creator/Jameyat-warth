@@ -483,6 +483,7 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div style="display:flex;gap:8px;margin-top:9px"><button class="action primary" onclick="resetFamilyFilters()" style="flex:1" type="button">إعادة ضبط الفلاتر</button><button class="action" onclick="toggleFamilyFilters()" style="flex:1" type="button">إخفاء</button></div>
 </div>
 <div class="actions"><button class="action primary" onclick="showScreen('add-family')">＋ إضافة عائلة</button><button class="action" onclick="toggleFamilySort()" type="button">↕ ترتيب</button><button class="action" onclick="openExportModal('families')" type="button">📤 تصدير السجل</button></div>
+<div class="actions"><button class="action" onclick="showScreen('family-followup')" type="button">📋 متابعة العوائل</button></div>
 <div class="card" id="familySortPanel" style="display:none;margin-top:8px;padding:10px">
 <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
 <select class="forminput" id="familySortField" onchange="applyFamilySort()">
@@ -491,6 +492,24 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <button class="action" id="familySortDir" onclick="toggleFamilySortDirection()" type="button">↑ تصاعدي</button>
 </div></div>
 <div id="familyList"></div>
+</section>
+<section class="screen" id="family-followup">
+<div class="top"><button class="back" onclick="showScreen('families')">← رجوع</button><div class="screen-title">متابعة العوائل</div></div>
+<div class="card">
+<div class="sub" style="margin-bottom:9px">يعرض آخر مساعدة مسجلة وآخر برنامج استلام مؤكد لكل عائلة. تاريخ استلام البرنامج يعتمد تاريخ إنشاء البرنامج، ولا يُحتسب إلا إذا كانت حالة العائلة «استلم».</div>
+<div class="search"><span>🔎</span><input id="followupQ" oninput="renderFamilyFollowup()" placeholder="ابحث برقم العائلة أو اسم رب الأسرة"/></div>
+<label class="fl">حالة العائلة</label><select class="forminput" id="followupStatus" onchange="renderFamilyFollowup()"><option value="الكل">كل الحالات</option><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select>
+<label class="fl" style="margin-top:9px">أنواع آخر مساعدة (يمكن اختيار أكثر من نوع)</label><select class="forminput" id="followupAidTypes" multiple size="4" onchange="renderFamilyFollowup()" style="min-height:90px"></select>
+<label class="fl" style="margin-top:9px">البرنامج المستلم (يمكن اختيار أكثر من برنامج)</label><select class="forminput" id="followupPrograms" multiple size="4" onchange="renderFamilyFollowup()" style="min-height:90px"></select>
+<div style="display:flex;gap:8px;margin-top:10px"><button class="action primary" type="button" onclick="resetFamilyFollowupFilters()">إعادة ضبط الفلاتر</button><button class="action" type="button" id="followupSortBtn" onclick="toggleFamilyFollowupSort()">الترتيب: الأحدث أولاً ↓</button></div>
+</div>
+<div class="stats">
+<div class="stat">👨‍👩‍👧‍👦 <b id="followupFamilyCount">0</b><span>العوائل المعروضة</span></div>
+<div class="stat">🤝 <b id="followupAidCount">0</b><span>لديها مساعدة مسجلة</span></div>
+<div class="stat">🎯 <b id="followupProgramCount">0</b><span>لديها استلام برنامج مؤكد</span></div>
+</div>
+<div class="section"><b>سجل المتابعة</b><span class="count" id="followupResultCount"></span></div>
+<div id="familyFollowupList"></div>
 </section>
 <section class="screen" id="donations">
 <div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">التبرعات</div></div>
@@ -1762,7 +1781,7 @@ function authEmailForUsername(username){
 function currentRole(){return normalizeRole(currentUser()?.role||'')}
 function hasPermission(p){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);/* المالك ومدير الجمعية لا يتأثران بأي صلاحيات قديمة مخزنة */if(role==='المالك')return true;if(role==='مدير الجمعية')return p!=='users-settings';const rolePerms=ROLE_PERMISSIONS[role]||[];const savedPerms=Array.isArray(u.permissions)?u.permissions:rolePerms;if(['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['families','family-detail','family-members','add-member'].includes(p))return true;if(p==='inventory'&&['مسؤول المخزن','إدخال البيانات'].includes(role))return true;return savedPerms.includes(p)||rolePerms.includes(p)}
 function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);if(role==='المالك'||role==='مدير الجمعية')return true;/* صلاحية العوائل ثابتة لمسؤولي العوائل/الكشف وإدخال البيانات، حتى لو كانت بيانات الصلاحيات القديمة ناقصة */if(section==='families'&&['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['add','edit'].includes(action))return true;const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
-function canAccessScreen(id){if(id==='login')return true;const u=currentUser();const role=normalizeRole(u?.role||'');if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(role))return true;return hasPermission('inventory')}return hasPermission(id)||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
+function canAccessScreen(id){if(id==='login')return true;const u=currentUser();const role=normalizeRole(u?.role||'');if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(role))return true;return hasPermission('inventory')}return hasPermission(id)||id==='family-followup'&&hasPermission('families')||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
 function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');document.querySelectorAll('[data-action]').forEach(el=>{const [a,s]=String(el.dataset.action).split(':');el.style.display=hasAction(a,s)?'':'none'});}
 function renderUserOptions(){}
 async function performLogin(){
@@ -2025,7 +2044,7 @@ function renderFilesCenter(){
 function openCentralFile(i){const f=window._visibleFiles?.[i];openFileViewer(f);}
 function deleteCentralFile(i){if(!hasAction('delete','files-center')){alert('ليس لديك صلاحية حذف المرفقات.');return}const f=window._visibleFiles?.[i];if(!f)return;if(!confirm('حذف هذا المرفق نهائياً من السجل؟'))return;const arr=window[f.source];if(!Array.isArray(arr)||!arr[f.recordIndex]){const rec=arr?.find(x=>String(x.id)===String(f.recordKey)||String(x.c)===String(f.recordKey));if(!rec?.attachments?.[f.index])return;rec.attachments.splice(f.index,1);}else{arr[f.recordIndex].attachments.splice(f.index,1);}localStorage.setItem({families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'}[f.source],JSON.stringify(arr));if(f.source==='families')localStorage.setItem('warith_families',JSON.stringify(arr));renderFilesCenter();}
 
-function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لديك صلاحية الوصول إلى هذا القسم.');return}document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='add-family'&&editingFamilyCode===null){const fc=document.getElementById('f-code');if(fc){fc.value=String(nextFamilyCode());fc.readOnly=true;}}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor'&&editingDonorIndex===null)resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
+function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لديك صلاحية الوصول إلى هذا القسم.');return}document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-followup')renderFamilyFollowup();if(id==='add-family'&&editingFamilyCode===null){const fc=document.getElementById('f-code');if(fc){fc.value=String(nextFamilyCode());fc.readOnly=true;}}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor'&&editingDonorIndex===null)resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
 let familyQuickFilter='all';
 function toggleFamilyFilters(){const el=document.getElementById('familyAdvancedFilters');if(!el)return;const show=el.style.display==='none'||!el.style.display;el.style.display=show?'block':'none';if(show)populateFamilyFilterOptions();}
 function familyFilterValue(id){return document.getElementById(id)?.value||'الكل';}
@@ -2194,6 +2213,76 @@ function doExportPrint(){
 
 function doExportPDF(){
   doExportPrint();
+}
+
+
+let familyFollowupSort='date';
+function followupIsReceived(value){
+  if(value===true||value===1)return true;
+  if(value===false||value===0||value==null)return false;
+  const v=normalizeArabicSearch(String(value).trim()).toLowerCase();
+  return ['نعم','استلم','تم الاستلام','مستلم','true','1','received'].includes(v);
+}
+function followupDateValue(value){
+  const v=String(value||'').trim();
+  if(!v)return 0;
+  const iso=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(iso)return Date.UTC(Number(iso[1]),Number(iso[2])-1,Number(iso[3]));
+  const n=Date.parse(v);
+  return Number.isFinite(n)?n:0;
+}
+function followupDateLabel(value){const v=String(value||'').trim();return v?escapeHtml(v):'—';}
+function followupLatestAid(code){
+  return helps.filter(h=>!isHiddenRecord(h)&&Number(h.familyCode)===Number(code))
+    .sort((a,b)=>followupDateValue(b.date)-followupDateValue(a.date)||Number(b.id||0)-Number(a.id||0))[0]||null;
+}
+function followupLatestReceivedProgram(code){
+  const matches=[];
+  programs.filter(p=>!isHiddenRecord(p)).forEach(p=>{
+    const raw=Array.isArray(p.families)?p.families:(Array.isArray(p.familyCodes)?p.familyCodes.map(familyCode=>({familyCode})):[]);
+    raw.forEach(v=>{
+      const familyCode=typeof v==='object'?v?.familyCode:v;
+      const received=typeof v==='object'&&followupIsReceived(v?.received);
+      if(Number(familyCode)===Number(code)&&received)matches.push(p);
+    });
+  });
+  return matches.sort((a,b)=>followupDateValue(b.date)-followupDateValue(a.date)||Number(b.id||0)-Number(a.id||0))[0]||null;
+}
+function populateFamilyFollowupFilters(){
+  const aid=document.getElementById('followupAidTypes'),pro=document.getElementById('followupPrograms');
+  if(!aid||!pro)return;
+  const aidSelected=new Set(Array.from(aid.selectedOptions||[]).map(o=>o.value));
+  const proSelected=new Set(Array.from(pro.selectedOptions||[]).map(o=>o.value));
+  const aidTypes=[...new Set(helps.filter(h=>!isHiddenRecord(h)).map(h=>String(h.type||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+  const programNames=[...new Set(programs.filter(p=>!isHiddenRecord(p)).map(p=>String(p.name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ar'));
+  aid.innerHTML=aidTypes.map(v=>'<option value="'+escapeHtml(v)+'" '+(aidSelected.has(v)?'selected':'')+'>'+escapeHtml(v)+'</option>').join('');
+  pro.innerHTML=programNames.map(v=>'<option value="'+escapeHtml(v)+'" '+(proSelected.has(v)?'selected':'')+'>'+escapeHtml(v)+'</option>').join('');
+}
+function resetFamilyFollowupFilters(){
+  const q=document.getElementById('followupQ');if(q)q.value='';
+  const st=document.getElementById('followupStatus');if(st)st.value='الكل';
+  ['followupAidTypes','followupPrograms'].forEach(id=>{const e=document.getElementById(id);if(e)Array.from(e.options).forEach(o=>o.selected=false)});
+  familyFollowupSort='date';renderFamilyFollowup();
+}
+function toggleFamilyFollowupSort(){familyFollowupSort=familyFollowupSort==='date'?'family':'date';renderFamilyFollowup();}
+function renderFamilyFollowup(){
+  const box=document.getElementById('familyFollowupList');if(!box)return;
+  populateFamilyFollowupFilters();
+  const q=normalizeArabicSearch(document.getElementById('followupQ')?.value||'');
+  const status=document.getElementById('followupStatus')?.value||'الكل';
+  const selectedAid=new Set(Array.from(document.getElementById('followupAidTypes')?.selectedOptions||[]).map(o=>o.value));
+  const selectedPrograms=new Set(Array.from(document.getElementById('followupPrograms')?.selectedOptions||[]).map(o=>o.value));
+  const rows=families.filter(f=>!isHiddenRecord(f)&&(!q||normalizeArabicSearch([f.c,f.n,f.head,f.i].join(' ')).includes(q))&&(status==='الكل'||String(f.st||'')===status)).map(f=>{
+    const aid=followupLatestAid(f.c),program=followupLatestReceivedProgram(f.c);
+    return {f,aid,program,lastDate:Math.max(followupDateValue(aid?.date),followupDateValue(program?.date))};
+  }).filter(r=>(!selectedAid.size||(r.aid&&selectedAid.has(String(r.aid.type||'').trim())))&&(!selectedPrograms.size||(r.program&&selectedPrograms.has(String(r.program.name||'').trim()))));
+  rows.sort((a,b)=>familyFollowupSort==='family'?Number(a.f.c)-Number(b.f.c):b.lastDate-a.lastDate||Number(a.f.c)-Number(b.f.c));
+  const count=document.getElementById('followupFamilyCount');if(count)count.textContent=rows.length.toLocaleString('en-US');
+  const ac=document.getElementById('followupAidCount');if(ac)ac.textContent=rows.filter(r=>r.aid).length.toLocaleString('en-US');
+  const pc=document.getElementById('followupProgramCount');if(pc)pc.textContent=rows.filter(r=>r.program).length.toLocaleString('en-US');
+  const rc=document.getElementById('followupResultCount');if(rc)rc.textContent=rows.length+' عائلة';
+  const sb=document.getElementById('followupSortBtn');if(sb)sb.textContent=familyFollowupSort==='date'?'الترتيب: الأحدث أولاً ↓':'الترتيب: رقم العائلة ↑';
+  box.innerHTML=rows.length?'<div style="overflow-x:auto;border:1px solid #e3ebe7;border-radius:12px;background:#fff"><table style="width:100%;min-width:820px;border-collapse:collapse;font-size:12px"><thead><tr style="background:#edf4f1;color:#174b40"><th style="padding:9px;text-align:center">رقم العائلة</th><th style="padding:9px;text-align:right">رب الأسرة</th><th style="padding:9px;text-align:right">آخر مساعدة</th><th style="padding:9px;text-align:center">تاريخ المساعدة</th><th style="padding:9px;text-align:right">آخر برنامج مستلم</th><th style="padding:9px;text-align:center">تاريخ البرنامج</th><th style="padding:9px;text-align:center">فتح السجل</th></tr></thead><tbody>'+rows.map(r=>'<tr><td style="padding:9px;text-align:center;border-top:1px solid #edf1ef;font-weight:900">#'+escapeHtml(r.f.c)+'</td><td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">'+escapeHtml(r.f.head||r.f.n||'—')+'<div class="sub">الحالة: '+escapeHtml(r.f.st||'غير محددة')+'</div></td><td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">'+(r.aid?escapeHtml(r.aid.type||'مساعدة')+'<div class="sub">'+escapeHtml(r.aid.details||'')+'</div>':'—')+'</td><td style="padding:9px;text-align:center;border-top:1px solid #edf1ef;white-space:nowrap">'+followupDateLabel(r.aid?.date)+'</td><td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">'+(r.program?escapeHtml(r.program.name||'برنامج'):'—')+'</td><td style="padding:9px;text-align:center;border-top:1px solid #edf1ef;white-space:nowrap">'+followupDateLabel(r.program?.date)+'</td><td style="padding:9px;text-align:center;border-top:1px solid #edf1ef"><button class="action primary" style="padding:7px 9px" onclick="openFamily('+Number(r.f.c)+')">فتح</button></td></tr>').join('')+'</tbody></table></div>':'<div class="empty">لا توجد عوائل مطابقة للفلاتر الحالية</div>';
 }
 
 function renderFamilies(){
@@ -4806,7 +4895,7 @@ function warithSyncCfg(entity){return Object.values(WARITH_SYNC_CONFIG).find(x=>
 function warithSyncArray(entity){switch(entity){case'families':return families;case'appeals':return appeals;case'donors':return donors;case'donations':return donations;case'inventory':return inventoryMovements;case'help':return helps;case'programs':return programs;case'expenses':return expenses;default:return []}}
 function warithSyncSetArray(entity,value){switch(entity){case'families':families=value;break;case'appeals':appeals=value;break;case'donors':donors=value;break;case'donations':donations=value;break;case'inventory':inventoryMovements=value;break;case'help':helps=value;break;case'programs':programs=value;break;case'expenses':expenses=value;break}}
 function warithSyncLocalSet(cfg,arr){const data=JSON.stringify(arr||[]);warithSyncOriginalSetItem(cfg.key,data);if(cfg.entity==='families')warithSyncOriginalSetItem('warith_families',data)}
-function warithSyncRefreshUI(entity){try{if(entity==='families'&&typeof renderFamilies==='function')renderFamilies();if(entity==='appeals'&&typeof renderAppeals==='function'){renderAppeals();if(typeof updateAppealDashboard==='function')updateAppealDashboard()}if(entity==='donors'&&typeof renderDonors==='function')renderDonors();if(entity==='donations'&&typeof renderDonations==='function')renderDonations();if(entity==='inventory'&&typeof renderInventory==='function')renderInventory();if((entity==='help'||entity==='programs'||entity==='expenses')&&typeof renderActivities==='function')renderActivities();if(typeof renderHomeDashboard==='function')renderHomeDashboard()}catch(e){console.warn('Warith sync UI refresh:',e)}}
+function warithSyncRefreshUI(entity){try{if(entity==='families'&&typeof renderFamilies==='function')renderFamilies();if(entity==='appeals'&&typeof renderAppeals==='function'){renderAppeals();if(typeof updateAppealDashboard==='function')updateAppealDashboard()}if(entity==='donors'&&typeof renderDonors==='function')renderDonors();if(entity==='donations'&&typeof renderDonations==='function')renderDonations();if(entity==='inventory'&&typeof renderInventory==='function')renderInventory();if((entity==='help'||entity==='programs'||entity==='expenses')&&typeof renderActivities==='function')renderActivities();if(document.getElementById('family-followup')?.classList.contains('active')&&typeof renderFamilyFollowup==='function')renderFamilyFollowup();if(typeof renderHomeDashboard==='function')renderHomeDashboard()}catch(e){console.warn('Warith sync UI refresh:',e)}}
 function warithSyncStampChanged(cfg,arr,now){const prev=warithSyncShadow[cfg.entity]||new Map(),next=Array.isArray(arr)?arr:[],stamp=new Date(now).toISOString(),currentKeys=new Set();for(const item of next){const key=cfg.id(item);if(!key||key==='undefined'||key==='null')continue;currentKeys.add(key);const old=prev.get(key);const oldBody=old?JSON.stringify({...old,updatedAt:undefined,updated_at:undefined}):'';const newBody=JSON.stringify({...item,updatedAt:undefined,updated_at:undefined});if(!old||oldBody!==newBody)item.updatedAt=stamp}for(const [key] of prev)if(!currentKeys.has(key))warithSyncDeleted[cfg.entity].set(key,stamp);return next}
 async function warithSyncPushChanges(entity,force=false){const cfg=warithSyncCfg(entity);if(!cfg||(!warithSyncReady&&!force)||!window.warithSupabase)return false;const arr=Array.isArray(warithSyncArray(entity))?warithSyncArray(entity):[],prev=warithSyncShadow[entity]||new Map(),rows=[],seen=new Set();for(const item of arr){const key=cfg.id(item);if(!key||seen.has(key))continue;seen.add(key);const old=prev.get(key),oldDeleted=!!old?.__warithDeleted,oldTs=Date.parse(old?.updatedAt||old?.updated_at||0)||0,itemTs=Date.parse(item.updatedAt||item.updated_at||0)||Date.now(),ts=item.updatedAt||item.updated_at||new Date().toISOString();if(oldDeleted&&itemTs<=oldTs)continue;if(!old||oldDeleted||JSON.stringify(old)!==JSON.stringify(item)||force)rows.push({entity,record_key:key,data:item,updated_at:ts,deleted:false})}for(const [key,ts] of warithSyncDeleted[entity]||new Map())rows.push({entity,record_key:key,data:null,updated_at:ts,deleted:true});if(!rows.length)return true;const {error}=await window.warithSupabase.from('client_sync_records').upsert(rows,{onConflict:'entity,record_key'});if(error)throw error;for(const r of rows)if(r.deleted)warithSyncDeleted[entity].delete(r.record_key);warithSyncShadow[entity]=new Map(arr.map(x=>[cfg.id(x),x]));for(const r of rows)if(r.deleted)warithSyncShadow[entity].set(r.record_key,{__warithDeleted:true,updatedAt:r.updated_at});return true}
 function warithSyncQueueAll(){Object.values(WARITH_SYNC_CONFIG).forEach(cfg=>warithSyncPending.add(cfg.entity));warithSyncFlushSoon()}
