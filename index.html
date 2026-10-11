@@ -500,6 +500,9 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <button class="donation-tab" id="tabUnpaid" onclick="switchDonationTab('unpaid')">🔴 غير المستلمة</button>
 <button class="donation-tab" id="tabInKind" onclick="showScreen('in-kind-donations')">🎁 التبرعات العينية</button>
 </div>
+<div class="actions" style="margin:12px 0">
+<button class="action primary" style="width:100%;padding:13px;font-size:14px" onclick="showScreen('add-donation')">＋ تسجيل تبرع جديد</button>
+</div>
 <div id="donorsTab">
 <div class="actions">
 <button class="action primary" onclick="showScreen('add-donor')">＋ إضافة متبرع</button>
@@ -508,9 +511,6 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div id="donorList"></div>
 </div>
 <div id="recordsTab" style="display:none">
-<div class="actions">
-<button class="action primary" onclick="showScreen('add-donation')">＋ تسجيل تبرع</button>
-</div>
 <div class="search"><span>🔎</span><input id="donationQ" oninput="renderDonations()" placeholder="ابحث بالمتبرع أو رقم التبرع أو التخصيص"/></div>
 <div class="filterbar">
 <button class="chip" onclick="filterDonationType('الكل')">الكل</button>
