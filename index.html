@@ -1162,6 +1162,7 @@ let families=(()=>{
 })();
 enrichKnownAddressCodes();
 let selectedFamilyCode=null;
+let editingFamilyCode=null;
 let editingMemberIndex=null;
 
 let appeals=(()=>{try{return JSON.parse(localStorage.getItem('warith_appeals')||'[]')}catch(e){return []}})();
