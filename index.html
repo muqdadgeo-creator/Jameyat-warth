@@ -500,7 +500,9 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div class="search"><span>🔎</span><input id="followupQ" oninput="renderFamilyFollowup()" placeholder="ابحث برقم العائلة أو اسم رب الأسرة"/></div>
 <label class="fl">حالة العائلة</label><select class="forminput" id="followupStatus" onchange="renderFamilyFollowup()"><option value="الكل">كل الحالات</option><option>مستمر</option><option>مفتوح</option></select>
 <label class="fl" style="margin-top:9px">أنواع آخر مساعدة (يمكن اختيار أكثر من نوع)</label><select class="forminput" id="followupAidTypes" multiple size="4" onchange="renderFamilyFollowup()" style="min-height:90px"></select>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:8px"><div><label class="fl">المساعدة من تاريخ</label><input class="forminput" type="date" id="followupAidDateFrom" onchange="renderFamilyFollowup()"/></div><div><label class="fl">المساعدة إلى تاريخ</label><input class="forminput" type="date" id="followupAidDateTo" onchange="renderFamilyFollowup()"/></div></div>
 <label class="fl" style="margin-top:9px">البرنامج المستلم (يمكن اختيار أكثر من برنامج)</label><select class="forminput" id="followupPrograms" multiple size="4" onchange="renderFamilyFollowup()" style="min-height:90px"></select>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:8px"><div><label class="fl">البرنامج من تاريخ</label><input class="forminput" type="date" id="followupProgramDateFrom" onchange="renderFamilyFollowup()"/></div><div><label class="fl">البرنامج إلى تاريخ</label><input class="forminput" type="date" id="followupProgramDateTo" onchange="renderFamilyFollowup()"/></div></div>
 <div style="display:flex;gap:8px;margin-top:10px"><button class="action primary" type="button" onclick="resetFamilyFollowupFilters()">إعادة ضبط الفلاتر</button><button class="action" type="button" id="followupSortBtn" onclick="toggleFamilyFollowupSort()">الترتيب: الأحدث أولاً ↓</button></div>
 </div>
 <div class="stats">
@@ -2262,6 +2264,7 @@ function resetFamilyFollowupFilters(){
   const q=document.getElementById('followupQ');if(q)q.value='';
   const st=document.getElementById('followupStatus');if(st)st.value='الكل';
   ['followupAidTypes','followupPrograms'].forEach(id=>{const e=document.getElementById(id);if(e)Array.from(e.options).forEach(o=>o.selected=false)});
+  ['followupAidDateFrom','followupAidDateTo','followupProgramDateFrom','followupProgramDateTo'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});
   familyFollowupSort='date';renderFamilyFollowup();
 }
 function toggleFamilyFollowupSort(){familyFollowupSort=familyFollowupSort==='date'?'family':'date';renderFamilyFollowup();}
@@ -2272,10 +2275,12 @@ function renderFamilyFollowup(){
   const status=document.getElementById('followupStatus')?.value||'الكل';
   const selectedAid=new Set(Array.from(document.getElementById('followupAidTypes')?.selectedOptions||[]).map(o=>o.value));
   const selectedPrograms=new Set(Array.from(document.getElementById('followupPrograms')?.selectedOptions||[]).map(o=>o.value));
+  const aidFrom=followupDateValue(document.getElementById('followupAidDateFrom')?.value),aidToRaw=followupDateValue(document.getElementById('followupAidDateTo')?.value),aidTo=aidToRaw?aidToRaw+86400000-1:0;
+  const programFrom=followupDateValue(document.getElementById('followupProgramDateFrom')?.value),programToRaw=followupDateValue(document.getElementById('followupProgramDateTo')?.value),programTo=programToRaw?programToRaw+86400000-1:0;
   const rows=families.filter(f=>!isHiddenRecord(f)&&String(f.st||'').trim()!=='مغلق'&&(!q||normalizeArabicSearch([f.c,f.n,f.head,f.i].join(' ')).includes(q))&&(status==='الكل'||String(f.st||'')===status)).map(f=>{
     const aid=followupLatestAid(f.c),program=followupLatestReceivedProgram(f.c);
     return {f,aid,program,lastDate:Math.max(followupDateValue(aid?.date),followupDateValue(program?.date))};
-  }).filter(r=>(!selectedAid.size||(r.aid&&selectedAid.has(String(r.aid.type||'').trim())))&&(!selectedPrograms.size||(r.program&&selectedPrograms.has(String(r.program.name||'').trim()))));
+  }).filter(r=>(!selectedAid.size||(r.aid&&selectedAid.has(String(r.aid.type||'').trim())))&&(!selectedPrograms.size||(r.program&&selectedPrograms.has(String(r.program.name||'').trim())))&&(!aidFrom||(r.aid&&followupDateValue(r.aid.date)>=aidFrom))&&(!aidTo||(r.aid&&followupDateValue(r.aid.date)<=aidTo))&&(!programFrom||(r.program&&followupDateValue(r.program.date)>=programFrom))&&(!programTo||(r.program&&followupDateValue(r.program.date)<=programTo)));
   rows.sort((a,b)=>familyFollowupSort==='family'?Number(a.f.c)-Number(b.f.c):b.lastDate-a.lastDate||Number(a.f.c)-Number(b.f.c));
   const count=document.getElementById('followupFamilyCount');if(count)count.textContent=rows.length.toLocaleString('en-US');
   const ac=document.getElementById('followupAidCount');if(ac)ac.textContent=rows.filter(r=>r.aid).length.toLocaleString('en-US');
