@@ -506,6 +506,7 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div><label class="fl">فرز البرامج</label><select class="forminput" id="followupProgramSort" onchange="renderFamilyFollowup()"><option value="desc">الأحدث أولاً ↓</option><option value="asc">الأقدم أولاً ↑</option></select></div>
 <div><label class="fl">فرز المساعدات</label><select class="forminput" id="followupAidSort" onchange="renderFamilyFollowup()"><option value="desc">الأحدث أولاً ↓</option><option value="asc">الأقدم أولاً ↑</option></select></div>
 </div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px"><button class="action" type="button" id="followupMissingAidBtn" aria-pressed="false" onclick="toggleFamilyFollowupMissing('aid')">لم تستلم مساعدة</button><button class="action" type="button" id="followupMissingProgramBtn" aria-pressed="false" onclick="toggleFamilyFollowupMissing('program')">لم يستلم أي برنامج</button></div>
 <div style="display:flex;gap:8px;margin-top:10px"><button class="action primary" type="button" onclick="resetFamilyFollowupFilters()">إعادة ضبط الفلاتر</button></div>
 </div>
 <div class="stats" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
@@ -2222,6 +2223,13 @@ function doExportPDF(){
 
 
 let familyFollowupSort='date';
+let familyFollowupMissingAid=false;
+let familyFollowupMissingProgram=false;
+function toggleFamilyFollowupMissing(kind){
+  if(kind==='aid')familyFollowupMissingAid=!familyFollowupMissingAid;
+  if(kind==='program')familyFollowupMissingProgram=!familyFollowupMissingProgram;
+  renderFamilyFollowup();
+}
 function followupIsReceived(value){
   if(value===true||value===1)return true;
   if(value===false||value===0||value==null)return false;
@@ -2266,6 +2274,7 @@ function resetFamilyFollowupFilters(){
   const aid=document.getElementById('followupAidTypes');if(aid)Array.from(aid.options).forEach(o=>o.selected=false);
   const ps=document.getElementById('followupProgramSort');if(ps)ps.value='desc';
   const as=document.getElementById('followupAidSort');if(as)as.value='desc';
+  familyFollowupMissingAid=false;familyFollowupMissingProgram=false;
   renderFamilyFollowup();
 }
 function renderFamilyFollowup(){
@@ -2279,13 +2288,15 @@ function renderFamilyFollowup(){
   const rows=families.filter(f=>!isHiddenRecord(f)&&String(f.st||'').trim()!=='مغلق'&&(!q||normalizeArabicSearch([f.c,f.n,f.head,f.i].join(' ')).includes(q))&&(status==='الكل'||String(f.st||'')===status)).map(f=>{
     const aid=followupLatestAid(f.c),program=followupLatestReceivedProgram(f.c);
     return {f,aid,program,lastDate:Math.max(followupDateValue(aid?.date),followupDateValue(program?.date))};
-  }).filter(r=>(!selectedAid.size||(r.aid&&selectedAid.has(String(r.aid.type||'').trim()))));
+  }).filter(r=>(!selectedAid.size||(r.aid&&selectedAid.has(String(r.aid.type||'').trim())))&&(!familyFollowupMissingAid||!r.aid)&&(!familyFollowupMissingProgram||!r.program));
   rows.sort((a,b)=>{
     const programDelta=(followupDateValue(a.program?.date)-followupDateValue(b.program?.date))*(programSort==='asc'?1:-1);
     if(programDelta)return programDelta;
     const aidDelta=(followupDateValue(a.aid?.date)-followupDateValue(b.aid?.date))*(aidSort==='asc'?1:-1);
     return aidDelta||Number(a.f.c)-Number(b.f.c);
   });
+  const missingAidBtn=document.getElementById('followupMissingAidBtn');if(missingAidBtn){missingAidBtn.className=familyFollowupMissingAid?'action primary':'action';missingAidBtn.setAttribute('aria-pressed',String(familyFollowupMissingAid));}
+  const missingProgramBtn=document.getElementById('followupMissingProgramBtn');if(missingProgramBtn){missingProgramBtn.className=familyFollowupMissingProgram?'action primary':'action';missingProgramBtn.setAttribute('aria-pressed',String(familyFollowupMissingProgram));}
   const count=document.getElementById('followupFamilyCount');if(count)count.textContent=rows.length.toLocaleString('en-US');
   const ac=document.getElementById('followupAidCount');if(ac)ac.textContent=rows.filter(r=>r.aid).length.toLocaleString('en-US');
   const pc=document.getElementById('followupProgramCount');if(pc)pc.textContent=rows.filter(r=>r.program).length.toLocaleString('en-US');
