@@ -23,6 +23,11 @@ main{padding:12px 12px 65px}.screen{display:none!important}.screen.active{displa
 .screen > *{position:relative;z-index:1}
 
 .hello{font-size:13px;color:#71857f}.title{font-size:25px;font-weight:900;margin:5px 0 17px}
+/* ترويسة الحديث الشريف في لوحة العرض */
+.home-hadith{background:linear-gradient(135deg,#f8fbf8 0%,#fffdf7 100%);border:1px solid #d7c18a;border-right:4px solid #b8994d;border-radius:12px;padding:13px 14px;margin:0 0 12px;text-align:center;box-shadow:0 2px 8px #173f3010}
+.home-hadith-text{font-size:clamp(13px,2.4vw,17px);font-weight:800;line-height:1.9;color:#185b49}
+.home-hadith-attrib{margin-top:5px;font-size:12px;font-weight:800;color:#9a7833}
+
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{background:#fff;border-radius:16px;padding:14px;box-shadow:0 2px 10px #0000000b}.stat b{display:block;font-size:22px;margin-top:5px}.stat span{font-size:11px;color:#71857f}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:17px}.tile{border:0;background:#fff;border-radius:16px;padding:12px 4px;text-align:center;color:#24473f;box-shadow:0 2px 10px #0000000b}.tile .ico{font-size:23px;display:block;margin-bottom:5px}.tile small{font-size:10px}
 .section{display:flex;justify-content:space-between;align-items:center;margin:23px 2px 10px}.section b{font-size:16px}.link{font-size:11px;color:#0f5c4d}
@@ -385,6 +390,10 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <main>
 <section class="screen active" id="home">
 <div class="hello">السلام عليكم</div><div class="title">لوحة العرض</div>
+<div class="home-hadith" role="note" aria-label="حديث شريف للإمام الحسين عليه السلام">
+  <div class="home-hadith-text">«اعلموا أن حوائج الناس إليكم من نعم الله عليكم فلا تملوا النعم فتتحول إلى غيركم»</div>
+  <div class="home-hadith-attrib">الإمام الحسين عليه السلام</div>
+</div>
 <div class="home-dashboard">
 <div class="home-card home-families-card">
 <div class="home-card-title">👨‍👩‍👧‍👦 <b>العوائل المسجلة</b></div>
