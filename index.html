@@ -1681,7 +1681,7 @@ function renderHomeDashboard(){
   const addBeneficiary=(code,name)=>{
     const c=String(code??'').trim();
     if(c&&c!=='0'&&c!=='null'&&c!=='undefined'){beneficiaryKeys.add('code:'+c);return;}
-    const n=String(name||'').trim().replace(/\\s+/g,' ');
+    const n=String(name||'').trim().replace(/\s+/g,' ');
     if(n)beneficiaryKeys.add('name:'+n);
   };
   monthlyFinancialAids.forEach(x=>addBeneficiary(x.familyCode??x.family_code,x.familyName??x.family_name));
