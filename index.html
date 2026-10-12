@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261012-0006';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261012-0007';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -1477,6 +1477,10 @@ function showAllAppeals(){
   if(wrap){wrap.innerHTML='<button class="action" style="width:100%;margin-top:3px" onclick="renderAppeals()">عرض آخر 5 فقط</button>';wrap.style.display='block';}
 }
 function appealFinancialSummary(a){
+  if(a?.publicSummary===true){
+    const required=Number(a.amount||0),donationTotal=Number(a.publicDonationTotal||0);
+    return {required,donationTotal,receivedTotal:donationTotal,helpTotal:0,covered:donationTotal,remaining:Math.max(required-donationTotal,0),pledgedTotal:0,linkedDonations:[],linkedHelps:[]};
+  }
   const linkedDonations=donations.filter(d=>d.type==='مالي'&&Number(d.appealId)===Number(a.id));
   const receivedDonations=linkedDonations.filter(d=>!d.paid||d.paid==='تم التسديد');
   const pledgedDonations=linkedDonations.filter(d=>d.paid==='لا');
@@ -1660,12 +1664,12 @@ function renderHomeFollowAppeals(visibleAppeals){
       <div class="appeal-line"><span class="appeal-label">مجموع التبرعات</span><span class="appeal-value">${(fx.donationTotal||0).toLocaleString('en-US')} د.ع</span></div>
       <div class="appeal-line"><span class="appeal-label">المبلغ المتبقي</span><span class="appeal-value">${(fx.remaining||0).toLocaleString('en-US')} د.ع</span></div>
       <div class="home-appeal-actions"><button class="home-appeal-details-btn" type="button" onclick="showHomeAppealDetails(${Number(a.id)||0})">📖 تفاصيل المناشدة</button>
-      <button class="appeal-donate-btn" type="button" onclick="donateToAppeal(appeals.find(x=>Number(x.id)===Number(${Number(a.id)||0})))">تبرع الآن</button></div>
+      <button class="appeal-donate-btn" type="button" onclick="openHomeAppealDonation(${Number(a.id)||0})">تبرع الآن</button></div>
     </div>`;
   }).join('')||'<div class="home-follow-empty">لا توجد مناشدات قيد المتابعة حالياً</div>';
 }
 function showHomeAppealDetails(id){
-  const a=appeals.find(x=>Number(x.id)===Number(id));
+  const a=appeals.find(x=>Number(x.id)===Number(id))||(window.warithPublicAppeals||[]).find(x=>Number(x.id)===Number(id));
   if(!a)return;
   const modal=document.getElementById('homeAppealDetailsModal');
   const body=document.getElementById('homeAppealDetailsBody');
@@ -1682,7 +1686,7 @@ function showHomeAppealDetails(id){
   modal.classList.add('open');
 }
 function openHomePublicAttachment(id,index){
-  const a=appeals.find(x=>Number(x.id)===Number(id));
+  const a=appeals.find(x=>Number(x.id)===Number(id))||(window.warithPublicAppeals||[]).find(x=>Number(x.id)===Number(id));
   const f=a?.attachments?.[index];
   if(!f||f.showToVisitors!==true||!f.data)return;
   const w=window.open();
@@ -1694,6 +1698,7 @@ function closeHomeAppealDetails(){
 }
 
 function renderHomeDashboard(){
+  if(!warithHasSignedInUser()){renderWarithPublicDashboard();return;}
   const visibleFamilies=families.filter(x=>!isHiddenRecord(x));
   const visibleDonations=donations.filter(x=>!isHiddenRecord(x));
   const visibleAppeals=appeals.filter(x=>!isHiddenRecord(x));
@@ -4982,6 +4987,45 @@ try{renderHomeDashboard();}catch(e){}
    - Realtime للتحديث الفوري، مع إعادة اتصال تلقائية عند انقطاع الشبكة.
    - لا حاجة لتسجيل الدخول/الخروج حتى تتحدث البيانات بين الأجهزة.
 */
+function warithHasSignedInUser(){try{return !!(typeof currentUser==='function'&&currentUser())}catch(e){return false}}
+function openHomeAppealDonation(id){const a=appeals.find(x=>Number(x.id)===Number(id))||(window.warithPublicAppeals||[]).find(x=>Number(x.id)===Number(id));if(a)donateToAppeal(a)}
+function renderWarithPublicDashboardLoading(){
+  const ids=['homeFamiliesActive','homeFamiliesOpen','homeFamiliesClosed','homeMonthlyDonationsReceived','homeMonthlyDonationsPending','homeMonthlyFinancialAidTotal','homeMonthlyBeneficiaryFamilies','homeAppealsDone','homeAppealsNotDone'];
+  ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='…'});
+  const inv=document.getElementById('homeInventoryItems');if(inv)inv.innerHTML='<div class="home-empty">جار تحميل بيانات العرض العام…</div>';
+  const recent=document.getElementById('homeRecentActivities');if(recent)recent.innerHTML='<div class="empty">يتم تحديث لوحة العرض من السحابة…</div>';
+  const list=document.getElementById('homeFollowAppeals');if(list)list.innerHTML='<div class="home-follow-empty">جار تحميل المناشدات المعتمدة للعرض…</div>';
+}
+function renderWarithPublicDashboard(){
+  const d=window.warithPublicDashboardData;
+  if(!d){renderWarithPublicDashboardLoading();return}
+  const setText=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=Number(v||0).toLocaleString('en-US')};
+  setText('homeFamiliesActive',d.families?.active);setText('homeFamiliesOpen',d.families?.open);setText('homeFamiliesClosed',d.families?.closed);
+  const rec=document.getElementById('homeMonthlyDonationsReceived');if(rec)rec.textContent=Number(d.donations?.received||0).toLocaleString('en-US')+' د.ع';
+  const pend=document.getElementById('homeMonthlyDonationsPending');if(pend)pend.textContent=Number(d.donations?.pending||0).toLocaleString('en-US')+' د.ع';
+  const aid=document.getElementById('homeMonthlyFinancialAidTotal');if(aid)aid.textContent=Number(d.help?.amount||0).toLocaleString('en-US')+' د.ع';
+  setText('homeMonthlyBeneficiaryFamilies',d.help?.beneficiaries);
+  setText('homeAppealsDone',d.appeals?.done);setText('homeAppealsNotDone',d.appeals?.notDone);
+  const inv=document.getElementById('homeInventoryItems');
+  if(inv){const rows=Array.isArray(d.inventory)?d.inventory:[];inv.innerHTML=rows.map(x=>'<div class="home-inventory-item"><span>'+escapeHtml(x.name||'غير محدد')+'</span><b>'+Number(x.qty||0).toLocaleString('en-US')+'</b></div>').join('')||'<div class="home-empty">لا توجد حركات إخراج لهذا الشهر</div>'}
+  window.warithPublicAppeals=Array.isArray(d.publicAppeals)?d.publicAppeals:[];
+  renderHomeFollowAppeals(window.warithPublicAppeals);
+  const recent=document.getElementById('homeRecentActivities');if(recent)recent.innerHTML='<div class="empty">تُعرض هنا الإحصاءات العامة والمناشدات المعتمدة فقط، حفاظاً على خصوصية العوائل والمتبرعين.</div>';
+}
+async function initWarithPublicDashboard(){
+  if(!navigator.onLine){warithSyncSetStatus('العرض العام دون اتصال','error','تأكد من اتصال الإنترنت لإحضار أحدث تحديثات السحابة');return}
+  try{
+    const sb=await window.warithSupabaseReady;if(!sb)throw new Error('عميل السحابة غير جاهز');
+    const {data:sessionData,error:sessionError}=await sb.auth.getSession();if(sessionError)throw sessionError;
+    if(sessionData?.session?.user&&warithHasSignedInUser())return;
+    warithSyncSetStatus('جار تحديث لوحة العرض…','busy');
+    const {data,error}=await sb.rpc('get_public_dashboard');if(error)throw error;
+    if(!data||typeof data!=='object')throw new Error('لم تصل بيانات العرض العام');
+    window.warithPublicDashboardData=data;renderWarithPublicDashboard();
+    const stamp=data.updatedAt?new Date(data.updatedAt).toLocaleString('ar-IQ',{dateStyle:'short',timeStyle:'short',timeZone:'Asia/Baghdad'}):'';
+    warithSyncSetStatus('تحديث العرض العام ✓','ok',stamp?'آخر تحديث للسحابة: '+stamp:'تم تحميل بيانات العرض العام');
+  }catch(e){const msg=String(e?.message||e||'خطأ غير معروف');warithSyncSetStatus('تعذر تحديث العرض العام ⚠','error',msg);console.warn('Warith public dashboard refresh failed:',e);if(!window.warithPublicDashboardData)renderWarithPublicDashboardLoading()}
+}
 const WARITH_SYNC_CONFIG={
   families:{key:'warith_families_v2',entity:'families',id:x=>String(x?.c??'')},
   appeals:{key:'warith_appeals',entity:'appeals',id:x=>String(x?.id??'')},
@@ -5027,11 +5071,11 @@ function warithSyncStopRealtime(){if(warithSyncReconnectTimer){clearTimeout(wari
 function warithSyncScheduleReconnect(){if(warithSyncReconnectTimer||!warithSyncReady||!navigator.onLine)return;warithSyncReconnectTimer=setTimeout(()=>{warithSyncReconnectTimer=null;warithSyncStartRealtime(true)},2000)}
 function warithSyncStartRealtime(force=false){if(!window.warithSupabase||!warithSyncReady||!navigator.onLine)return;if(warithSyncChannel&&!force)return;if(force)warithSyncStopRealtime();warithSyncChannel=window.warithSupabase.channel('warith-client-sync-'+warithSyncClientId).on('postgres_changes',{event:'*',schema:'public',table:'client_sync_records'},warithSyncApplyRealtime).subscribe(status=>{warithSyncLastStatus=status;if(status==='SUBSCRIBED'){if(!warithSyncLastError)warithSyncSetStatus('متصل بالسحابة ✓','ok','المزامنة اللحظية فعالة');warithSyncFlushSoon()}if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){warithSyncChannel=null;warithSyncSetStatus('إعادة الاتصال بالسحابة…','busy','انقطع الاتصال اللحظي؛ ستتم إعادة المحاولة');warithSyncScheduleReconnect()}})}
 async function initWarithCloudSync(){if(warithSyncInitPromise)return warithSyncInitPromise;warithSyncInitPromise=(async()=>{try{warithSyncSetStatus('جارِ الاتصال بالسحابة…','busy');const sb=await window.warithSupabaseReady;if(!sb)throw new Error('عميل Supabase غير جاهز');window.warithSupabase=sb;const {data,error}=await sb.auth.getSession();if(error)throw error;if(!data?.session?.user){warithSyncReady=false;warithSyncStopRealtime();warithSyncSetStatus('سجّل الدخول للمزامنة','error','لا توجد جلسة دخول سحابية على هذا الجهاز');return}await warithSyncPullAll();if(warithSyncReady)warithSyncStartRealtime()}catch(e){warithSyncReady=false;warithSyncLastError=String(e?.message||e||'خطأ غير معروف');warithSyncSetStatus('تعذر الاتصال بالسحابة ⚠','error',warithSyncLastError);console.warn('Warith cloud sync initialization failed:',e)}})().finally(()=>{warithSyncInitPromise=null});return warithSyncInitPromise}
-async function warithSyncManualRefresh(){if(!navigator.onLine){warithSyncSetStatus('لا يوجد اتصال بالإنترنت','error');return}warithSyncSetStatus('جارِ إعادة فحص المزامنة…','busy');try{await initWarithCloudSync();if(!warithSyncReady&&!warithSyncLastError)warithSyncSetStatus('سجّل الدخول للمزامنة','error','لا توجد جلسة دخول سحابية');else if(warithSyncReady&&warithSyncLastError)warithSyncSetStatus('مزامنة جزئية ⚠','error',warithSyncLastError)}catch(e){warithSyncLastError=String(e?.message||e||'خطأ غير معروف');warithSyncSetStatus('تعذر الاتصال بالسحابة ⚠','error',warithSyncLastError)}}
-window.warithSupabaseReady.then(sb=>{if(!sb)return;sb.auth.onAuthStateChange((event,session)=>{if(session?.user){setTimeout(()=>initWarithCloudSync(),0)}else{warithSyncReady=false;warithSyncPending.clear();warithSyncStopRealtime()}});setTimeout(()=>initWarithCloudSync(),0)});
+async function warithSyncManualRefresh(){if(!navigator.onLine){warithSyncSetStatus('لا يوجد اتصال بالإنترنت','error');return}if(!warithHasSignedInUser()){await initWarithPublicDashboard();return}warithSyncSetStatus('جارِ إعادة فحص المزامنة…','busy');try{await initWarithCloudSync();if(!warithSyncReady&&!warithSyncLastError)warithSyncSetStatus('سجّل الدخول للمزامنة','error','لا توجد جلسة دخول سحابية');else if(warithSyncReady&&warithSyncLastError)warithSyncSetStatus('مزامنة جزئية ⚠','error',warithSyncLastError)}catch(e){warithSyncLastError=String(e?.message||e||'خطأ غير معروف');warithSyncSetStatus('تعذر الاتصال بالسحابة ⚠','error',warithSyncLastError)}}
+window.warithSupabaseReady.then(sb=>{if(!sb){warithSyncSetStatus('تعذر الاتصال بالسحابة ⚠','error','تعذر تهيئة عميل Supabase');return}sb.auth.onAuthStateChange((event,session)=>{if(session?.user){setTimeout(()=>initWarithCloudSync(),0)}else{warithSyncReady=false;warithSyncPending.clear();warithSyncStopRealtime();setTimeout(()=>initWarithPublicDashboard(),0)}});if(warithHasSignedInUser())setTimeout(()=>initWarithCloudSync(),0);else setTimeout(()=>initWarithPublicDashboard(),0);if(!window.warithPublicRefreshTimer)window.warithPublicRefreshTimer=setInterval(()=>{if(!warithHasSignedInUser()&&document.visibilityState==='visible')initWarithPublicDashboard()},30000)});
 localStorage.setItem=function(key,value){if(warithSyncPulling){warithSyncOriginalSetItem(key,value);return}const cfg=Object.values(WARITH_SYNC_CONFIG).find(x=>x.key===key);if(!cfg){warithSyncOriginalSetItem(key,value);return}try{const arr=JSON.parse(value||'[]'),stamped=warithSyncStampChanged(cfg,arr,Date.now()),data=JSON.stringify(stamped);warithSyncOriginalSetItem(key,data);if(cfg.entity==='families')warithSyncOriginalSetItem('warith_families',data);warithSyncSchedule(cfg.entity)}catch(e){warithSyncOriginalSetItem(key,value);warithSyncSchedule(cfg.entity)}};
 localStorage.removeItem=function(key){warithSyncOriginalRemoveItem(key);if(warithSyncPulling)return;const cfg=Object.values(WARITH_SYNC_CONFIG).find(x=>x.key===key);if(cfg)warithSyncSchedule(cfg.entity)};
-window.addEventListener('online',()=>{warithSyncQueueAll();initWarithCloudSync()});window.addEventListener('offline',()=>{warithSyncLastStatus='OFFLINE';warithSyncStopRealtime()});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){initWarithCloudSync();warithSyncFlushSoon()}});
+window.addEventListener('online',()=>{if(warithHasSignedInUser()){warithSyncQueueAll();initWarithCloudSync()}else initWarithPublicDashboard()});window.addEventListener('offline',()=>{warithSyncLastStatus='OFFLINE';warithSyncStopRealtime();if(!warithHasSignedInUser())warithSyncSetStatus('العرض العام دون اتصال','error','سيتم تحديث لوحة العرض عند عودة الإنترنت')});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(warithHasSignedInUser()){initWarithCloudSync();warithSyncFlushSoon()}else initWarithPublicDashboard()}});
 setInterval(()=>{if(warithSyncReady&&navigator.onLine){if(!warithSyncChannel){warithSyncStartRealtime();if(!warithSyncChannel)initWarithCloudSync()}if(warithSyncPending.size)warithSyncFlushSoon()}},15000);
 
 </script>
