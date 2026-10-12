@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261008-0210';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261012-0001';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -395,6 +395,19 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div><b id="homeMonthlyDonationsPending">0</b><span>غير مستلمة</span></div>
 </div>
 <div class="home-card-note">التبرعات المالية خلال هذا الشهر</div>
+</div>
+<div class="home-card home-financial-aid-card">
+<div class="home-card-title">💵 <b>المساعدات المالية (لهذا الشهر)</b></div>
+<div class="home-card-grid home-two-cols">
+<div><b id="homeMonthlyFinancialAidCount">0</b><span>عدد المساعدات</span></div>
+<div><b id="homeMonthlyFinancialAidTotal">0 د.ع</b><span>مجموع المبالغ</span></div>
+</div>
+<div class="home-card-note">المساعدات المالية المسجلة خلال الشهر الحالي</div>
+</div>
+<div class="home-card home-beneficiary-families-card">
+<div class="home-card-title">👨‍👩‍👧‍👦 <b>عوائل مستفيدة (هذا الشهر)</b></div>
+<div class="home-big-value" id="homeMonthlyBeneficiaryFamilies">0</div>
+<div class="home-card-note">عدد العوائل الفريدة التي استلمت مساعدة مالية أو عينية</div>
 </div>
 <div class="home-card home-appeals-card">
 <div class="home-card-title">📋 <b>المناشدات</b></div>
@@ -1651,6 +1664,30 @@ function renderHomeDashboard(){
   const pendingEl=document.getElementById('homeMonthlyDonationsPending');
   if(receivedEl)receivedEl.textContent=monthlyReceived.toLocaleString('en-US')+' د.ع';
   if(pendingEl)pendingEl.textContent=monthlyPending.toLocaleString('en-US')+' د.ع';
+
+  // المساعدات المالية: عدد السجلات ومجموع المبالغ لهذا الشهر.
+  const normalizeAidType=v=>String(v||'').trim().replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي');
+  const monthlyFinancialAids=helps.filter(x=>{
+    const t=normalizeAidType(x.type);
+    return !isHiddenRecord(x)&&homeIsCurrentMonth(x.date)&&/مالي/.test(t)&&!/عيني/.test(t);
+  });
+  setText('homeMonthlyFinancialAidCount',monthlyFinancialAids.length);
+  const financialAidTotal=monthlyFinancialAids.reduce((n,x)=>n+Number(x.amount||0),0);
+  const financialAidTotalEl=document.getElementById('homeMonthlyFinancialAidTotal');
+  if(financialAidTotalEl)financialAidTotalEl.textContent=financialAidTotal.toLocaleString('en-US')+' د.ع';
+
+  // العوائل المستفيدة: توحيد العائلة لمنع تكرارها عبر المساعدات المالية والعينية.
+  const beneficiaryKeys=new Set();
+  const addBeneficiary=(code,name)=>{
+    const c=String(code??'').trim();
+    if(c&&c!=='0'&&c!=='null'&&c!=='undefined'){beneficiaryKeys.add('code:'+c);return;}
+    const n=String(name||'').trim().replace(/\\s+/g,' ');
+    if(n)beneficiaryKeys.add('name:'+n);
+  };
+  monthlyFinancialAids.forEach(x=>addBeneficiary(x.familyCode??x.family_code,x.familyName??x.family_name));
+  visibleInventory.filter(x=>!isHiddenRecord(x)&&x.move==='صادر'&&homeIsCurrentMonth(x.date))
+    .forEach(x=>addBeneficiary(x.beneficiaryFamilyCode??x.familyCode??x.beneficiary_family_id,x.familyName??x.beneficiaryFamilyName));
+  setText('homeMonthlyBeneficiaryFamilies',beneficiaryKeys.size);
 
   // المناشدات: مكتملة / غير مكتملة لهذا الشهر.
   const monthlyAppeals=visibleAppeals.filter(x=>homeIsCurrentMonth(x.date));
