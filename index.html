@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261012-0003';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261012-0004';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -1679,12 +1679,12 @@ function renderHomeDashboard(){
   // المساعدات: اعتماد تاريخ سجل المساعدة نفسه، مع دعم صيغ التاريخ المختلفة.
   const normalizeAidType=v=>String(v||'').trim().replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي');
   const monthlyHelps=helps.filter(x=>x&&!isHiddenRecord(x)&&homeIsCurrentMonth(x.date));
-  const monthlyFinancialAids=monthlyHelps.filter(x=>{
-    const t=normalizeAidType(x.type);
-    return /مالي/.test(t)&&!/عيني/.test(t);
-  });
-  const aidAmount=x=>Number(String(x?.amount??0).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[٬,،]/g,'').trim())||0;
-  const financialAidTotal=monthlyFinancialAids.reduce((n,x)=>n+aidAmount(x),0);
+  // إجمالي مبالغ المساعدات المسجلة هذا الشهر، مهما كان تصنيفها؛ لأن التصنيف قد يكون طبياً أو معيشياً وغيرها مع وجود مبلغ مالي.
+  const aidAmount=x=>{
+    const raw=String(x?.amount??0).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[٬,،]/g,'').replace(/[^0-9.\-]/g,'').trim();
+    return Number(raw)||0;
+  };
+  const financialAidTotal=monthlyHelps.reduce((n,x)=>n+aidAmount(x),0);
   const financialAidTotalEl=document.getElementById('homeMonthlyFinancialAidTotal');
   if(financialAidTotalEl)financialAidTotalEl.textContent=financialAidTotal.toLocaleString('en-US')+' د.ع';
 
