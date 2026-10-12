@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261012-0001';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261012-0002';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -163,6 +163,12 @@ textarea.forminput{height:80px;resize:vertical}
 .financial-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:9px}.financial-summary .fs{background:#f4f7f6;border-radius:11px;padding:10px}.financial-summary .fs small{display:block;color:#71857f;font-size:9px}.financial-summary .fs b{display:block;margin-top:4px;font-size:13px;color:#0f5c4d}.financial-summary .fs.remaining b{color:#8a6517}.financial-summary .fs.covered b{color:#2f6f4e}
 
 .home-dashboard{display:grid;gap:10px;margin-bottom:17px}
+.home-monthly-aid-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+.home-monthly-aid-pair>.home-card{min-width:0}
+.home-monthly-aid-pair .home-card-title{align-items:flex-start;line-height:1.5}
+.home-monthly-aid-pair .home-big-value{font-size:clamp(16px,4.5vw,24px);overflow-wrap:anywhere}
+.home-monthly-aid-pair .home-card-note{line-height:1.5}
+
 .home-card{background:#fff;border-radius:11px;padding:8px;box-shadow:0 2px 7px #0000000a}
 .home-card-title{display:flex;align-items:center;gap:4px;font-size:11px;color:#24473f;margin-bottom:6px}
 .home-card-title b{font-size:12px}
@@ -396,18 +402,17 @@ window.warithSupabaseReady=new Promise(resolve=>{
 </div>
 <div class="home-card-note">التبرعات المالية خلال هذا الشهر</div>
 </div>
+<div class="home-monthly-aid-pair">
 <div class="home-card home-financial-aid-card">
 <div class="home-card-title">💵 <b>المساعدات المالية (لهذا الشهر)</b></div>
-<div class="home-card-grid home-two-cols">
-<div><b id="homeMonthlyFinancialAidCount">0</b><span>عدد المساعدات</span></div>
-<div><b id="homeMonthlyFinancialAidTotal">0 د.ع</b><span>مجموع المبالغ</span></div>
-</div>
-<div class="home-card-note">المساعدات المالية المسجلة خلال الشهر الحالي</div>
+<div class="home-big-value" id="homeMonthlyFinancialAidTotal">0 د.ع</div>
+<div class="home-card-note">مجموع المساعدات المالية خلال الشهر الحالي</div>
 </div>
 <div class="home-card home-beneficiary-families-card">
 <div class="home-card-title">👨‍👩‍👧‍👦 <b>عوائل مستفيدة (هذا الشهر)</b></div>
 <div class="home-big-value" id="homeMonthlyBeneficiaryFamilies">0</div>
 <div class="home-card-note">عدد العوائل الفريدة التي استلمت مساعدة مالية أو عينية</div>
+</div>
 </div>
 <div class="home-card home-appeals-card">
 <div class="home-card-title">📋 <b>المناشدات</b></div>
@@ -1671,7 +1676,6 @@ function renderHomeDashboard(){
     const t=normalizeAidType(x.type);
     return !isHiddenRecord(x)&&homeIsCurrentMonth(x.date)&&/مالي/.test(t)&&!/عيني/.test(t);
   });
-  setText('homeMonthlyFinancialAidCount',monthlyFinancialAids.length);
   const financialAidTotal=monthlyFinancialAids.reduce((n,x)=>n+Number(x.amount||0),0);
   const financialAidTotalEl=document.getElementById('homeMonthlyFinancialAidTotal');
   if(financialAidTotalEl)financialAidTotalEl.textContent=financialAidTotal.toLocaleString('en-US')+' د.ع';
