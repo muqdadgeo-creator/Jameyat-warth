@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261012-0002';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261012-0003';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -411,7 +411,7 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div class="home-card home-beneficiary-families-card">
 <div class="home-card-title">👨‍👩‍👧‍👦 <b>عوائل مستفيدة (هذا الشهر)</b></div>
 <div class="home-big-value" id="homeMonthlyBeneficiaryFamilies">0</div>
-<div class="home-card-note">عدد العوائل الفريدة التي استلمت مساعدة مالية أو عينية</div>
+<div class="home-card-note">عدد العوائل الفريدة التي استلمت مساعدة خلال الشهر الحالي</div>
 </div>
 </div>
 <div class="home-card home-appeals-card">
@@ -1590,11 +1590,17 @@ function homeDateLabel(v){
 }
 function homeIsCurrentMonth(v){
   if(!v)return false;
-  const raw=String(v).slice(0,10);
-  const m=raw.match(/^(\d{4})-(\d{1,2})-\d{1,2}$/);
-  if(!m)return false;
+  const raw=String(v).trim().replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).slice(0,10);
+  let year,month,day,m=raw.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if(m){year=Number(m[1]);month=Number(m[2]);day=Number(m[3]);}
+  else{
+    m=raw.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+    if(!m)return false;
+    day=Number(m[1]);month=Number(m[2]);year=Number(m[3]);
+  }
+  if(!year||month<1||month>12||day<1||day>31)return false;
   const now=new Date();
-  return Number(m[1])===now.getFullYear() && Number(m[2])===now.getMonth()+1;
+  return year===now.getFullYear() && month===now.getMonth()+1;
 }
 const DONATION_WHATSAPP='07714987502';
 const DONATION_KI='7118846554';
@@ -1670,27 +1676,32 @@ function renderHomeDashboard(){
   if(receivedEl)receivedEl.textContent=monthlyReceived.toLocaleString('en-US')+' د.ع';
   if(pendingEl)pendingEl.textContent=monthlyPending.toLocaleString('en-US')+' د.ع';
 
-  // المساعدات المالية: عدد السجلات ومجموع المبالغ لهذا الشهر.
+  // المساعدات: اعتماد تاريخ سجل المساعدة نفسه، مع دعم صيغ التاريخ المختلفة.
   const normalizeAidType=v=>String(v||'').trim().replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي');
-  const monthlyFinancialAids=helps.filter(x=>{
+  const monthlyHelps=helps.filter(x=>x&&!isHiddenRecord(x)&&homeIsCurrentMonth(x.date));
+  const monthlyFinancialAids=monthlyHelps.filter(x=>{
     const t=normalizeAidType(x.type);
-    return !isHiddenRecord(x)&&homeIsCurrentMonth(x.date)&&/مالي/.test(t)&&!/عيني/.test(t);
+    return /مالي/.test(t)&&!/عيني/.test(t);
   });
-  const financialAidTotal=monthlyFinancialAids.reduce((n,x)=>n+Number(x.amount||0),0);
+  const aidAmount=x=>Number(String(x?.amount??0).replace(/[٠-٩]/g,d=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[٬,،]/g,'').trim())||0;
+  const financialAidTotal=monthlyFinancialAids.reduce((n,x)=>n+aidAmount(x),0);
   const financialAidTotalEl=document.getElementById('homeMonthlyFinancialAidTotal');
   if(financialAidTotalEl)financialAidTotalEl.textContent=financialAidTotal.toLocaleString('en-US')+' د.ع';
 
-  // العوائل المستفيدة: توحيد العائلة لمنع تكرارها عبر المساعدات المالية والعينية.
+  // عدد العوائل المستفيدة من كل أنواع المساعدة هذا الشهر؛ كل عائلة تُحسب مرة واحدة فقط.
   const beneficiaryKeys=new Set();
+  const normalizeFamilyName=v=>String(v||'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/\s+/g,' ').trim().toLowerCase();
   const addBeneficiary=(code,name)=>{
-    const c=String(code??'').trim();
+    let c=String(code??'').trim();
+    const n=normalizeFamilyName(name);
+    if(!c||c==='0'||c==='null'||c==='undefined'){
+      const matched=n&&visibleFamilies.find(f=>normalizeFamilyName(f.head||f.n||f.name)===n);
+      if(matched)c=String(matched.c??matched.familyCode??'').trim();
+    }
     if(c&&c!=='0'&&c!=='null'&&c!=='undefined'){beneficiaryKeys.add('code:'+c);return;}
-    const n=String(name||'').trim().replace(/\s+/g,' ');
     if(n)beneficiaryKeys.add('name:'+n);
   };
-  monthlyFinancialAids.forEach(x=>addBeneficiary(x.familyCode??x.family_code,x.familyName??x.family_name));
-  visibleInventory.filter(x=>!isHiddenRecord(x)&&x.move==='صادر'&&homeIsCurrentMonth(x.date))
-    .forEach(x=>addBeneficiary(x.beneficiaryFamilyCode??x.familyCode??x.beneficiary_family_id,x.familyName??x.beneficiaryFamilyName));
+  monthlyHelps.forEach(x=>addBeneficiary(x.familyCode??x.family_code,x.familyName??x.family_name));
   setText('homeMonthlyBeneficiaryFamilies',beneficiaryKeys.size);
 
   // المناشدات: مكتملة / غير مكتملة لهذا الشهر.
