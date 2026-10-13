@@ -3542,7 +3542,7 @@ function pickEditLocation(){
     status.textContent=msg; alert(msg);
   },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
-function saveFamilyEdit(){if(!hasAction('edit','families')){alert('ليس لديك صلاحية تعديل العوائل.');return}
+async function saveFamilyEdit(){if(!hasAction('edit','families')){alert('ليس لديك صلاحية تعديل العوائل.');return}
   const x=getFamily();
   if(!x)return;
   const head=document.getElementById('e-head').value.trim();
@@ -3553,33 +3553,56 @@ function saveFamilyEdit(){if(!hasAction('edit','families')){alert('ليس لدي
   const salarySource=document.getElementById('e-salary-source').value.trim();
   if(!head||!phone||!members||!social||!hasSalary){alert('يرجى إكمال البيانات الأساسية.');return}
   if(hasSalary==='نعم'&&!salarySource){alert('يرجى إدخال الجهة المانحة للراتب.');return}
-  x.head=head; x.n='عائلة '+head; x.phone=phone; x.m=members; x.social=social; x.updatedAt=Date.now(); if(!x.createdAt)x.createdAt=x.updatedAt;
-  x.j=document.getElementById('e-job').value.trim()||'غير محدد';
-  x.hasSalary=hasSalary; x.salarySource=salarySource;
-  x.s=(document.getElementById('e-salary').value.trim()||'0')+' د.ع';
-  x.r=document.getElementById('e-rights').value||'غير محدد';
-  x.i=document.getElementById('e-id').value.trim();
-  x.h=document.getElementById('e-housing').value||'غير محدد';
-  x.address=document.getElementById('e-address').value.trim();
-  const addressResult=addressCodeResult(x.address);
+  const key=String(x.c??'').trim();
+  if(!key||key==='0'||key==='undefined'||key==='null'){alert('تعذر الحفظ: رمز العائلة غير صالح.');return}
+  const payload={...x};
+  payload.head=head; payload.n='عائلة '+head; payload.phone=phone; payload.m=members; payload.social=social;
+  payload.updatedAt=new Date().toISOString(); if(!payload.createdAt)payload.createdAt=payload.updatedAt;
+  payload.j=document.getElementById('e-job').value.trim()||'غير محدد';
+  payload.hasSalary=hasSalary; payload.salarySource=salarySource;
+  payload.s=(document.getElementById('e-salary').value.trim()||'0')+' د.ع';
+  payload.r=document.getElementById('e-rights').value||'غير محدد';
+  payload.i=document.getElementById('e-id').value.trim();
+  payload.h=document.getElementById('e-housing').value||'غير محدد';
+  payload.address=document.getElementById('e-address').value.trim();
+  const addressResult=addressCodeResult(payload.address);
   const addressCode=addressResult.code!==''?String(addressResult.code):document.getElementById('e-address-code').value.trim();
-  x.addressCode=addressCode?Number(addressCode):'';
-  x.landmark=document.getElementById('e-landmark').value.trim();
-  x.map=document.getElementById('e-map').value.trim();
-  x.st=document.getElementById('e-status').value;
+  payload.addressCode=addressCode?Number(addressCode):'';
+  payload.landmark=document.getElementById('e-landmark').value.trim();
+  payload.map=document.getElementById('e-map').value.trim();
+  payload.st=document.getElementById('e-status').value;
   try{
+    const sb=window.warithSupabase||await window.warithSupabaseReady;
+    if(!sb)throw new Error('عميل Supabase غير متاح');
+    window.warithSupabase=sb;
+    let sessionResult=await sb.auth.getSession();
+    if(!sessionResult?.data?.session?.user)sessionResult=await sb.auth.refreshSession();
+    if(!sessionResult?.data?.session?.user)throw new Error('جلسة Supabase غير صالحة؛ سجّل الدخول مجدداً');
+    const {data:cloudRow,error}=await sb.from('client_sync_records').upsert({
+      entity:'families',record_key:key,data:payload,updated_at:payload.updatedAt,deleted:false
+    },{onConflict:'entity,record_key'}).select('entity,record_key,data,updated_at,deleted').single();
+    if(error)throw error;
+    if(!cloudRow||cloudRow.deleted||String(cloudRow.record_key)!==key)throw new Error('لم يتم تأكيد حفظ سجل العائلة في السحابة');
+    const remote=cloudRow.data||{};
+    for(const field of ['head','phone','m','social','hasSalary','salarySource','s','r','i','h','address','addressCode','landmark','map','st']){
+      if(String(remote[field]??'')!==String(payload[field]??''))throw new Error('لم تتطابق بيانات السحابة بعد الحفظ: '+field);
+    }
+    Object.assign(x,payload);
     const data=JSON.stringify(families);
     localStorage.setItem('warith_families_v2',data);
     localStorage.setItem('warith_families',data);
     const check=JSON.parse(localStorage.getItem('warith_families_v2')||'[]');
-    const saved=check.find(f=>Number(f.c)===Number(x.c));
-    if(!saved||saved.head!==head)throw new Error('verify');
+    const saved=check.find(f=>String(f.c)===key);
+    if(!saved||saved.head!==head||saved.phone!==phone)throw new Error('تم الحفظ سحابياً لكن تعذر التحقق من النسخة المحلية');
+    if(warithSyncShadow.families)warithSyncShadow.families.set(key,{...payload});
+    if(warithSyncDeleted.families)warithSyncDeleted.families.delete(key);
+    warithSyncPending.delete('families');
+    alert('تم حفظ تعديلات العائلة في السحابة والتحقق منها بنجاح ✓');
+    showScreen('family-detail');
   }catch(e){
-    alert('تعذر حفظ التعديلات على هذا المتصفح.');
-    return;
+    console.error('حفظ تعديلات العائلة سحابياً فشل:',e);
+    alert('لم يتم تأكيد حفظ التعديلات في السحابة. لم نعرض رسالة نجاح.\n'+(e?.message||e));
   }
-  alert('تم حفظ تعديلات العائلة بنجاح ✓');
-  showScreen('family-detail');
 }
 
 
