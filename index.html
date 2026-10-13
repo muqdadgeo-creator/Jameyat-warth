@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261013-0002';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261013-0003';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -4325,17 +4325,42 @@ function printActiveReport(){
   if(!active){alert('لا يوجد تقرير ظاهر للطباعة.');return}
   reports.forEach(x=>x.classList.remove('print-target'));
   active.classList.add('print-target');
+  const paper=active.querySelector('.report-paper');
+  const fontSnapshots=[];
+  if(paper){
+    paper.querySelectorAll('*').forEach(el=>{
+      const computedSize=parseFloat(window.getComputedStyle(el).fontSize);
+      if(!Number.isFinite(computedSize)||computedSize<=0)return;
+      fontSnapshots.push({el,style:el.getAttribute('style')});
+      el.style.setProperty('font-size',(computedSize*1.5)+'px','important');
+    });
+    paper.querySelectorAll('.report-paper-title,.report-detail-heading,h1,h2,h3,h4,.report-paper-subtitle').forEach(el=>{
+      const computedSize=parseFloat(window.getComputedStyle(el).fontSize);
+      if(Number.isFinite(computedSize)&&computedSize>0){
+        el.style.setProperty('font-size',(computedSize/1.5*1.8)+'px','important');
+        el.style.setProperty('color','#283593','important');
+        el.style.setProperty('font-weight','900','important');
+        el.style.setProperty('text-decoration','underline','important');
+        el.style.setProperty('text-decoration-thickness','2px','important');
+        el.style.setProperty('text-underline-offset','4px','important');
+      }
+    });
+  }
   document.body.classList.add('printing-report');
   const cleanup=()=>{
     document.body.classList.remove('printing-report');
     active.classList.remove('print-target');
+    fontSnapshots.forEach(({el,style})=>{
+      if(style===null)el.removeAttribute('style');
+      else el.setAttribute('style',style);
+    });
     window.removeEventListener('afterprint',cleanup);
   };
   window.addEventListener('afterprint',cleanup);
   setTimeout(()=>window.print(),50);
 }
 
-function applyReportReadability(){const root=document.getElementById('reports');if(!root)return;const items=Array.from(root.querySelectorAll('.report-paper *')).filter(el=>el.dataset.reportFontScaled!=='1').map(el=>({el,px:parseFloat(window.getComputedStyle(el).fontSize)}));items.forEach(({el,px})=>{if(Number.isFinite(px)&&px>0){el.dataset.reportOriginalFontSize=String(px);el.style.setProperty('font-size',(px*1.5)+'px','important');el.dataset.reportFontScaled='1';}})}
+function applyReportReadability(){/* حجم خط شاشة النظام يبقى كما هو؛ التكبير يطبق داخل printActiveReport فقط. */}
 function renderActiveReport(){if(activeReportTab==='general')renderGeneralReport();else if(activeReportTab==='family')renderFamilyReport();else if(activeReportTab==='donor')renderDonorReport();else if(activeReportTab==='helps')renderHelpsReport();else if(activeReportTab==='donations')renderDonationsReport();else if(activeReportTab==='expenses')renderExpensesReport();else renderHiddenReport();applyReportReadability()}
 function reportMoney(n){return (Number(n)||0).toLocaleString('en-US')+' د.ع'}
 function reportTitleText(title){
