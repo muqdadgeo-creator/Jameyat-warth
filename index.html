@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية وارث الخيرية</title>
-<script>(()=>{try{const v='warith-v-20261013-0003';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='warith-v-20261013-0004';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -344,6 +344,7 @@ textarea.forminput{height:80px;resize:vertical}
 <style id="report-print-clean">
 @page{size:A4 portrait;margin:15mm 0}
 @media print{
+  body.printing-report,body.printing-report .report-paper,body.printing-report .report-paper *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   body.printing-report{margin:0!important;padding:0!important;background:#fff!important}
   body.printing-report .app{display:block!important;visibility:visible!important}
   body.printing-report header{display:none!important;visibility:hidden!important}
@@ -4339,7 +4340,7 @@ function printActiveReport(){
         el.style.setProperty('font-size',(computedSize*1.5)+'px','important');
       }
     });
-    const headingSelector='.report-paper-title,.report-detail-heading,h1,h2,h3,h4,.report-paper-subtitle';
+    const headingSelector='.report-paper-title,.report-section-title,.report-detail-heading,.report-paper-org,.report-paper-quote-attrib,h1,h2,h3,h4,.report-paper-subtitle';
     fontEntries.filter(({el})=>el.matches(headingSelector)).forEach(({el,computedSize})=>{
       if(Number.isFinite(computedSize)&&computedSize>0){
         el.style.setProperty('font-size',(computedSize*1.8)+'px','important');
