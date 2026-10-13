@@ -4335,7 +4335,7 @@ function printActiveReport(){
   setTimeout(()=>window.print(),50);
 }
 
-function applyReportReadability(){const root=document.getElementById('reports');if(!root)return;root.querySelectorAll('.report-paper *').forEach(el=>{if(el.dataset.reportFontScaled==='1')return;const cs=window.getComputedStyle(el);const px=parseFloat(cs.fontSize);if(Number.isFinite(px)&&px>0){el.dataset.reportOriginalFontSize=String(px);el.style.setProperty('font-size',(px*1.5)+'px','important');el.dataset.reportFontScaled='1';}})}
+function applyReportReadability(){const root=document.getElementById('reports');if(!root)return;const items=Array.from(root.querySelectorAll('.report-paper *')).filter(el=>el.dataset.reportFontScaled!=='1').map(el=>({el,px:parseFloat(window.getComputedStyle(el).fontSize)}));items.forEach(({el,px})=>{if(Number.isFinite(px)&&px>0){el.dataset.reportOriginalFontSize=String(px);el.style.setProperty('font-size',(px*1.5)+'px','important');el.dataset.reportFontScaled='1';}})}
 function renderActiveReport(){if(activeReportTab==='general')renderGeneralReport();else if(activeReportTab==='family')renderFamilyReport();else if(activeReportTab==='donor')renderDonorReport();else if(activeReportTab==='helps')renderHelpsReport();else if(activeReportTab==='donations')renderDonationsReport();else if(activeReportTab==='expenses')renderExpensesReport();else renderHiddenReport();applyReportReadability()}
 function reportMoney(n){return (Number(n)||0).toLocaleString('en-US')+' د.ع'}
 function reportTitleText(title){
