@@ -4328,16 +4328,21 @@ function printActiveReport(){
   const paper=active.querySelector('.report-paper');
   const fontSnapshots=[];
   if(paper){
-    paper.querySelectorAll('*').forEach(el=>{
-      const computedSize=parseFloat(window.getComputedStyle(el).fontSize);
-      if(!Number.isFinite(computedSize)||computedSize<=0)return;
-      fontSnapshots.push({el,style:el.getAttribute('style')});
-      el.style.setProperty('font-size',(computedSize*1.5)+'px','important');
-    });
-    paper.querySelectorAll('.report-paper-title,.report-detail-heading,h1,h2,h3,h4,.report-paper-subtitle').forEach(el=>{
-      const computedSize=parseFloat(window.getComputedStyle(el).fontSize);
+    const fontEntries=Array.from(paper.querySelectorAll('*')).map(el=>({
+      el,
+      style:el.getAttribute('style'),
+      computedSize:parseFloat(window.getComputedStyle(el).fontSize)
+    }));
+    fontEntries.forEach(({el,style,computedSize})=>{
+      fontSnapshots.push({el,style});
       if(Number.isFinite(computedSize)&&computedSize>0){
-        el.style.setProperty('font-size',(computedSize/1.5*1.8)+'px','important');
+        el.style.setProperty('font-size',(computedSize*1.5)+'px','important');
+      }
+    });
+    const headingSelector='.report-paper-title,.report-detail-heading,h1,h2,h3,h4,.report-paper-subtitle';
+    fontEntries.filter(({el})=>el.matches(headingSelector)).forEach(({el,computedSize})=>{
+      if(Number.isFinite(computedSize)&&computedSize>0){
+        el.style.setProperty('font-size',(computedSize*1.8)+'px','important');
         el.style.setProperty('color','#283593','important');
         el.style.setProperty('font-weight','900','important');
         el.style.setProperty('text-decoration','underline','important');
@@ -4359,7 +4364,6 @@ function printActiveReport(){
   window.addEventListener('afterprint',cleanup);
   setTimeout(()=>window.print(),50);
 }
-
 function applyReportReadability(){/* حجم خط شاشة النظام يبقى كما هو؛ التكبير يطبق داخل printActiveReport فقط. */}
 function renderActiveReport(){if(activeReportTab==='general')renderGeneralReport();else if(activeReportTab==='family')renderFamilyReport();else if(activeReportTab==='donor')renderDonorReport();else if(activeReportTab==='helps')renderHelpsReport();else if(activeReportTab==='donations')renderDonationsReport();else if(activeReportTab==='expenses')renderExpensesReport();else renderHiddenReport();applyReportReadability()}
 function reportMoney(n){return (Number(n)||0).toLocaleString('en-US')+' د.ع'}
