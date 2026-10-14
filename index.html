@@ -2138,6 +2138,7 @@ async function initUsersPermissions(){
 
     const uiRole=normalizeRole(profile.role);
     localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,name:profile.display_name||profile.username,role:uiRole,active:true,permissions:profile.permissions||ROLE_PERMISSIONS[uiRole]||[],actions:profile.actions||ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}}));
+    warithTrackUserActivity(warithShouldMarkVisit());
     if(login)login.style.display='none';
     if(uiRole==='المالك')await migrateLegacyUsersToAuth();
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
