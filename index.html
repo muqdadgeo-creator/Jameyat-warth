@@ -1971,6 +1971,7 @@ async function performLogin(){
     if(err)err.textContent='';
     document.getElementById('loginBackdrop').style.display='none';
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();showScreen('home');
+    warithTrackUserActivity(true);
     setTimeout(()=>initWarithCloudSync(),100);
   }catch(e){if(err)err.textContent='تعذر تسجيل الدخول: '+(e?.message||'تحقق من البيانات');}
 }
@@ -2005,8 +2006,8 @@ async function renderUsers(){
   try{
     const users=await loadRemoteUsers();
     const count=document.getElementById('usersCount');if(count)count.textContent=users.length+' مستخدم';
-    box.innerHTML='<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>'+
-      users.map(u=>{const role=normalizeRole(u.role);const perms=ROLE_PERMISSIONS[role]||[];return '<tr><td><b>'+escapeHtml(u.display_name||u.username)+'</b></td><td><span class="user-badge">'+escapeHtml(role)+'</span></td><td><span class="user-badge '+(u.is_active===false?'user-off':'')+'">'+(u.is_active===false?'موقوف':'فعال')+'</span></td><td>'+perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')+'</td><td>'+(u.username==='admin'?'—':'<button class="more" onclick="openUserEditorById(\''+u.id+'\')">✏️</button>')+'</td></tr>'}).join('')+
+    box.innerHTML='<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>آخر زيارة</th><th>حالة النشاط</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>'+
+      users.map(u=>{const role=normalizeRole(u.role);const visit=u.last_visit_at?new Date(u.last_visit_at).toLocaleString('ar-IQ',{dateStyle:'short',timeStyle:'short'}):'لم يزر النظام بعد';const activityTime=u.last_activity_at?Date.parse(u.last_activity_at):0;const isOnline=!!activityTime&&(Date.now()-activityTime<5*60*1000)&&u.is_active!==false;const perms=ROLE_PERMISSIONS[role]||[];return '<tr><td><b>'+escapeHtml(u.display_name||u.username)+'</b></td><td><span class="user-badge">'+escapeHtml(role)+'</span></td><td><span class="user-badge '+(u.is_active===false?'user-off':'')+'">'+(u.is_active===false?'موقوف':'فعال')+'</span></td><td>'+escapeHtml(visit)+'</td><td><span class="user-badge '+(isOnline?'':'user-off')+'">'+(isOnline?'نشط':'غير نشط')+'</span></td><td>'+perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')+'</td><td>'+(u.username==='admin'?'—':'<button class="more" onclick="openUserEditorById(\''+u.id+'\')">✏️</button>')+'</td></tr>'}).join('')+
       '</tbody></table></div>';
   }catch(e){box.innerHTML='<div class="empty">تعذر تحميل مستخدمي Supabase</div>'}
 }
@@ -2137,6 +2138,7 @@ async function initUsersPermissions(){
 
     const uiRole=normalizeRole(profile.role);
     localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,name:profile.display_name||profile.username,role:uiRole,active:true,permissions:profile.permissions||ROLE_PERMISSIONS[uiRole]||[],actions:profile.actions||ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}}));
+    warithTrackUserActivity(warithShouldMarkVisit());
     if(login)login.style.display='none';
     if(uiRole==='المالك')await migrateLegacyUsersToAuth();
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
@@ -2167,10 +2169,25 @@ async function warithRefreshSession(){
     if(profile.is_active===false)return;
     const uiRole=normalizeRole(profile.role);
     localStorage.setItem(CURRENT_USER_KEY,JSON.stringify({...profile,name:profile.display_name||profile.username,role:uiRole,active:true,permissions:profile.permissions||ROLE_PERMISSIONS[uiRole]||[],actions:profile.actions||ROLE_ACTIONS[uiRole]||{add:[],edit:[],delete:[]}}));
+    warithTrackUserActivity(warithShouldMarkVisit());
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
     initWarithCloudSync();
   }catch(e){}
 }
+let warithActivityLastPing=0,warithActivityLastVisit=0;
+async function warithTrackUserActivity(markVisit=false){
+  const u=currentUser();if(!u||u.active===false||!window.warithSupabase||document.visibilityState!=='visible')return;
+  const now=Date.now();
+  if(markVisit&&now-warithActivityLastVisit<5*60*1000)markVisit=false;
+  if(!markVisit&&now-warithActivityLastPing<45000)return;
+  warithActivityLastPing=now;if(markVisit)warithActivityLastVisit=now;
+  try{await window.warithSupabase.functions.invoke('manage-app-user',{body:{action:'activity',visit:!!markVisit}})}catch(e){}
+}
+function warithShouldMarkVisit(){return !warithActivityLastVisit||Date.now()-warithActivityLastVisit>=5*60*1000}
+document.addEventListener('pointerdown',()=>warithTrackUserActivity(false),{passive:true});
+document.addEventListener('keydown',()=>warithTrackUserActivity(false),{passive:true});
+document.addEventListener('touchstart',()=>warithTrackUserActivity(false),{passive:true});
+setInterval(()=>{if(document.visibilityState==='visible'&&document.hasFocus()){warithTrackUserActivity(false);if(document.getElementById('settings')?.classList.contains('active')&&hasPermission('users-settings'))renderUsers()}},60000);
 window.addEventListener('online',warithRefreshSession);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')warithRefreshSession()});
 
