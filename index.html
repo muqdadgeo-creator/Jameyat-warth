@@ -5169,18 +5169,42 @@ function renderWarithPublicDashboard(){
   const recent=document.getElementById('homeRecentActivities');if(recent)recent.innerHTML='<div class="empty">تُعرض هنا الإحصاءات العامة والمناشدات المعتمدة فقط، حفاظاً على خصوصية العوائل والمتبرعين.</div>';
 }
 async function initWarithPublicDashboard(){
-  if(!navigator.onLine){warithSyncSetStatus('العرض العام دون اتصال','error','تأكد من اتصال الإنترنت لإحضار أحدث تحديثات السحابة');return}
+  if(window.warithPublicDashboardFetchBusy||!navigator.onLine)return;
+  window.warithPublicDashboardFetchBusy=true;
+  let signedIn=false;
   try{
     const sb=await window.warithSupabaseReady;if(!sb)throw new Error('عميل السحابة غير جاهز');
     const {data:sessionData,error:sessionError}=await sb.auth.getSession();if(sessionError)throw sessionError;
-    if(sessionData?.session?.user&&warithHasSignedInUser())return;
-    warithSyncSetStatus('جار تحديث لوحة العرض…','busy');
+    signedIn=!!(sessionData?.session?.user&&warithHasSignedInUser());
     const {data,error}=await sb.rpc('get_public_dashboard');if(error)throw error;
     if(!data||typeof data!=='object')throw new Error('لم تصل بيانات العرض العام');
-    window.warithPublicDashboardData=data;renderWarithPublicDashboard();
-    const stamp=data.updatedAt?new Date(data.updatedAt).toLocaleString('ar-IQ',{dateStyle:'short',timeStyle:'short',timeZone:'Asia/Baghdad'}):'';
-    warithSyncSetStatus('تحديث العرض العام ✓','ok',stamp?'آخر تحديث للسحابة: '+stamp:'تم تحميل بيانات العرض العام');
-  }catch(e){const msg=String(e?.message||e||'خطأ غير معروف');warithSyncSetStatus('تعذر تحديث العرض العام ⚠','error',msg);console.warn('Warith public dashboard refresh failed:',e);if(!window.warithPublicDashboardData)renderWarithPublicDashboardLoading()}
+    window.warithPublicTickerData={
+      settings:data.tickerSettings&&typeof data.tickerSettings==='object'?data.tickerSettings:null,
+      news:Array.isArray(data.tickerNews)?data.tickerNews:[],
+      updatedAt:data.updatedAt||null
+    };
+    if(window.warithPublicTickerData.settings&&String(window.warithPublicTickerData.settings.id||'')==='main'){
+      tickerSettingsRecords=[window.warithPublicTickerData.settings];
+    }
+    if(typeof warithTickerShowNext==='function'){
+      warithTickerShowNext(false);
+      if(typeof warithTickerApplyCycleInterval==='function')warithTickerApplyCycleInterval();
+    }
+    if(!signedIn){
+      warithSyncSetStatus('جار تحديث لوحة العرض…','busy');
+      window.warithPublicDashboardData=data;
+      renderWarithPublicDashboard();
+      const stamp=data.updatedAt?new Date(data.updatedAt).toLocaleString('ar-IQ',{dateStyle:'short',timeStyle:'short',timeZone:'Asia/Baghdad'}):'';
+      warithSyncSetStatus('تحديث العرض العام ✓','ok',stamp?'آخر تحديث للسحابة: '+stamp:'تم تحميل بيانات العرض العام');
+    }
+  }catch(e){
+    const msg=String(e?.message||e||'خطأ غير معروف');
+    if(!signedIn)warithSyncSetStatus('تعذر تحديث العرض العام ⚠','error',msg);
+    console.warn('Warith public dashboard/ticker refresh failed:',e);
+    if(!signedIn&&!window.warithPublicDashboardData)renderWarithPublicDashboardLoading();
+  }finally{
+    window.warithPublicDashboardFetchBusy=false;
+  }
 }
 const WARITH_SYNC_CONFIG={
   families:{key:'warith_families_v2',entity:'families',id:x=>String(x?.c??'')},
@@ -5233,7 +5257,7 @@ async function warithSyncManualRefresh(){if(!navigator.onLine){warithSyncSetStat
 window.warithSupabaseReady.then(sb=>{if(!sb){warithSyncSetStatus('تعذر الاتصال بالسحابة ⚠','error','تعذر تهيئة عميل Supabase');return}sb.auth.onAuthStateChange((event,session)=>{if(session?.user){setTimeout(()=>initWarithCloudSync(),0)}else{warithSyncReady=false;warithSyncPending.clear();warithSyncStopRealtime();setTimeout(()=>initWarithPublicDashboard(),0)}});if(warithHasSignedInUser())setTimeout(()=>initWarithCloudSync(),0);else setTimeout(()=>initWarithPublicDashboard(),0);if(!window.warithPublicRefreshTimer)window.warithPublicRefreshTimer=setInterval(()=>{if(!warithHasSignedInUser()&&document.visibilityState==='visible')initWarithPublicDashboard()},30000)});
 localStorage.setItem=function(key,value){if(warithSyncPulling){warithSyncOriginalSetItem(key,value);return}const cfg=Object.values(WARITH_SYNC_CONFIG).find(x=>x.key===key);if(!cfg){warithSyncOriginalSetItem(key,value);return}try{const arr=JSON.parse(value||'[]'),stamped=warithSyncStampChanged(cfg,arr,Date.now()),data=JSON.stringify(stamped);warithSyncOriginalSetItem(key,data);if(cfg.entity==='families')warithSyncOriginalSetItem('warith_families',data);warithSyncSchedule(cfg.entity)}catch(e){warithSyncOriginalSetItem(key,value);warithSyncSchedule(cfg.entity)}};
 localStorage.removeItem=function(key){warithSyncOriginalRemoveItem(key);if(warithSyncPulling)return;const cfg=Object.values(WARITH_SYNC_CONFIG).find(x=>x.key===key);if(cfg)warithSyncSchedule(cfg.entity)};
-window.addEventListener('online',()=>{if(warithHasSignedInUser()){warithSyncQueueAll();initWarithCloudSync()}else initWarithPublicDashboard()});window.addEventListener('offline',()=>{warithSyncLastStatus='OFFLINE';warithSyncStopRealtime();if(!warithHasSignedInUser())warithSyncSetStatus('العرض العام دون اتصال','error','سيتم تحديث لوحة العرض عند عودة الإنترنت')});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(warithHasSignedInUser()){initWarithCloudSync();warithSyncFlushSoon()}else initWarithPublicDashboard()}});
+window.addEventListener('online',()=>{initWarithPublicDashboard();if(warithHasSignedInUser()){warithSyncQueueAll();initWarithCloudSync()}});window.addEventListener('offline',()=>{warithSyncLastStatus='OFFLINE';warithSyncStopRealtime();if(!warithHasSignedInUser())warithSyncSetStatus('العرض العام دون اتصال','error','سيتم تحديث لوحة العرض عند عودة الإنترنت')});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){initWarithPublicDashboard();if(warithHasSignedInUser()){initWarithCloudSync();warithSyncFlushSoon()}}});if(!window.warithPublicTickerRefreshTimer)window.warithPublicTickerRefreshTimer=window.setInterval(()=>{if(document.visibilityState==='visible'&&navigator.onLine)initWarithPublicDashboard()},60000);
 setInterval(()=>{if(warithSyncReady&&navigator.onLine){if(!warithSyncChannel){warithSyncStartRealtime();if(!warithSyncChannel)initWarithCloudSync()}if(warithSyncPending.size)warithSyncFlushSoon()}},15000);
 
 /* WARITH MOVING TICKER */
@@ -5248,16 +5272,27 @@ function removeTickerQuote(index){const current=warithTickerReadQuoteDrafts();cu
 function openTickerSettings(){if(!hasPermission('ticker-settings')){alert('ليس لديك صلاحية إدارة إعدادات الشريط المتحرك.');return}showScreen('ticker-settings');renderWarithTickerSettings()}
 function saveTickerSettings(){if(!hasPermission('ticker-settings')){alert('ليس لديك صلاحية تعديل إعدادات الشريط المتحرك.');return}const quotes=warithTickerReadQuoteDrafts();const displayIntervalSeconds=Math.max(2,Math.min(120,Number(document.getElementById('tickerDisplayIntervalSeconds')?.value)||WARITH_TICKER_DEFAULTS.displayIntervalSeconds));const quoteIntervalHours=Math.max(1,Math.min(168,Number(document.getElementById('tickerQuoteIntervalHours')?.value)||WARITH_TICKER_DEFAULTS.quoteIntervalHours));const newsExpiryHours=Math.max(1,Math.min(720,Number(document.getElementById('tickerNewsExpiryHours')?.value)||WARITH_TICKER_DEFAULTS.newsExpiryHours));const record={id:'main',welcomeText:document.getElementById('tickerWelcomeText')?.value?.trim()||'',introText:document.getElementById('tickerIntroText')?.value?.trim()||'',displayIntervalSeconds,quoteIntervalHours,newsExpiryHours,quotes,updatedAt:new Date().toISOString()};tickerSettingsRecords=[record];localStorage.setItem('warith_ticker_settings',JSON.stringify(tickerSettingsRecords));warithTickerQuoteDrafts=null;if(typeof warithSyncSchedule==='function')warithSyncSchedule('ticker_settings');warithTickerApplyCycleInterval();warithTickerShowNext(false);renderWarithTickerSettings();alert('تم حفظ إعدادات الشريط المتحرك بنجاح ✓')}
 function warithTickerVisitorMessage(){const v=id=>document.getElementById(id)?.textContent||'—';return 'عدد الزوار — اليوم: '+v('warithVisitorsToday')+' · هذا الشهر: '+v('warithVisitorsMonth')+' · هذه السنة: '+v('warithVisitorsYear')+' · الكلي: '+v('warithVisitorsTotal')+' · الموجودون الآن: '+v('warithVisitorsOnline')}
-function warithTickerBuildMessages(){const cfg=warithTickerSettings(),out=[];if(String(cfg.welcomeText||'').trim())out.push({key:'welcome',text:String(cfg.welcomeText).trim()});if(String(cfg.introText||'').trim())out.push({key:'intro',text:String(cfg.introText).trim()});const quotes=(Array.isArray(cfg.quotes)?cfg.quotes:[]).filter(q=>q&&q.active!==false&&String(q.text||'').trim());if(quotes.length){const quoteHours=Math.max(1,Math.min(168,Number(cfg.quoteIntervalHours??WARITH_TICKER_DEFAULTS.quoteIntervalHours)||WARITH_TICKER_DEFAULTS.quoteIntervalHours));const slot=Math.floor(Date.now()/(quoteHours*60*60*1000));const q=quotes[((slot%quotes.length)+quotes.length)%quotes.length];out.push({key:'quote:'+q.id,text:String(q.text).trim()+(q.source?' — '+String(q.source).trim():'')})}
-const newsHours=Math.max(1,Math.min(720,Number(cfg.newsExpiryHours??WARITH_TICKER_DEFAULTS.newsExpiryHours)||WARITH_TICKER_DEFAULTS.newsExpiryHours));const now=Date.now(),expiry=newsHours*60*60*1000,news=[];
-/* الأخبار التشغيلية تظهر بعد دخول مستخدم فعّال، ولا تُفلتر حسب صلاحيات أقسامه. */
-const tickerUser=(()=>{try{return typeof currentUser==='function'?currentUser():null}catch(e){return null}})();
-if(tickerUser&&tickerUser.active!==false){
-for(const a of (Array.isArray(appeals)?appeals:[])){if(a?.status!=='مكتملة'||!a.completedAt)continue;const ts=Date.parse(a.completedAt);if(!Number.isFinite(ts)||now-ts<0||now-ts>=expiry)continue;const family=a.familyCode?('، للعائلة #'+a.familyCode):'';news.push({key:'appeal:'+a.id+':'+a.completedAt,ts,text:'نود إعلامكم بإنجاز المناشدة #'+(a.id??'—')+' — '+String(a.type||'مناشدة')+family})}
-for(const h of (Array.isArray(helps)?helps:[])){if(!h?.recordedAt)continue;const ts=Date.parse(h.recordedAt);if(!Number.isFinite(ts)||now-ts<0||now-ts>=expiry)continue;news.push({key:'help:'+h.id+':'+h.recordedAt,ts,text:'تم تقديم مساعدة '+String(h.type||'')+(h.familyCode?' إلى العائلة #'+h.familyCode:'')})}
-for(const p of (Array.isArray(programs)?programs:[])){if(!['مكتمل','مغلق'].includes(p?.status)||!p.newsAt)continue;const ts=Date.parse(p.newsAt);if(!Number.isFinite(ts)||now-ts<0||now-ts>=expiry)continue;const received=Array.isArray(p.families)?p.families.filter(v=>v&&v.received).length:0;const desc=String(p.details||p.name||'البرنامج').trim();const complete=p.status==='مكتمل'||(Array.isArray(p.families)&&p.families.length>0&&received===p.families.length);const text=complete?'تم إكمال توزيع '+desc+' على '+received+' عائلة من العوائل المشمولة لهذا الشهر':'تم إغلاق برنامج '+desc+'، واستلمت '+received+' عائلة من العوائل المشمولة';news.push({key:'program:'+p.id+':'+p.newsAt,ts,text})}
+function warithTickerBuildMessages(){
+const cfg=warithTickerSettings(),out=[];
+if(String(cfg.welcomeText||'').trim())out.push({key:'welcome',text:String(cfg.welcomeText).trim()});
+if(String(cfg.introText||'').trim())out.push({key:'intro',text:String(cfg.introText).trim()});
+const quotes=(Array.isArray(cfg.quotes)?cfg.quotes:[]).filter(q=>q&&q.active!==false&&String(q.text||'').trim());
+if(quotes.length){
+  const quoteHours=Math.max(1,Math.min(168,Number(cfg.quoteIntervalHours??WARITH_TICKER_DEFAULTS.quoteIntervalHours)||WARITH_TICKER_DEFAULTS.quoteIntervalHours));
+  const slot=Math.floor(Date.now()/(quoteHours*60*60*1000));
+  const q=quotes[((slot%quotes.length)+quotes.length)%quotes.length];
+  out.push({key:'quote:'+q.id,text:String(q.text).trim()+(q.source?' — '+String(q.source).trim():'')});
 }
-news.sort((a,b)=>b.ts-a.ts);out.push(...news);out.push({key:'visitors',text:warithTickerVisitorMessage()});return out}
+const newsHours=Math.max(1,Math.min(720,Number(cfg.newsExpiryHours??WARITH_TICKER_DEFAULTS.newsExpiryHours)||WARITH_TICKER_DEFAULTS.newsExpiryHours));
+const now=Date.now(),expiry=newsHours*60*60*1000;
+const news=(Array.isArray(window.warithPublicTickerData?.news)?window.warithPublicTickerData.news:[])
+  .filter(item=>{const ts=Date.parse(item?.ts||'');return Number.isFinite(ts)&&ts<=now&&now-ts<expiry&&String(item?.text||'').trim()})
+  .map(item=>({key:String(item.key||('news:'+item.ts)),text:String(item.text).trim(),ts:Date.parse(item.ts)}))
+  .sort((a,b)=>b.ts-a.ts);
+out.push(...news.map(({key,text})=>({key,text})));
+out.push({key:'visitors',text:warithTickerVisitorMessage()});
+return out
+}
 function warithTickerShowNext(advance=false){const el=document.getElementById('warithTickerMessage');if(!el)return;const messages=warithTickerBuildMessages();if(!messages.length)return;let idx=messages.findIndex(m=>m.key===warithTickerCurrentKey);if(!warithTickerStarted){idx=0;warithTickerStarted=true}else if(advance){if(warithTickerCurrentKey==='visitors'&&typeof warithUpdateVisitorTicker==='function')warithUpdateVisitorTicker();if(idx<0)idx=warithTickerIndex;idx=(idx+1)%messages.length}else if(idx<0)idx=Math.min(warithTickerIndex,messages.length-1);warithTickerIndex=idx;const msg=messages[idx];warithTickerCurrentKey=msg.key;el.textContent=msg.text;const viewport=document.getElementById('warithTickerViewport');el.style.fontSize='';if(viewport){let size=11;while(el.scrollWidth>viewport.clientWidth&&size>8){size=Math.max(8,size-.5);el.style.fontSize=size+'px'}}el.classList.remove('wvtick-enter');void el.offsetWidth;el.classList.add('wvtick-enter')}
 function warithTickerApplyCycleInterval(){if(window.warithTickerCycleTimer)window.clearInterval(window.warithTickerCycleTimer);const cfg=warithTickerSettings();const seconds=Math.max(2,Math.min(120,Number(cfg.displayIntervalSeconds??WARITH_TICKER_DEFAULTS.displayIntervalSeconds)||WARITH_TICKER_DEFAULTS.displayIntervalSeconds));window.warithTickerCycleTimer=window.setInterval(()=>warithTickerShowNext(true),seconds*1000)}
 function initWarithMovingTicker(){warithTickerShowNext(false);warithTickerApplyCycleInterval()}
@@ -5267,7 +5302,7 @@ function warithVisitorBrowserKey(){const storageKey='warith_visitor_tracking_id'
 function warithVisitorIdentityKey(){let u=null;try{u=typeof currentUser==='function'?currentUser():null}catch(e){}if(u&&u.active!==false){const raw=String(u.username||u.code||u.id||u.name||u.displayName||'').trim().toLowerCase();if(raw)return 'employee:'+encodeURIComponent(raw).slice(0,150)}return warithVisitorBrowserKey()}
 function warithRenderVisitorStats(data){if(!data||typeof data!=='object')return;const values={warithVisitorsToday:data.today,warithVisitorsMonth:data.month,warithVisitorsYear:data.year,warithVisitorsTotal:data.total,warithVisitorsOnline:data.online};Object.entries(values).forEach(([id,value])=>{const el=document.getElementById(id);if(el&&Number.isFinite(Number(value)))el.textContent=Number(value).toLocaleString('ar-IQ')});if(warithTickerCurrentKey==='visitors')warithTickerShowNext(false)}
 async function warithUpdateVisitorTicker(){if(window.warithVisitorTrackBusy||!navigator.onLine)return;window.warithVisitorTrackBusy=true;try{const sb=await window.warithSupabaseReady;if(!sb)return;const visitorKey=warithVisitorIdentityKey();const previousVisitorKey=visitorKey.startsWith('employee:')?warithVisitorBrowserKey():null;const {data,error}=await sb.rpc('track_site_visit',{p_visitor_key:visitorKey,p_previous_visitor_key:previousVisitorKey});if(error)throw error;warithRenderVisitorStats(data)}catch(e){console.warn('Visitor statistics update failed:',e)}finally{window.warithVisitorTrackBusy=false}}
-function initWarithVisitorTicker(){if(window.warithVisitorStatsStarted)return;window.warithVisitorStatsStarted=true;initWarithMovingTicker();warithUpdateVisitorTicker();window.setInterval(()=>{if(document.visibilityState==='visible'&&document.hasFocus())warithUpdateVisitorTicker()},60000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')warithUpdateVisitorTicker()});window.addEventListener('focus',warithUpdateVisitorTicker)}
+function initWarithVisitorTicker(){if(window.warithVisitorStatsStarted)return;window.warithVisitorStatsStarted=true;initWarithMovingTicker();initWarithPublicDashboard();warithUpdateVisitorTicker();window.setInterval(()=>{if(document.visibilityState==='visible'&&document.hasFocus())warithUpdateVisitorTicker()},60000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){initWarithPublicDashboard();warithUpdateVisitorTicker()}});window.addEventListener('focus',()=>{initWarithPublicDashboard();warithUpdateVisitorTicker()})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initWarithVisitorTicker,{once:true});else initWarithVisitorTicker();
 </script>
 </html>
