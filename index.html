@@ -1951,6 +1951,25 @@ function hasAction(action,section){const u=currentUser();if(!u||u.active===false
 function canAccessScreen(id){if(id==='login')return true;const u=currentUser();const role=normalizeRole(u?.role||'');if(id==='in-kind-donations')return hasPermission('donations')||(u&&u.active!==false&&role==='مسؤول المخزن'&&hasPermission('inventory'));if(id==='settings-hub')return hasPermission('users-settings')||hasPermission('ticker-settings');if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(role))return true;return hasPermission('inventory')}return hasPermission(id)||id==='in-kind-donations'&&hasPermission('donations')||id==='family-followup'&&hasPermission('families')||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
 function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');const settingsHubAllowed=hasPermission('users-settings')||hasPermission('ticker-settings');['homeSettingsHubTile','menuSettingsHubButton'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=settingsHubAllowed?'':'none'});document.querySelectorAll('[data-action]').forEach(el=>{const [a,s]=String(el.dataset.action).split(':');el.style.display=hasAction(a,s)?'':'none'});const inkindBtn=document.getElementById('inventoryInKindBtn');if(inkindBtn){const u=currentUser();inkindBtn.style.display=u&&u.active!==false&&normalizeRole(u.role)==='مسؤول المخزن'&&hasPermission('inventory')?'':'none';}};
 function renderUserOptions(){}
+let presenceWriteInFlight=false;
+let presenceVisitPending=false;
+async function recordUserPresence(isVisit=false){
+  if(isVisit)presenceVisitPending=true;
+  if(presenceWriteInFlight)return;
+  const u=currentUser();
+  if(!u||u.active===false){presenceVisitPending=false;return}
+  const sb=window.warithSupabase;if(!sb)return;
+  presenceWriteInFlight=true;
+  const visit=presenceVisitPending;presenceVisitPending=false;
+  try{
+    const {data,error}=await sb.functions.invoke('manage-app-user',{body:{action:'presence',visit}});
+    if(error||data?.error)throw new Error(data?.error||error?.message||'تعذر تسجيل الزيارة');
+  }catch(e){console.warn('تعذر تحديث نشاط المستخدم',e)}
+  finally{
+    presenceWriteInFlight=false;
+    if(presenceVisitPending&&document.visibilityState==='visible')setTimeout(()=>recordUserPresence(false),1000);
+  }
+}
 async function performLogin(){
   const rawInput=String(document.getElementById('loginUsername')?.value||'').trim();
   const username=rawInput.toLowerCase().replace(/\s+/g,'');
@@ -1971,6 +1990,7 @@ async function performLogin(){
     if(err)err.textContent='';
     document.getElementById('loginBackdrop').style.display='none';
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();showScreen('home');
+    recordUserPresence(true);
     setTimeout(()=>initWarithCloudSync(),100);
   }catch(e){if(err)err.textContent='تعذر تسجيل الدخول: '+(e?.message||'تحقق من البيانات');}
 }
@@ -2000,13 +2020,23 @@ async function migrateLegacyUsersToAuth(){
     localStorage.setItem(USER_KEY,JSON.stringify(all));
   }catch(e){}
 }
+function formatUserLastVisit(value){
+  if(!value)return 'لم يزر النظام بعد';
+  const d=new Date(value);if(Number.isNaN(d.getTime()))return '—';
+  try{return new Intl.DateTimeFormat('ar-IQ',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Baghdad'}).format(d)}catch(e){return d.toLocaleString()}
+}
+function userActivityState(u){
+  const stamp=Date.parse(u.last_activity_at||'');
+  const online=u.is_active!==false&&Number.isFinite(stamp)&&(Date.now()-stamp)<5*60*1000;
+  return {label:online?'نشط الآن':'غير نشط',className:online?'':'user-off'};
+}
 async function renderUsers(){
   const box=document.getElementById('usersTable');if(!box)return;
   try{
     const users=await loadRemoteUsers();
     const count=document.getElementById('usersCount');if(count)count.textContent=users.length+' مستخدم';
-    box.innerHTML='<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>'+
-      users.map(u=>{const role=normalizeRole(u.role);const perms=ROLE_PERMISSIONS[role]||[];return '<tr><td><b>'+escapeHtml(u.display_name||u.username)+'</b></td><td><span class="user-badge">'+escapeHtml(role)+'</span></td><td><span class="user-badge '+(u.is_active===false?'user-off':'')+'">'+(u.is_active===false?'موقوف':'فعال')+'</span></td><td>'+perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')+'</td><td>'+(u.username==='admin'?'—':'<button class="more" onclick="openUserEditorById(\''+u.id+'\')">✏️</button>')+'</td></tr>'}).join('')+
+    box.innerHTML='<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>آخر زيارة</th><th>النشاط</th><th>حالة الحساب</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>'+
+      users.map(u=>{const role=normalizeRole(u.role);const perms=ROLE_PERMISSIONS[role]||[];const activity=userActivityState(u);return '<tr><td><b>'+escapeHtml(u.display_name||u.username)+'</b></td><td><span class="user-badge">'+escapeHtml(role)+'</span></td><td>'+escapeHtml(formatUserLastVisit(u.last_visit_at))+'</td><td><span class="user-badge '+activity.className+'">'+activity.label+'</span></td><td><span class="user-badge '+(u.is_active===false?'user-off':'')+'">'+(u.is_active===false?'موقوف':'فعال')+'</span></td><td>'+perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')+'</td><td>'+(u.username==='admin'?'—':'<button class="more" onclick="openUserEditorById(\''+u.id+'\')">✏️</button>')+'</td></tr>'}).join('')+
       '</tbody></table></div>';
   }catch(e){box.innerHTML='<div class="empty">تعذر تحميل مستخدمي Supabase</div>'}
 }
@@ -2140,6 +2170,7 @@ async function initUsersPermissions(){
     if(login)login.style.display='none';
     if(uiRole==='المالك')await migrateLegacyUsersToAuth();
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
+    recordUserPresence(true);
     if(document.getElementById('usersTable'))renderUsers();
     setTimeout(()=>initWarithCloudSync(),0);
   }catch(e){
@@ -2172,7 +2203,8 @@ async function warithRefreshSession(){
   }catch(e){}
 }
 window.addEventListener('online',warithRefreshSession);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')warithRefreshSession()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){recordUserPresence(true);warithRefreshSession()}});
+setInterval(()=>{if(document.visibilityState==='visible')recordUserPresence(false)},60*1000);
 
 let filesCategory='الكل';
 function canAccessFiles(){return hasPermission('files-center')}
