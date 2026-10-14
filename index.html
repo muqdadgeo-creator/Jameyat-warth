@@ -5264,6 +5264,20 @@ function removeTickerQuote(index){const current=warithTickerReadQuoteDrafts();cu
 function openTickerSettings(){if(!hasPermission('ticker-settings')){alert('ليس لديك صلاحية إدارة إعدادات الشريط المتحرك.');return}showScreen('ticker-settings');renderWarithTickerSettings()}
 function saveTickerSettings(){if(!hasPermission('ticker-settings')){alert('ليس لديك صلاحية تعديل إعدادات الشريط المتحرك.');return}const quotes=warithTickerReadQuoteDrafts();const displayIntervalSeconds=Math.max(2,Math.min(120,Number(document.getElementById('tickerDisplayIntervalSeconds')?.value)||WARITH_TICKER_DEFAULTS.displayIntervalSeconds));const quoteIntervalHours=Math.max(1,Math.min(168,Number(document.getElementById('tickerQuoteIntervalHours')?.value)||WARITH_TICKER_DEFAULTS.quoteIntervalHours));const newsExpiryHours=Math.max(1,Math.min(720,Number(document.getElementById('tickerNewsExpiryHours')?.value)||WARITH_TICKER_DEFAULTS.newsExpiryHours));const record={id:'main',welcomeText:document.getElementById('tickerWelcomeText')?.value?.trim()||'',introText:document.getElementById('tickerIntroText')?.value?.trim()||'',displayIntervalSeconds,quoteIntervalHours,newsExpiryHours,quotes,updatedAt:new Date().toISOString()};tickerSettingsRecords=[record];localStorage.setItem('warith_ticker_settings',JSON.stringify(tickerSettingsRecords));warithTickerQuoteDrafts=null;if(typeof warithSyncSchedule==='function')warithSyncSchedule('ticker_settings');warithTickerApplyCycleInterval();warithTickerShowNext(false);renderWarithTickerSettings();alert('تم حفظ إعدادات الشريط المتحرك بنجاح ✓')}
 function warithTickerVisitorMessage(){const v=id=>document.getElementById(id)?.textContent||'—';return 'عدد الزوار — اليوم: '+v('warithVisitorsToday')+' · هذا الشهر: '+v('warithVisitorsMonth')+' · هذه السنة: '+v('warithVisitorsYear')+' · الكلي: '+v('warithVisitorsTotal')+' · الموجودون الآن: '+v('warithVisitorsOnline')}
+function warithTickerFormatNewsText(value){
+let text=String(value||'').trim();
+text=text.replace('تم تقديم مساعدة من نوع ','تم تقديم مساعدة ');
+const prefix='تم إنجاز المناشدة رقم ';
+if(text.startsWith(prefix)){
+ const rest=text.slice(prefix.length),familyMark=' للعائلة رقم ',typeMark=' من نوع ';
+ const familyAt=rest.indexOf(familyMark),typeAt=rest.indexOf(typeMark);
+ if(familyAt>=0&&typeAt>familyAt){
+  const id=rest.slice(0,familyAt).trim(),family=rest.slice(familyAt+familyMark.length,typeAt).trim(),type=rest.slice(typeAt+typeMark.length).trim();
+  return 'تم إنجاز المناشدة '+id+' / '+type+' للعائلة '+family;
+ }
+}
+return text;
+}
 function warithTickerBuildMessages(){
 const cfg=warithTickerSettings(),out=[];
 if(String(cfg.welcomeText||'').trim())out.push({key:'welcome',text:String(cfg.welcomeText).trim()});
@@ -5279,7 +5293,7 @@ const newsHours=Math.max(1,Math.min(720,Number(cfg.newsExpiryHours??WARITH_TICKE
 const now=Date.now(),expiry=newsHours*60*60*1000;
 const news=(Array.isArray(window.warithPublicTickerData?.news)?window.warithPublicTickerData.news:[])
   .filter(item=>{const ts=Date.parse(item?.ts||'');return Number.isFinite(ts)&&ts<=now&&now-ts<expiry&&String(item?.text||'').trim()})
-  .map(item=>({key:String(item.key||('news:'+item.ts)),text:String(item.text).trim(),ts:Date.parse(item.ts)}))
+  .map(item=>({key:String(item.key||('news:'+item.ts)),text:warithTickerFormatNewsText(String(item.text).trim()),ts:Date.parse(item.ts)}))
   .sort((a,b)=>b.ts-a.ts);
 out.push(...news.map(({key,text})=>({key,text})));
 out.push({key:'visitors',text:warithTickerVisitorMessage()});
