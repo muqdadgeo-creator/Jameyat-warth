@@ -279,7 +279,7 @@ textarea.forminput{height:80px;resize:vertical}
 
 .users-perm-table{width:100%;border-collapse:collapse;font-size:12px}.users-perm-table th,.users-perm-table td{padding:9px 7px;border-bottom:1px solid #e5ece9;text-align:right}.users-perm-table th{background:#f3f7f5;font-weight:900}
 .users-perm-table{min-width:1050px}
-.users-perm-table th:nth-child(4),.users-perm-table td:nth-child(4){width:36%;min-width:420px;white-space:normal;line-height:1.8}.perm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.perm-item{display:flex;align-items:center;gap:7px;background:#f7faf9;border:1px solid #e1ebe7;border-radius:10px;padding:8px}.user-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e9f3ef;font-size:10px;font-weight:800}.user-off{background:#f5e8e8;color:#8a3333}.login-backdrop{position:fixed;inset:0;background:#0008;z-index:12000;display:flex;align-items:center;justify-content:center;padding:18px}.login-card{width:min(430px,94vw);background:#fff;border-radius:18px;padding:20px;box-shadow:0 15px 50px #0005}.login-backdrop#loginBackdrop .login-card{position:relative}.login-backdrop#loginBackdrop .login-close-btn{position:absolute;top:10px;left:12px;width:34px;height:34px;border:0;border-radius:50%;background:#f1f3f4;color:#444;font-size:25px;line-height:1;cursor:pointer;display:grid;place-items:center}.login-backdrop#loginBackdrop .login-close-btn:hover{background:#e3e7e8}.login-logo{width:82px;height:100px;border-radius:0;background:transparent;color:inherit;display:grid;place-items:center;font-size:28px;font-weight:900;margin:0 auto 10px}.login-card h2{text-align:center;margin:4px 0 4px}.login-card .sub{text-align:center;margin-bottom:15px}.user-action-row{display:flex;gap:7px;flex-wrap:wrap}.user-action-row button{flex:1;min-width:120px}
+.users-perm-table th:nth-child(6),.users-perm-table td:nth-child(6){width:36%;min-width:420px;white-space:normal;line-height:1.8}.user-activity-online{background:#e1f5e8;color:#176b3b}.user-activity-offline{background:#eef0f0;color:#59635f}.perm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.perm-item{display:flex;align-items:center;gap:7px;background:#f7faf9;border:1px solid #e1ebe7;border-radius:10px;padding:8px}.user-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#e9f3ef;font-size:10px;font-weight:800}.user-off{background:#f5e8e8;color:#8a3333}.login-backdrop{position:fixed;inset:0;background:#0008;z-index:12000;display:flex;align-items:center;justify-content:center;padding:18px}.login-card{width:min(430px,94vw);background:#fff;border-radius:18px;padding:20px;box-shadow:0 15px 50px #0005}.login-backdrop#loginBackdrop .login-card{position:relative}.login-backdrop#loginBackdrop .login-close-btn{position:absolute;top:10px;left:12px;width:34px;height:34px;border:0;border-radius:50%;background:#f1f3f4;color:#444;font-size:25px;line-height:1;cursor:pointer;display:grid;place-items:center}.login-backdrop#loginBackdrop .login-close-btn:hover{background:#e3e7e8}.login-logo{width:82px;height:100px;border-radius:0;background:transparent;color:inherit;display:grid;place-items:center;font-size:28px;font-weight:900;margin:0 auto 10px}.login-card h2{text-align:center;margin:4px 0 4px}.login-card .sub{text-align:center;margin-bottom:15px}.user-action-row{display:flex;gap:7px;flex-wrap:wrap}.user-action-row button{flex:1;min-width:120px}
 
 
 .export-modal-backdrop{position:fixed;inset:0;background:rgba(15,30,28,.45);display:none;align-items:center;justify-content:center;z-index:9999;padding:18px}
@@ -1909,6 +1909,31 @@ document.addEventListener('click',e=>{const w=document.querySelector('.notificat
 /* ================= المستخدمون والصلاحيات ================= */
 const USER_KEY='warith_users_v1';
 const CURRENT_USER_KEY='warith_current_user';
+let warithActivityTrackingBound=false;
+let warithActivityHeartbeat=null;
+let warithActivityLastSentAt=0;
+async function recordUserActivity(visit=false){
+  const u=currentUser();if(!u||u.active===false||!window.warithSupabase)return;
+  const now=Date.now();
+  if(!visit&&now-warithActivityLastSentAt<30000)return;
+  if(document.visibilityState==='hidden'&&!visit)return;
+  warithActivityLastSentAt=now;
+  try{
+    const {error}=await window.warithSupabase.functions.invoke('manage-app-user',{body:{action:'activity',visit:!!visit}});
+    if(error)throw error;
+  }catch(e){console.warn('تعذر تحديث نشاط المستخدم',e)}
+}
+function startUserActivityTracking(markVisit=false){
+  if(!currentUser())return;
+  if(markVisit)recordUserActivity(true);
+  if(!warithActivityTrackingBound){
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')recordUserActivity(true)});
+    document.addEventListener('pointerdown',()=>recordUserActivity(false),{passive:true});
+    document.addEventListener('keydown',()=>recordUserActivity(false),{passive:true});
+    warithActivityTrackingBound=true;
+  }
+  if(!warithActivityHeartbeat)warithActivityHeartbeat=setInterval(()=>{if(document.visibilityState==='visible')recordUserActivity(false)},60000);
+}
 const PERM_LABELS={home:'الرئيسية',families:'العوائل',donations:'التبرعات',appeals:'المناشدات','files-center':'الملفات والتوثيق',activities:'النشاطات',inventory:'المخزن',reports:'التقارير','ticker-settings':'إعدادات الشريط المتحرك','users-settings':'المستخدمون والصلاحيات'};
 const ROLE_PERMISSIONS={
   'المالك':Object.keys(PERM_LABELS),
@@ -1973,6 +1998,7 @@ async function performLogin(){
     if(err)err.textContent='';
     document.getElementById('loginBackdrop').style.display='none';
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();showScreen('home');
+    startUserActivityTracking(true);
     setTimeout(()=>initWarithCloudSync(),100);
   }catch(e){if(err)err.textContent='تعذر تسجيل الدخول: '+(e?.message||'تحقق من البيانات');}
 }
@@ -2002,16 +2028,26 @@ async function migrateLegacyUsersToAuth(){
     localStorage.setItem(USER_KEY,JSON.stringify(all));
   }catch(e){}
 }
+function formatUserLastVisit(value){
+  if(!value)return 'لم يزر النظام بعد';
+  const d=new Date(value);if(Number.isNaN(d.getTime()))return '—';
+  return d.toLocaleString('ar-IQ',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function isUserCurrentlyActive(u){
+  const at=Date.parse(u.last_activity_at||'');
+  return u.is_active!==false&&Number.isFinite(at)&&(Date.now()-at)<=5*60*1000;
+}
 async function renderUsers(){
   const box=document.getElementById('usersTable');if(!box)return;
   try{
     const users=await loadRemoteUsers();
     const count=document.getElementById('usersCount');if(count)count.textContent=users.length+' مستخدم';
-    box.innerHTML='<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>'+
-      users.map(u=>{const role=normalizeRole(u.role);const perms=ROLE_PERMISSIONS[role]||[];return '<tr><td><b>'+escapeHtml(u.display_name||u.username)+'</b></td><td><span class="user-badge">'+escapeHtml(role)+'</span></td><td><span class="user-badge '+(u.is_active===false?'user-off':'')+'">'+(u.is_active===false?'موقوف':'فعال')+'</span></td><td>'+perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')+'</td><td>'+(u.username==='admin'?'—':'<button class="more" onclick="openUserEditorById(\''+u.id+'\')">✏️</button>')+'</td></tr>'}).join('')+
+    box.innerHTML='<div style="overflow:auto"><table class="users-perm-table"><thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>آخر زيارة</th><th>حالة النشاط</th><th>الصلاحيات</th><th>إجراء</th></tr></thead><tbody>'+
+      users.map(u=>{const role=normalizeRole(u.role);const perms=ROLE_PERMISSIONS[role]||[];const activeNow=isUserCurrentlyActive(u);return '<tr><td><b>'+escapeHtml(u.display_name||u.username)+'</b></td><td><span class="user-badge">'+escapeHtml(role)+'</span></td><td><span class="user-badge '+(u.is_active===false?'user-off':'')+'">'+(u.is_active===false?'موقوف':'فعال')+'</span></td><td>'+escapeHtml(formatUserLastVisit(u.last_visit_at))+'</td><td><span class="user-badge '+(activeNow?'user-activity-online':'user-activity-offline')+'">'+(activeNow?'نشط':'غير نشط')+'</span></td><td>'+perms.map(p=>escapeHtml(PERM_LABELS[p]||p)).join('، ')+'</td><td>'+(u.username==='admin'?'—':'<button class="more" onclick="openUserEditorById(\''+u.id+'\')">✏️</button>')+'</td></tr>'}).join('')+
       '</tbody></table></div>';
   }catch(e){box.innerHTML='<div class="empty">تعذر تحميل مستخدمي Supabase</div>'}
 }
+if(!window.warithUsersActivityRefreshTimer)window.warithUsersActivityRefreshTimer=setInterval(()=>{const screen=document.getElementById('settings');if(screen?.classList.contains('active')&&hasPermission('users-settings'))renderUsers()},60000);
 async function openUserEditorById(id){
   if(!hasPermission('users-settings'))return;
   const u=remoteUsersCache.find(x=>String(x.id)===String(id));if(!u)return;
@@ -2142,6 +2178,7 @@ async function initUsersPermissions(){
     if(login)login.style.display='none';
     if(uiRole==='المالك')await migrateLegacyUsersToAuth();
     applyPermissionUI();updateCurrentUserBadge();updateAuthHeaderUI();
+    startUserActivityTracking(true);
     if(document.getElementById('usersTable'))renderUsers();
     setTimeout(()=>initWarithCloudSync(),0);
   }catch(e){
