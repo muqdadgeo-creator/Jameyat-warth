@@ -395,7 +395,7 @@ window.warithSupabaseReady=new Promise(resolve=>{
 
 
 <style id="warith-visitor-ticker-style">
-#warithVisitorTicker{display:flex;align-items:center;justify-content:center;min-height:34px;padding:5px 12px;background:#f4f8f5;border-bottom:1px solid #dce8e0;color:#205b49;font-family:Tahoma,Arial,sans-serif;font-size:11px;line-height:1.55;overflow:hidden;white-space:nowrap}
+#warithVisitorTicker{position:relative;z-index:12001;display:flex;align-items:center;justify-content:center;min-height:34px;padding:5px 12px;background:#f4f8f5;border-bottom:1px solid #dce8e0;color:#205b49;font-family:Tahoma,Arial,sans-serif;font-size:11px;line-height:1.55;overflow:hidden;white-space:nowrap}
 #warithTickerViewport{display:block;width:100%;min-width:0;overflow:hidden;text-align:center;text-overflow:ellipsis;white-space:nowrap}
 #warithTickerMessage{display:block;width:100%;overflow:hidden;text-overflow:clip;white-space:nowrap;font-weight:800;color:#205b49;opacity:1;transform:translateX(0);transition:opacity .35s ease,transform .35s ease}
 #warithTickerMessage.wvtick-enter{animation:warithTickerEnter .45s ease both}
@@ -5294,21 +5294,33 @@ async function refreshWarithPublicTicker(){
   if(warithPublicTickerRefreshBusy||!navigator.onLine)return;
   warithPublicTickerRefreshBusy=true;
   try{
+    /* الشريط العام مستقل عن جلسة الدخول والصلاحيات، ويُحمّل مباشرة للزائر والموظف. */
     const sb=await window.warithSupabaseReady;
-    if(!sb)return;
-    const {data,error}=await sb.rpc('get_public_ticker');
-    if(error)throw error;
-    if(!data||typeof data!=='object')throw new Error('لم تصل بيانات الشريط العام');
+    if(!sb)throw new Error('عميل السحابة غير جاهز للشريط العام');
+    let data=null,primaryError=null;
+    const primary=await sb.rpc('get_public_ticker');
+    if(!primary.error&&primary.data&&typeof primary.data==='object'&&Array.isArray(primary.data.tickerNews)){
+      data=primary.data;
+    }else{
+      primaryError=primary.error||new Error('مصدر الشريط العام لم يُرجع الأخبار');
+      /* احتياط مستقل: لوحة العرض العامة ترجع بيانات الشريط نفسها دون فحص الصلاحيات. */
+      const fallback=await sb.rpc('get_public_dashboard');
+      if(fallback.error)throw new Error('تعذر تحميل الشريط العام: '+String(primaryError.message||primaryError)+'؛ '+String(fallback.error.message||fallback.error));
+      if(!fallback.data||typeof fallback.data!=='object'||!Array.isArray(fallback.data.tickerNews))throw primaryError;
+      data={tickerSettings:fallback.data.tickerSettings,tickerNews:fallback.data.tickerNews,updatedAt:fallback.data.updatedAt};
+    }
+    const previous=window.warithPublicTickerData||{};
     const remoteSettings=data.tickerSettings&&typeof data.tickerSettings==='object'?data.tickerSettings:null;
-    const signature=remoteSettings?JSON.stringify(remoteSettings):'';
+    const isMainSettings=!!remoteSettings&&String(remoteSettings.id||'')==='main';
+    const signature=isMainSettings?JSON.stringify(remoteSettings):'';
     const settingsChanged=!!signature&&signature!==warithPublicTickerSettingsSignature;
     window.warithPublicTickerData={
-      ...(window.warithPublicTickerData||{}),
-      settings:remoteSettings,
-      news:Array.isArray(data.tickerNews)?data.tickerNews:[],
-      updatedAt:data.updatedAt||null
+      ...previous,
+      settings:remoteSettings||previous.settings||null,
+      news:Array.isArray(data.tickerNews)?data.tickerNews:(Array.isArray(previous.news)?previous.news:[]),
+      updatedAt:data.updatedAt||previous.updatedAt||null
     };
-    if(remoteSettings&&String(remoteSettings.id||'')==='main'){
+    if(isMainSettings){
       tickerSettingsRecords=[remoteSettings];
       warithPublicTickerSettingsSignature=signature;
     }
