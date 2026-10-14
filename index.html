@@ -477,14 +477,20 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <button class="tile" data-perm="inventory" onclick="showScreen('inventory')"><span class="ico">📦</span><small>المخزن</small></button>
 <button class="tile" data-perm="reports" onclick="showScreen('reports')"><span class="ico">📊</span><small>التقارير</small></button>
 <button class="tile" data-perm="files-center" onclick="openFilesCenter()"><span class="ico">📁</span><small>الملفات والتوثيق</small></button>
-<button class="tile" data-perm="ticker-settings" onclick="openTickerSettings()"><span class="ico">📢</span><small>إعدادات الشريط المتحرك</small></button>
-<button class="tile" data-perm="users-settings" onclick="openSettings()"><span class="ico">⚙️</span><small>المستخدمون والصلاحيات</small></button>
+<button class="tile" id="homeSettingsHubTile" onclick="openSettingsHub()"><span class="ico">⚙️</span><small>الإعدادات</small></button>
 </div>
 <div class="section"><b>آخر النشاطات</b><span class="link" data-perm="activities" onclick="showScreen('activities')">عرض الكل</span></div>
 <div id="homeRecentActivities"><div class="empty">لا توجد نشاطات مسجلة حالياً</div></div>
 </section>
+<section class="screen" id="settings-hub">
+<div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">الإعدادات</div></div>
+<div class="card">
+  <button class="tile" data-perm="users-settings" style="width:100%;margin-bottom:10px" onclick="openSettings()">👥 إعدادات المستخدمين والصلاحيات</button>
+  <button class="tile" data-perm="ticker-settings" style="width:100%" onclick="openTickerSettings()">📢 إعدادات الشريط المتحرك</button>
+</div>
+</section>
 <section class="screen" id="settings">
-<div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">المستخدمون والصلاحيات</div><div class="count" id="usersCount"></div></div>
+<div class="top"><button class="back" onclick="showScreen('settings-hub')">← رجوع</button><div class="screen-title">إعدادات المستخدمين والصلاحيات</div><div class="count" id="usersCount"></div></div>
 <div class="card">
 <div class="row" style="margin-bottom:10px"><div class="grow"><b>إدارة المستخدمين</b><div class="sub">تحديد المستخدم، دوره، كلمة المرور، والأقسام المسموح له بالدخول إليها.</div></div><button class="action primary" onclick="openUserEditor()">＋ إضافة مستخدم</button></div>
 <div id="usersTable"></div>
@@ -495,7 +501,7 @@ window.warithSupabaseReady=new Promise(resolve=>{
 </div>
 </section>
 <section class="screen" id="ticker-settings">
-<div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">إعدادات الشريط المتحرك</div></div>
+<div class="top"><button class="back" onclick="showScreen('settings-hub')">← رجوع</button><div class="screen-title">إعدادات الشريط المتحرك</div></div>
 <div class="card">
   <b>النصوص الثابتة</b>
   <div class="sub" style="margin:5px 0 12px">تظهر النصوص بالتتابع في سطر واحد، ويمكن تعديلها من هنا دون تغيير البرمجة.</div>
@@ -1156,8 +1162,7 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <button data-perm="activities" onclick="showScreen('activities');closeMenu()">🎯 النشاطات</button>
 <button data-perm="inventory" onclick="showScreen('inventory');closeMenu()">📦 المخزن</button>
 <button data-perm="reports" onclick="showScreen('reports');closeMenu()">📊 التقارير</button>
-<button data-perm="ticker-settings" onclick="openTickerSettings();closeMenu()">📢 إعدادات الشريط المتحرك</button>
-<button data-perm="users-settings" onclick="openSettings();closeMenu()">⚙️ المستخدمون والصلاحيات</button>
+<button id="menuSettingsHubButton" onclick="openSettingsHub();closeMenu()">⚙️ الإعدادات</button>
 <button id="menuLoginButton" onclick="openLogin();closeMenu()">🔐 تسجيل الدخول</button>
 </div></div>
 <script>
@@ -1937,8 +1942,8 @@ function authEmailForUsername(username){
 function currentRole(){return normalizeRole(currentUser()?.role||'')}
 function hasPermission(p){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);/* المالك ومدير الجمعية لا يتأثران بأي صلاحيات قديمة مخزنة */if(role==='المالك')return true;if(role==='مدير الجمعية')return p!=='users-settings';const rolePerms=ROLE_PERMISSIONS[role]||[];const savedPerms=Array.isArray(u.permissions)?u.permissions:rolePerms;if(['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['families','family-detail','family-members','add-member'].includes(p))return true;if(p==='inventory'&&['مسؤول المخزن','إدخال البيانات'].includes(role))return true;return savedPerms.includes(p)||rolePerms.includes(p)}
 function hasAction(action,section){const u=currentUser();if(!u||u.active===false)return false;const role=normalizeRole(u.role);if(role==='المالك'||role==='مدير الجمعية')return true;/* صلاحية العوائل ثابتة لمسؤولي العوائل/الكشف وإدخال البيانات، حتى لو كانت بيانات الصلاحيات القديمة ناقصة */if(section==='families'&&['مسؤول العوائل والكشوفات','إدخال البيانات'].includes(role)&&['add','edit'].includes(action))return true;const a=(u.actions||ROLE_ACTIONS[role]||{})[action];return a==='*'||Array.isArray(a)&&a.includes(section)}
-function canAccessScreen(id){if(id==='login')return true;const u=currentUser();const role=normalizeRole(u?.role||'');if(id==='in-kind-donations')return hasPermission('donations')||(u&&u.active!==false&&role==='مسؤول المخزن'&&hasPermission('inventory'));if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(role))return true;return hasPermission('inventory')}return hasPermission(id)||id==='in-kind-donations'&&hasPermission('donations')||id==='family-followup'&&hasPermission('families')||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
-function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');document.querySelectorAll('[data-action]').forEach(el=>{const [a,s]=String(el.dataset.action).split(':');el.style.display=hasAction(a,s)?'':'none'});const inkindBtn=document.getElementById('inventoryInKindBtn');if(inkindBtn){const u=currentUser();inkindBtn.style.display=u&&u.active!==false&&normalizeRole(u.role)==='مسؤول المخزن'&&hasPermission('inventory')?'':'none';}};
+function canAccessScreen(id){if(id==='login')return true;const u=currentUser();const role=normalizeRole(u?.role||'');if(id==='in-kind-donations')return hasPermission('donations')||(u&&u.active!==false&&role==='مسؤول المخزن'&&hasPermission('inventory'));if(id==='settings-hub')return hasPermission('users-settings')||hasPermission('ticker-settings');if(id==='settings')return hasPermission('users-settings');if(id==='inventory'||id==='add-inventory'){if(u&&u.active!==false&&['المالك','مدير الجمعية','مسؤول المخزن','إدخال البيانات'].includes(role))return true;return hasPermission('inventory')}return hasPermission(id)||id==='in-kind-donations'&&hasPermission('donations')||id==='family-followup'&&hasPermission('families')||id==='family-detail'&&hasPermission('families')||id==='family-members'&&hasPermission('families')||id==='add-member'&&hasPermission('families')||id==='donors'&&hasPermission('donations')||id==='add-donor'&&hasPermission('donations')||id==='add-donation'&&hasPermission('donations')||id==='appeal-detail'&&hasPermission('appeals')||id==='add-appeal'&&hasPermission('appeals')||id==='add-activity'&&hasPermission('activities')||id==='add-inventory'&&hasPermission('inventory');}
+function applyPermissionUI(){document.querySelectorAll('[data-perm]').forEach(el=>el.style.display=hasPermission(el.dataset.perm)?'':'none');document.querySelectorAll('[data-screen]').forEach(el=>el.style.display=hasPermission(el.dataset.screen)?'':'none');const settingsHubAllowed=hasPermission('users-settings')||hasPermission('ticker-settings');['homeSettingsHubTile','menuSettingsHubButton'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=settingsHubAllowed?'':'none'});document.querySelectorAll('[data-action]').forEach(el=>{const [a,s]=String(el.dataset.action).split(':');el.style.display=hasAction(a,s)?'':'none'});const inkindBtn=document.getElementById('inventoryInKindBtn');if(inkindBtn){const u=currentUser();inkindBtn.style.display=u&&u.active!==false&&normalizeRole(u.role)==='مسؤول المخزن'&&hasPermission('inventory')?'':'none';}};
 function renderUserOptions(){}
 async function performLogin(){
   const rawInput=String(document.getElementById('loginUsername')?.value||'').trim();
@@ -1968,6 +1973,7 @@ function updateCurrentUserBadge(){const u=currentUser();document.querySelectorAl
 function openLogin(){const u=document.getElementById('loginUsername');if(u)u.value='';const p=document.getElementById('loginPassword');if(p)p.value='';const e=document.getElementById('loginError');if(e)e.textContent='';const b=document.getElementById('loginBackdrop');if(b)b.style.display='flex';} function closeLogin(){const b=document.getElementById('loginBackdrop');if(b)b.style.display='none';}
 function updateAuthHeaderUI(){const u=currentUser();const logged=!!u;const btn=document.getElementById('headerLoginBtn');if(btn){btn.textContent=logged?'🚪 خروج':'🔐 تسجيل الدخول';btn.setAttribute('aria-label',logged?'تسجيل الخروج':'تسجيل الدخول');btn.onclick=logged?logoutSupabaseUser:openLogin;}const headerUser=document.getElementById('headerCurrentUser');if(headerUser){headerUser.textContent=logged?String(u.name||u.username||'').trim():'';headerUser.classList.toggle('visible',logged&&!!String(u.name||u.username||'').trim());}const menuBtn=document.getElementById('menuLoginButton');if(menuBtn){menuBtn.textContent=logged?'🚪 تسجيل الخروج':'🔐 تسجيل الدخول';menuBtn.onclick=logged?logoutSupabaseUser:openLogin;}document.querySelectorAll('[data-auth-only]').forEach(el=>el.style.display=logged?'':'none');}
 function switchUser(){openLogin()}
+function openSettingsHub(){if(!hasPermission('users-settings')&&!hasPermission('ticker-settings')){alert('ليس لديك صلاحية الوصول إلى الإعدادات.');return}showScreen('settings-hub')}
 function openSettings(){if(!hasPermission('users-settings')){alert('ليس لديك صلاحية إدارة المستخدمين والصلاحيات.');return}showScreen('settings');renderUsers()}
 let remoteUsersCache=[];
 async function loadRemoteUsers(){
