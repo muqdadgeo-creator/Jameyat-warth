@@ -5183,9 +5183,7 @@ async function initWarithPublicDashboard(){
       news:Array.isArray(data.tickerNews)?data.tickerNews:[],
       updatedAt:data.updatedAt||null
     };
-    if(window.warithPublicTickerData.settings&&String(window.warithPublicTickerData.settings.id||'')==='main'){
-      tickerSettingsRecords=[window.warithPublicTickerData.settings];
-    }
+    tickerSettingsRecords=window.warithPublicTickerData.settings&&String(window.warithPublicTickerData.settings.id||'')==='main'?[window.warithPublicTickerData.settings]:[];
     if(typeof warithTickerShowNext==='function'){
       warithTickerShowNext(false);
       if(typeof warithTickerApplyCycleInterval==='function')warithTickerApplyCycleInterval();
