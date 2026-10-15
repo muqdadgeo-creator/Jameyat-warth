@@ -813,6 +813,8 @@ window.warithSupabaseReady=new Promise(resolve=>{
 <div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterRightsBtn" onclick="toggleProgramFilter('rights')" type="button">الحقوق: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('rights')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterRightsMenu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterMembersBtn" onclick="toggleProgramFilter('members')" type="button">عدد الأفراد: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('members')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterMembersMenu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterHousingBtn" onclick="toggleProgramFilter('housing')" type="button">السكن: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('housing')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterHousingMenu"></div></div>
+<div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterAddressBtn" onclick="toggleProgramFilter('address')" type="button">العنوان: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('address')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterAddressMenu"></div></div>
+<div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterAddressCodeBtn" onclick="toggleProgramFilter('addressCode')" type="button">رمز العنوان: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('addressCode')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterAddressCodeMenu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterStatusBtn" onclick="toggleProgramFilter('status')" type="button">الحالة: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('status')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterStatusMenu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterSalaryBtn" onclick="toggleProgramFilter('salary')" type="button">الراتب: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('salary')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterSalaryMenu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterJobBtn" onclick="toggleProgramFilter('job')" type="button">المهنة: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('job')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterJobMenu"></div></div>
@@ -4050,8 +4052,8 @@ function normalizeProgramFamilies(x){
   const raw=Array.isArray(x?.families)?x.families:(Array.isArray(x?.familyCodes)?x.familyCodes.map(c=>({familyCode:c,received:false})):[]);
   return raw.map(v=>typeof v==='object'?{familyCode:Number(v.familyCode),received:!!v.received}:{familyCode:Number(v),received:false}).filter(v=>v.familyCode);
 }
-let programFilterCommitted={rights:[],members:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
-let programFilterPending={rights:[],members:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
+let programFilterCommitted={rights:[],members:[],housing:[],address:[],addressCode:[],status:[],salary:[],job:[],social:[],student:[]};
+let programFilterPending={rights:[],members:[],housing:[],address:[],addressCode:[],status:[],salary:[],job:[],social:[],student:[]};
 function programFilterState(){return programFilterPending;}
 function toggleProgramFilter(type){
   const menu=document.getElementById('programFilter'+type.charAt(0).toUpperCase()+type.slice(1)+'Menu');
@@ -4066,6 +4068,8 @@ function prepareProgramFamilyFilters(){
     rights:[...new Set(families.map(f=>normalizeProgramFilterValue(f.r)))].sort(),
     members:[...new Set(families.map(f=>String(Number(f.m)||0)))].sort((a,b)=>Number(a)-Number(b)),
     housing:[...new Set(families.map(f=>normalizeProgramFilterValue(f.h)))].sort(),
+    address:[...new Set(families.map(f=>normalizeProgramFilterValue(f.address)))].sort(),
+    addressCode:[...new Set(families.map(f=>normalizeProgramFilterValue(f.addressCode)))].sort(),
     status:[...new Set(families.map(f=>normalizeProgramFilterValue(f.st)))].sort(),
     salary:[...new Set(families.map(f=>normalizeProgramFilterValue(f.hasSalary)))].sort(),
     job:[...new Set(families.map(f=>normalizeProgramFilterValue(f.j)))].sort(),
@@ -4135,6 +4139,8 @@ function renderProgramFilterMenus(){
     rights:[...new Set(families.map(f=>normalizeProgramFilterValue(f.r)))].sort(),
     members:[...new Set(families.map(f=>String(Number(f.m)||0)))].sort((a,b)=>Number(a)-Number(b)),
     housing:[...new Set(families.map(f=>normalizeProgramFilterValue(f.h)))].sort(),
+    address:[...new Set(families.map(f=>normalizeProgramFilterValue(f.address)))].sort(),
+    addressCode:[...new Set(families.map(f=>normalizeProgramFilterValue(f.addressCode)))].sort(),
     status:[...new Set(families.map(f=>normalizeProgramFilterValue(f.st)))].sort(),
     salary:[...new Set(families.map(f=>normalizeProgramFilterValue(f.hasSalary)))].sort(),
     job:[...new Set(families.map(f=>normalizeProgramFilterValue(f.j)))].sort(),
@@ -4145,7 +4151,7 @@ function renderProgramFilterMenus(){
 }
 function renderProgramFilterLabels(){
   const st=programFilterCommitted;
-  const labels={rights:'الحقوق',members:'عدد الأفراد',housing:'السكن',status:'الحالة',salary:'الراتب',job:'المهنة',social:'الحالة الاجتماعية',student:'الطلبة'};
+  const labels={rights:'الحقوق',members:'عدد الأفراد',housing:'السكن',address:'العنوان',addressCode:'رمز العنوان',status:'الحالة',salary:'الراتب',job:'المهنة',social:'الحالة الاجتماعية',student:'الطلبة'};
   Object.keys(labels).forEach(k=>{const b=document.getElementById('programFilter'+k.charAt(0).toUpperCase()+k.slice(1)+'Btn');if(b)b.textContent=labels[k]+': '+(st[k]?.length?st[k].join('، '):'الكل')});
   const note=document.getElementById('programFilterActiveNote');
   if(note){const active=Object.keys(st).filter(k=>st[k]?.length);note.textContent=active.length?'الفلاتر المطبقة: '+active.map(k=>labels[k]+': '+st[k].join('، ')).join('  ·  '):'الفلاتر غير مفعّلة حالياً';}
@@ -4166,7 +4172,7 @@ function getProgramFilteredFamilies(){
   return families.filter(f=>{
     const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();
     const student=familyIsStudent(f)?'نعم':'لا';
-    return (!q||text.includes(q))&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.members.length||st.members.includes(String(Number(f.m)||0)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))&&(!st.job.length||st.job.includes(normalizeProgramFilterValue(f.j)))&&(!st.social.length||st.social.includes(normalizeProgramFilterValue(f.social)))&&(!st.student.length||st.student.includes(student));
+    return (!q||text.includes(q))&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.members.length||st.members.includes(String(Number(f.m)||0)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.address.length||st.address.includes(normalizeProgramFilterValue(f.address)))&&(!st.addressCode.length||st.addressCode.includes(normalizeProgramFilterValue(f.addressCode)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))&&(!st.job.length||st.job.includes(normalizeProgramFilterValue(f.j)))&&(!st.social.length||st.social.includes(normalizeProgramFilterValue(f.social)))&&(!st.student.length||st.student.includes(student));
   }).sort((a,b)=>{
     const ac=Number(a.addressCode)||999999, bc=Number(b.addressCode)||999999;
     return ac-bc || Number(a.c)-Number(b.c);
