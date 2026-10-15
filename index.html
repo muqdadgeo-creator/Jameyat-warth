@@ -4076,8 +4076,8 @@ function prepareProgramFamilyFilters(){
     social:[...new Set(families.map(f=>normalizeProgramFilterValue(f.social)))].sort(),
     student:['نعم','لا']
   };
-  programFilterCommitted={rights:[],members:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
-  programFilterPending={rights:[],members:[],housing:[],status:[],salary:[],job:[],social:[],student:[]};
+  programFilterCommitted={rights:[],members:[],housing:[],address:[],addressCode:[],status:[],salary:[],job:[],social:[],student:[]};
+  programFilterPending={rights:[],members:[],housing:[],address:[],addressCode:[],status:[],salary:[],job:[],social:[],student:[]};
   Object.keys(vals).forEach(k=>buildProgramFilterMenu(k,vals[k],k));
   renderProgramFilterLabels();
   const q=document.getElementById('programFamilyQ');if(q)q.value='';
