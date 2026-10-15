@@ -3389,7 +3389,7 @@ function addDonationForAppeal(appealId){
   setDonationType('مالي');
   populateAppealDonations(appealId);
 }
-function saveDonation(){
+async function saveDonation(){
   const _edit=editingDonationIndex!==null;
   if(!hasAction(_edit?'edit':'add','donations')){alert('ليس لديك صلاحية هذه العملية.');return}
   const donorId=document.getElementById('dn-donor').value;
@@ -3421,7 +3421,34 @@ function saveDonation(){
     attachments:donationAttachments
   };
   if(editingDonationIndex!==null)donations[editingDonationIndex]=item;else donations.unshift(item);
+  item.updatedAt=new Date().toISOString();
   localStorage.setItem('warith_donations',JSON.stringify(donations));
+  try{
+    const sb=window.warithSupabase||await window.warithSupabaseReady;
+    if(!sb)throw new Error('Supabase غير متاح');
+    window.warithSupabase=sb;
+    let sessionResult=await sb.auth.getSession();
+    if(!sessionResult?.data?.session?.user){
+      sessionResult=await sb.auth.refreshSession();
+    }
+    if(!sessionResult?.data?.session?.user)throw new Error('جلسة Supabase غير صالحة أو منتهية');
+    const key=String(item.id||'');
+    if(!key)throw new Error('مفتاح التبرع غير صالح');
+    const {error}=await sb.from('client_sync_records').upsert({
+      entity:'donations',
+      record_key:key,
+      data:item,
+      updated_at:item.updatedAt,
+      deleted:false
+    },{onConflict:'entity,record_key'});
+    if(error)throw error;
+    if(warithSyncShadow.donations)warithSyncShadow.donations.set(key,{...item});
+    if(warithSyncDeleted.donations)warithSyncDeleted.donations.delete(key);
+  }catch(e){
+    console.error('حفظ التبرع سحابياً فشل:',e);
+    alert('تم حفظ التعديل على هذا الجهاز، لكن تعذر تأكيد حفظه في السحابة.\n'+(e?.message||e)+'\nلا تغلق الصفحة قبل التأكد من المزامنة.');
+    return;
+  }
   notifyDonationSaved(item,editingDonationIndex!==null);
   renderDonors();
   alert(editingDonationIndex!==null?'تم تعديل التبرع وتوحيد الاسم ✓':'تم حفظ التبرع بنجاح ✓');
