@@ -1418,7 +1418,7 @@ function setAppealAttachmentPublic(i,checked){
   appealAttachments[i].showToVisitors=!!checked;
 }
 function removeAppealAttachment(i){appealAttachments.splice(i,1);renderAppealAttachments();}
-function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction(_edit?'edit':'add','appeals')){alert('ليس لديك صلاحية هذه العملية.');return}
+async function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction(_edit?'edit':'add','appeals')){alert('ليس لديك صلاحية هذه العملية.');return}
   const date=document.getElementById('a-date').value||new Date().toISOString().slice(0,10);
   if(appealOwnerType==='registered'&&!document.getElementById('a-appeal-family').value){alert('اختر العائلة أولاً');return}
   if(appealOwnerType==='new'&&!document.getElementById('a-name').value.trim()){alert('أدخل اسم صاحب الحالة');return}
@@ -1478,9 +1478,45 @@ function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction(_edit
   else if(item.status==='مكتملة'&&old?.completedAt)item.completedAt=old.completedAt;
   if(editingAppealIndex!==null)appeals[editingAppealIndex]=item;else appeals.unshift(item);
   localStorage.setItem('warith_appeals',JSON.stringify(appeals));
+  // ثبّت المناشدة في السحابة قبل تأكيد الحفظ، حتى تنعكس في لوحة العرض العامة.
+  try{
+    const sb=window.warithSupabase||await window.warithSupabaseReady;
+    if(!sb)throw new Error('Supabase غير متاح');
+    window.warithSupabase=sb;
+    let sessionResult=await sb.auth.getSession();
+    if(!sessionResult?.data?.session?.user)sessionResult=await sb.auth.refreshSession();
+    if(!sessionResult?.data?.session?.user)throw new Error('جلسة Supabase غير صالحة أو منتهية');
+    if(newFamilyAdded){
+      const family=families.find(x=>Number(x.c)===Number(familyCode));
+      if(family){
+        const familyKey=String(family.c);
+        const {error:familyError}=await sb.from('client_sync_records').upsert({
+          entity:'families',record_key:familyKey,data:family,
+          updated_at:family.updatedAt?new Date(family.updatedAt).toISOString():new Date().toISOString(),deleted:false
+        },{onConflict:'entity,record_key'});
+        if(familyError)throw familyError;
+        if(warithSyncShadow.families)warithSyncShadow.families.set(familyKey,{...family});
+        if(warithSyncDeleted.families)warithSyncDeleted.families.delete(familyKey);
+      }
+    }
+    const appealKey=String(item.id||'');
+    if(!appealKey)throw new Error('مفتاح المناشدة غير صالح');
+    const {error:appealError}=await sb.from('client_sync_records').upsert({
+      entity:'appeals',record_key:appealKey,data:item,
+      updated_at:item.updatedAt||new Date().toISOString(),deleted:false
+    },{onConflict:'entity,record_key'});
+    if(appealError)throw appealError;
+    if(warithSyncShadow.appeals)warithSyncShadow.appeals.set(appealKey,{...item});
+    if(warithSyncDeleted.appeals)warithSyncDeleted.appeals.delete(appealKey);
+  }catch(e){
+    console.error('حفظ المناشدة في السحابة فشل:',e);
+    alert('تم الاحتفاظ بالتعديل على هذا الجهاز، لكن تعذر تأكيد حفظه في السحابة.\\n'+(e?.message||e)+'\\nلا تعتبر المناشدة متزامنة إلى أن تتأكد من ظهورها على جهاز آخر.');
+    return;
+  }
   notifyAppealSaved(item,editingAppealIndex!==null,old?.status);
   renderAppeals();
   updateAppealDashboard();
+  renderHomeDashboard();
   alert(editingAppealIndex!==null?'تم تعديل المناشدة بنجاح ✓':(newFamilyAdded?'تم حفظ المناشدة وإضافة الحالة إلى سجل العوائل ✓':'تم حفظ المناشدة بنجاح ✓'));
   editingAppealIndex=null;
   showScreen('appeals');
