@@ -1,0 +1,40 @@
+name: Restore sidebar visibility
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/restore-sidebar-visibility.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  restore-sidebar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove risky page-wide layout override
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          pattern = r'<style id="warith-left-gap-layout-fix">.*?</style>'
+          updated, count = re.subn(pattern, '', s, count=1, flags=re.S)
+          if count == 0:
+              print("Left-gap override not found; no file changes made")
+              raise SystemExit(0)
+          p.write_text(updated, encoding="utf-8")
+      - name: Commit sidebar restoration
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Restore sidebar by removing global layout override"
+          git push
