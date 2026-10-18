@@ -1,0 +1,79 @@
+name: Add family social status and address filters
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/add-family-social-address.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add requested family filters
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path("index.html")
+          s=p.read_text(encoding="utf-8")
+
+          old='<div><label class="fl">الحالة</label><select class="forminput" id="ff-status" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select></div>\n<div><label class="fl">نوع السكن</label>'
+          new='<div><label class="fl">الحالة</label><select class="forminput" id="ff-status" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select></div>\n<div><label class="fl">الحالة الاجتماعية</label><select class="forminput" id="ff-social" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>\n<div><label class="fl">نوع السكن</label>'
+          if old not in s: raise SystemExit("Missing status/housing HTML anchor")
+          s=s.replace(old,new,1)
+
+          old='<div><label class="fl">رمز العنوان</label><select class="forminput" id="ff-addressCode" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>\n<div><label class="fl">المعرف</label>'
+          new='<div><label class="fl">العنوان</label><select class="forminput" id="ff-address" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>\n<div><label class="fl">رمز العنوان</label><select class="forminput" id="ff-addressCode" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>\n<div><label class="fl">المعرف</label>'
+          if old not in s: raise SystemExit("Missing address code HTML anchor")
+          s=s.replace(old,new,1)
+
+          old="const familyPopupFilterIds=['ff-status','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-addressCode','ff-identifier'];"
+          new="const familyPopupFilterIds=['ff-status','ff-social','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-address','ff-addressCode','ff-identifier'];"
+          if old not in s: raise SystemExit("Missing popup filter IDs")
+          s=s.replace(old,new,1)
+
+          old="const familyPopupFilterLabels={'ff-status':'الحالة','ff-housing':'نوع السكن','ff-rights':'الموقف من الحقوق','ff-hasSalary':'هل لديه راتب','ff-job':'المهنة','ff-source':'الجهة المانحة','ff-members':'عدد الأفراد','ff-salary':'الراتب','ff-addressCode':'رمز العنوان','ff-identifier':'المعرف'};"
+          new="const familyPopupFilterLabels={'ff-status':'الحالة','ff-social':'الحالة الاجتماعية','ff-housing':'نوع السكن','ff-rights':'الموقف من الحقوق','ff-hasSalary':'هل لديه راتب','ff-job':'المهنة','ff-source':'الجهة المانحة','ff-members':'عدد الأفراد','ff-salary':'الراتب','ff-address':'العنوان','ff-addressCode':'رمز العنوان','ff-identifier':'المعرف'};"
+          if old not in s: raise SystemExit("Missing popup filter labels")
+          s=s.replace(old,new,1)
+
+          old="  fill('ff-rights',unique(families.map(x=>x.r).filter(v=>v&&v!=='غير محدد')));"
+          new="  fill('ff-social',unique(families.map(x=>x.social).filter(v=>v&&v!=='غير محدد')));\n  fill('ff-address',unique(families.map(x=>x.address).filter(v=>v&&v!=='غير محدد')));\n  fill('ff-rights',unique(families.map(x=>x.r).filter(v=>v&&v!=='غير محدد')));"
+          if old not in s: raise SystemExit("Missing option population anchor")
+          s=s.replace(old,new,1)
+
+          old="const ids=['ff-status','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-addressCode','ff-identifier'];"
+          new="const ids=['ff-status','ff-social','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-address','ff-addressCode','ff-identifier'];"
+          count=s.count(old)
+          if count<2: raise SystemExit(f"Expected reset/quick-filter ID arrays, found {count}")
+          s=s.replace(old,new)
+
+          old="const status=familyFilterValue('ff-status'),housing=familyFilterValue('ff-housing'),rights=familyFilterValue('ff-rights'),hasSalary=familyFilterValue('ff-hasSalary'),job=familyFilterValue('ff-job'),source=familyFilterValue('ff-source'),members=familyFilterValue('ff-members'),salary=familyFilterValue('ff-salary'),code=familyFilterValue('ff-addressCode'),identifier=familyFilterValue('ff-identifier');"
+          new="const status=familyFilterValue('ff-status'),social=familyFilterValue('ff-social'),housing=familyFilterValue('ff-housing'),rights=familyFilterValue('ff-rights'),hasSalary=familyFilterValue('ff-hasSalary'),job=familyFilterValue('ff-job'),source=familyFilterValue('ff-source'),members=familyFilterValue('ff-members'),salary=familyFilterValue('ff-salary'),address=familyFilterValue('ff-address'),code=familyFilterValue('ff-addressCode'),identifier=familyFilterValue('ff-identifier');"
+          if old not in s: raise SystemExit("Missing filter matching variables")
+          s=s.replace(old,new,1)
+
+          old="  if(!matches(status,x.st))return false;\n  if(!matches(housing,x.h))return false;"
+          new="  if(!matches(status,x.st))return false;\n  if(!matches(social,x.social))return false;\n  if(!matches(housing,x.h))return false;"
+          if old not in s: raise SystemExit("Missing filter matching status/housing")
+          s=s.replace(old,new,1)
+
+          old="  if(!matches(code,String(x.addressCode??'')))return false;"
+          new="  if(!matches(address,x.address))return false;\n  if(!matches(code,String(x.addressCode??'')))return false;"
+          if old not in s: raise SystemExit("Missing address code matching")
+          s=s.replace(old,new,1)
+
+          p.write_text(s,encoding="utf-8")
+          print("Updated social status and address filters:",p.stat().st_size)
+
+      - name: Commit
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          git add index.html
+          git commit -m "Add social status and address family filters"
+          git push
