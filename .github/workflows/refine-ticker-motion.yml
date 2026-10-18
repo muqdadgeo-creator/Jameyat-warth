@@ -14,104 +14,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Add stable ticker transition
+      - name: Apply slow fade to ticker text only
         shell: python
         run: |
           from pathlib import Path
           p = Path("index.html")
           s = p.read_text(encoding="utf-8")
-          marker = '<style id="warith-ticker-motion-refinement">'
-          if marker in s:
-              print("Ticker motion refinement already present")
-              raise SystemExit(0)
 
-          style = r'''<style id="warith-ticker-motion-refinement">
-          /* Keep the ticker on one line; soften item transitions without cloning text. */
-          [id*="ticker" i], [class*="ticker" i],
-          [id*="marquee" i], [class*="marquee" i],
-          [id*="moving-news" i], [class*="moving-news" i] {
-            overflow: hidden;
-          }
-          .warith-ticker-item-transition {
-            will-change: opacity, filter;
-            transition: opacity 360ms ease, filter 360ms ease;
-          }
-          .warith-ticker-item-transition.warith-ticker-leaving {
-            opacity: .12 !important;
-            filter: blur(1px);
-          }
-          @media (prefers-reduced-motion: reduce) {
-            .warith-ticker-item-transition {
-              transition: none !important;
-            }
-          }
-          </style>'''
+          old_css = """#warithTickerMessage{display:block;width:100%;overflow:hidden;text-overflow:clip;white-space:nowrap;font-weight:800;color:#205b49;opacity:1;transform:translateX(0);transition:opacity .35s ease,transform .35s ease}
+          #warithTickerMessage.wvtick-enter{animation:warithTickerEnter .45s ease both}
+          @keyframes warithTickerEnter{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}"""
+          new_css = """#warithTickerMessage{display:block;width:100%;overflow:hidden;text-overflow:clip;white-space:nowrap;font-weight:800;color:#205b49;opacity:1;transform:translateX(0);transition:opacity 1.1s ease-in-out,transform 1.1s ease-in-out}
+          #warithTickerMessage.wvtick-enter{animation:warithTickerEnter 1.1s ease-in-out both}
+          @keyframes warithTickerEnter{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}"""
 
-          script = r'''<script id="warith-ticker-motion-refinement-script">
-          (() => {
-            if (window.__warithTickerMotionRefinement) return;
-            window.__warithTickerMotionRefinement = true;
-            const selector = '[id*="ticker" i], [class*="ticker" i], [id*="marquee" i], [class*="marquee" i], [id*="moving-news" i], [class*="moving-news" i]';
-            const eligible = (el) => {
-              if (!(el instanceof HTMLElement)) return false;
-              const key = ((el.id || '') + ' ' + (typeof el.className === 'string' ? el.className : '')).toLowerCase();
-              if (!/(ticker|marquee|moving-news)/.test(key)) return false;
-              if (el.children.length > 3) return false;
-              return !!(el.textContent || '').trim();
-            };
-            const attach = (root = document) => {
-              const found = [];
-              if (root instanceof HTMLElement && eligible(root)) found.push(root);
-              if (root.querySelectorAll) root.querySelectorAll(selector).forEach(el => {
-                if (eligible(el)) found.push(el);
-              });
-              found.forEach(el => {
-                if (el.dataset.warithTickerMotionAttached === '1') return;
-                el.dataset.warithTickerMotionAttached = '1';
-                el.classList.add('warith-ticker-item-transition');
-                let lastText = (el.textContent || '').trim();
-                let timer = 0;
-                const observer = new MutationObserver(() => {
-                  const nextText = (el.textContent || '').trim();
-                  if (!nextText || nextText === lastText) return;
-                  lastText = nextText;
-                  el.classList.add('warith-ticker-leaving');
-                  clearTimeout(timer);
-                  requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                      el.classList.remove('warith-ticker-leaving');
-                    });
-                  });
-                  timer = window.setTimeout(() => el.classList.remove('warith-ticker-leaving'), 420);
-                });
-                observer.observe(el, {subtree: true, childList: true, characterData: true});
-              });
-            };
-            if (document.readyState === 'loading') {
-              document.addEventListener('DOMContentLoaded', () => attach(), {once: true});
-            } else attach();
-            new MutationObserver(records => records.forEach(record => {
-              record.addedNodes && record.addedNodes.forEach(node => {
-                if (node instanceof HTMLElement) attach(node);
-              });
-            })).observe(document.documentElement, {subtree: true, childList: true});
-          })();
-          </script>'''
+          old_js = "const msg=messages[idx];warithTickerCurrentKey=msg.key;el.textContent=msg.text;const viewport=document.getElementById('warithTickerViewport');el.style.fontSize='';if(viewport){let size=11;while(el.scrollWidth>viewport.clientWidth&&size>8){size=Math.max(8,size-.5);el.style.fontSize=size+'px'}}el.classList.remove('wvtick-enter');void el.offsetWidth;el.classList.add('wvtick-enter')"
+          new_js = "const msg=messages[idx];warithTickerCurrentKey=msg.key;const viewport=document.getElementById('warithTickerViewport');el.classList.remove('wvtick-enter');el.style.opacity='0';window.setTimeout(()=>{el.textContent=msg.text;el.style.fontSize='';if(viewport){let size=11;while(el.scrollWidth>viewport.clientWidth&&size>8){size=Math.max(8,size-.5);el.style.fontSize=size+'px'}}el.style.opacity='';void el.offsetWidth;el.classList.add('wvtick-enter')},550)"
 
-          if "</head>" not in s or "</body>" not in s:
-              raise SystemExit("Expected document head/body not found; leaving index unchanged")
-          s = s.replace("</head>", style + "</head>", 1)
-          s = s.replace("</body>", script + "</body>", 1)
+          if old_css not in s:
+              # Accept a previous partial application, but fail safely if the ticker CSS is unknown.
+              if new_css not in s:
+                  raise SystemExit("Ticker CSS did not match expected version; no changes made.")
+          else:
+              s = s.replace(old_css, new_css, 1)
+
+          if old_js in s:
+              s = s.replace(old_js, new_js, 1)
+          elif new_js not in s:
+              raise SystemExit("Ticker rotation code did not match expected version; no changes made.")
+
           p.write_text(s, encoding="utf-8")
-      - name: Commit ticker motion refinement
+      - name: Commit ticker-only change
         shell: bash
         run: |
           git config user.name "muqdadgeo-creator"
           git config user.email "muqdadgeo@gmail.com"
           if git diff --quiet -- index.html; then
-            echo "No changes needed."
+            echo "No ticker changes needed."
             exit 0
           fi
           git add index.html
-          git commit -m "Refine moving ticker text transitions"
+          git commit -m "Smooth ticker text fade without changing timing"
           git push
