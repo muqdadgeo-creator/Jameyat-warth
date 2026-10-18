@@ -558,16 +558,16 @@ header>.header-auth-wrap{position:absolute;top:13px;right:15px;min-width:74px;ma
 </div>
 <div class="card" id="familyAdvancedFilters" style="display:none;margin-top:8px;padding:12px">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-<div><label class="fl">الحالة</label><select class="forminput" id="ff-status" onchange="renderFamilies()"><option value="الكل">الكل</option><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select></div>
-<div><label class="fl">نوع السكن</label><select class="forminput" id="ff-housing" onchange="renderFamilies()"><option value="الكل">الكل</option><option>ملك</option><option>ايجار</option><option>مع الأهل</option><option>وقف</option><option>تجاوز</option></select></div>
-<div><label class="fl">الموقف من الحقوق</label><select class="forminput" id="ff-rights" onchange="renderFamilies()"><option value="الكل">الكل</option></select></div>
-<div><label class="fl">هل لديه راتب</label><select class="forminput" id="ff-hasSalary" onchange="renderFamilies()"><option value="الكل">الكل</option><option>نعم</option><option>لا</option></select></div>
-<div><label class="fl">المهنة</label><select class="forminput" id="ff-job" onchange="renderFamilies()"><option value="الكل">الكل</option></select></div>
-<div><label class="fl">الجهة المانحة</label><select class="forminput" id="ff-source" onchange="renderFamilies()"><option value="الكل">الكل</option></select></div>
-<div><label class="fl">عدد الأفراد</label><select class="forminput" id="ff-members" onchange="renderFamilies()"><option value="الكل">الكل</option><option value="1-3">1 – 3</option><option value="4-6">4 – 6</option><option value="7-9">7 – 9</option><option value="10+">10 فأكثر</option></select></div>
-<div><label class="fl">الراتب</label><select class="forminput" id="ff-salary" onchange="renderFamilies()"><option value="الكل">الكل</option><option value="none">لا يوجد</option><option value="low">أقل من 250 ألف</option><option value="mid">250 – 500 ألف</option><option value="high">أكثر من 500 ألف</option></select></div>
-<div><label class="fl">رمز العنوان</label><select class="forminput" id="ff-addressCode" onchange="renderFamilies()"><option value="الكل">الكل</option></select></div>
-<div><label class="fl">المعرف</label><select class="forminput" id="ff-identifier" onchange="renderFamilies()"><option value="الكل">الكل</option></select></div>
+<div><label class="fl">الحالة</label><select class="forminput" id="ff-status" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select></div>
+<div><label class="fl">نوع السكن</label><select class="forminput" id="ff-housing" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option><option>ملك</option><option>ايجار</option><option>مع الأهل</option><option>وقف</option><option>تجاوز</option></select></div>
+<div><label class="fl">الموقف من الحقوق</label><select class="forminput" id="ff-rights" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>
+<div><label class="fl">هل لديه راتب</label><select class="forminput" id="ff-hasSalary" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option><option>نعم</option><option>لا</option></select></div>
+<div><label class="fl">المهنة</label><select class="forminput" id="ff-job" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>
+<div><label class="fl">الجهة المانحة</label><select class="forminput" id="ff-source" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>
+<div><label class="fl">عدد الأفراد</label><select class="forminput" id="ff-members" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option><option value="1-3">1 – 3</option><option value="4-6">4 – 6</option><option value="7-9">7 – 9</option><option value="10+">10 فأكثر</option></select></div>
+<div><label class="fl">الراتب</label><select class="forminput" id="ff-salary" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option><option value="none">لا يوجد</option><option value="low">أقل من 250 ألف</option><option value="mid">250 – 500 ألف</option><option value="high">أكثر من 500 ألف</option></select></div>
+<div><label class="fl">رمز العنوان</label><select class="forminput" id="ff-addressCode" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>
+<div><label class="fl">المعرف</label><select class="forminput" id="ff-identifier" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>
 </div>
 <div style="display:flex;gap:8px;margin-top:9px"><button class="action primary" onclick="resetFamilyFilters()" style="flex:1" type="button">إعادة ضبط الفلاتر</button><button class="action" onclick="toggleFamilyFilters()" style="flex:1" type="button">إخفاء</button></div>
 </div>
@@ -2295,13 +2295,13 @@ function goBackFromInKindDonations(){const u=currentUser();showScreen(u&&u.activ
 function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لديك صلاحية الوصول إلى هذا القسم.');return}document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-followup')renderFamilyFollowup();if(id==='add-family'&&editingFamilyCode===null){const fc=document.getElementById('f-code');if(fc){fc.value=String(nextFamilyCode());fc.readOnly=true;}}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor'&&editingDonorIndex===null)resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
 let familyQuickFilter='all';
 function toggleFamilyFilters(){const el=document.getElementById('familyAdvancedFilters');if(!el)return;const show=el.style.display==='none'||!el.style.display;el.style.display=show?'block':'none';if(show)populateFamilyFilterOptions();}
-function familyFilterValue(id){return document.getElementById(id)?.value||'الكل';}
+function familyFilterValue(id){const el=document.getElementById(id);if(!el)return ['الكل'];if(el.multiple){const v=[...el.selectedOptions].map(o=>o.value);return !v.length||v.includes('الكل')?['الكل']:v;}return [el.value||'الكل'];}
 function normalizeSalaryValue(v){return Number(String(v??'').replace(/[^0-9.]/g,''))||0;}
 function normalizeArabicSearch(v){return String(v??'').normalize('NFKC').replace(/[أإآٱ]/g,'ا').replace(/[ًٌٍَُِّْـ]/g,'').trim().toLowerCase();}
 
 function populateFamilyFilterOptions(){
   const unique=(arr)=>[...new Set(arr.filter(v=>v!==undefined&&v!==null&&String(v).trim()!=='').map(v=>String(v).trim()))].sort((a,b)=>a.localeCompare(b,'ar'));
-  const fill=(id,values)=>{const el=document.getElementById(id);if(!el)return;const current=el.value||'الكل';el.innerHTML='<option value="الكل">الكل</option>'+values.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');if(current==='__HAS_RIGHTS__' || values.includes(current))el.value=current;};
+  const fill=(id,values)=>{const el=document.getElementById(id);if(!el)return;const current=el.multiple?[...el.selectedOptions].map(o=>o.value):[el.value||'الكل'];el.innerHTML='<option value="الكل">الكل</option>'+values.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');[...el.options].forEach(o=>o.selected=current.includes(o.value));if(![...el.selectedOptions].length)el.options[0].selected=true;};
   fill('ff-rights',unique(families.map(x=>x.r).filter(v=>v&&v!=='غير محدد')));
   fill('ff-job',unique(families.map(x=>x.j).filter(v=>v&&v!=='غير محدد')));
   fill('ff-source',unique(families.map(x=>x.salarySource).filter(v=>v&&v!=='لا توجد')));
@@ -2321,16 +2321,19 @@ function setFamilyQuickFilter(v){
 function resetFamilyFilters(){familyQuickFilter='all';const ids=['ff-status','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-addressCode','ff-identifier'];ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='الكل';});document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick==='all'));renderFamilies();}
 function familyMatchesFilters(x){
   const status=familyFilterValue('ff-status'),housing=familyFilterValue('ff-housing'),rights=familyFilterValue('ff-rights'),hasSalary=familyFilterValue('ff-hasSalary'),job=familyFilterValue('ff-job'),source=familyFilterValue('ff-source'),members=familyFilterValue('ff-members'),salary=familyFilterValue('ff-salary'),code=familyFilterValue('ff-addressCode'),identifier=familyFilterValue('ff-identifier');
-  if(status!=='الكل'&&x.st!==status)return false;
-  if(housing!=='الكل'&&x.h!==housing)return false;
-  if(rights==='__HAS_RIGHTS__'){if(!x.r||x.r==='غير محدد')return false;}else if(rights!=='الكل'&&x.r!==rights)return false;
-  if(hasSalary!=='الكل'&&x.hasSalary!==hasSalary)return false;
-  if(job!=='الكل'&&x.j!==job)return false;
-  if(source!=='الكل'&&x.salarySource!==source)return false;
-  const m=Number(x.m)||0;if(members==='1-3'&&(m<1||m>3))return false;if(members==='4-6'&&(m<4||m>6))return false;if(members==='7-9'&&(m<7||m>9))return false;if(members==='10+'&&m<10)return false;
-  const sv=normalizeSalaryValue(x.s);if(salary==='none'&&sv>0)return false;if(salary==='low'&&(sv<=0||sv>=250000))return false;if(salary==='mid'&&(sv<250000||sv>500000))return false;if(salary==='high'&&sv<=500000)return false;
-  if(code!=='الكل'&&String(x.addressCode??'')!==String(code))return false;
-  if(identifier!=='الكل'&&x.i!==identifier)return false;
+  const matches=(selected,value)=>selected.includes('الكل')||selected.includes(value);
+  if(!matches(status,x.st))return false;
+  if(!matches(housing,x.h))return false;
+  if(rights.includes('__HAS_RIGHTS__')){if(!x.r||x.r==='غير محدد')return false;}else if(!matches(rights,x.r))return false;
+  if(!matches(hasSalary,x.hasSalary))return false;
+  if(!matches(job,x.j))return false;
+  if(!matches(source,x.salarySource))return false;
+  const m=Number(x.m)||0;
+  if(!members.includes('الكل')&&!members.some(v=>(v==='1-3'&&m>=1&&m<=3)||(v==='4-6'&&m>=4&&m<=6)||(v==='7-9'&&m>=7&&m<=9)||(v==='10+'&&m>=10)))return false;
+  const sv=normalizeSalaryValue(x.s);
+  if(!salary.includes('الكل')&&!salary.some(v=>(v==='none'&&sv===0)||(v==='low'&&sv>0&&sv<250000)||(v==='mid'&&sv>=250000&&sv<=500000)||(v==='high'&&sv>500000)))return false;
+  if(!matches(code,String(x.addressCode??'')))return false;
+  if(!matches(identifier,x.i))return false;
   return true;
 }
 let familySortField='c';
