@@ -1,0 +1,121 @@
+name: Improve ticker vertical motion and editable timing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/ticker-vertical-motion-settings.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  update-ticker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch ticker motion and settings only
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          original = s
+
+          old_css = """#warithTickerMessage{display:block;width:100%;overflow:hidden;text-overflow:clip;white-space:nowrap;font-weight:800;color:#205b49;opacity:1;transform:translateX(0);transition:opacity 1.1s ease-in-out,transform 1.1s ease-in-out}
+          #warithTickerMessage.wvtick-enter{animation:warithTickerEnter 1.1s ease-in-out both}
+          @keyframes warithTickerEnter{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}"""
+          new_css = """#warithTickerMessage{display:block;width:100%;overflow:hidden;text-overflow:clip;white-space:nowrap;font-weight:800;color:#205b49;opacity:1;transform:translateY(0);--warithTickerMotionDuration:650ms;will-change:transform,opacity}
+          #warithTickerMessage.wvtick-enter{animation:warithTickerEnter var(--warithTickerMotionDuration,650ms) cubic-bezier(.22,.7,.25,1) both}
+          #warithTickerMessage.wvtick-exit{animation:warithTickerExit var(--warithTickerMotionDuration,650ms) cubic-bezier(.55,0,.8,.35) both}
+          @keyframes warithTickerEnter{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
+          @keyframes warithTickerExit{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-100%)}}
+          @media(prefers-reduced-motion:reduce){#warithTickerMessage.wvtick-enter,#warithTickerMessage.wvtick-exit{animation:none!important}}"""
+          if old_css in s:
+              s = s.replace(old_css, new_css, 1)
+          elif new_css not in s:
+              raise SystemExit("Expected ticker CSS was not found; refusing to modify index.html.")
+
+          # Add a manually editable animation-duration setting beside the existing display interval.
+          old_setting = """<div style="flex:1;min-width:150px"><label class="fl" for="tickerDisplayIntervalSeconds">مدة عرض كل رسالة (ثانية)</label><input class="forminput" id="tickerDisplayIntervalSeconds" type="number" min="2" max="120" step="1" value="7"/></div>"""
+          new_setting = old_setting + """
+              <div style="flex:1;min-width:150px"><label class="fl" for="tickerAnimationDurationMs">مدة حركة انتقال الخبر (مللي ثانية)</label><input class="forminput" id="tickerAnimationDurationMs" type="number" min="200" max="1500" step="50" value="650"/></div>"""
+          if old_setting in s and 'id="tickerAnimationDurationMs"' not in s:
+              s = s.replace(old_setting, new_setting, 1)
+          elif 'id="tickerAnimationDurationMs"' not in s:
+              raise SystemExit("Ticker settings markup did not match; refusing to continue.")
+
+          s = s.replace(
+              "displayIntervalSeconds:7,quoteIntervalHours:3,newsExpiryHours:48,quotes:",
+              "displayIntervalSeconds:7,animationDurationMs:650,quoteIntervalHours:3,newsExpiryHours:48,quotes:",
+              1
+          ) if "animationDurationMs:650" not in s else s
+
+          old_render = "const displayInterval=document.getElementById('tickerDisplayIntervalSeconds'),quoteInterval=document.getElementById('tickerQuoteIntervalHours'),newsExpiry=document.getElementById('tickerNewsExpiryHours');if(displayInterval)displayInterval.value=cfg.displayIntervalSeconds??WARITH_TICKER_DEFAULTS.displayIntervalSeconds;if(quoteInterval)"
+          new_render = "const displayInterval=document.getElementById('tickerDisplayIntervalSeconds'),animationDuration=document.getElementById('tickerAnimationDurationMs'),quoteInterval=document.getElementById('tickerQuoteIntervalHours'),newsExpiry=document.getElementById('tickerNewsExpiryHours');if(displayInterval)displayInterval.value=cfg.displayIntervalSeconds??WARITH_TICKER_DEFAULTS.displayIntervalSeconds;if(animationDuration)animationDuration.value=cfg.animationDurationMs??WARITH_TICKER_DEFAULTS.animationDurationMs??650;if(quoteInterval)"
+          if old_render in s:
+              s = s.replace(old_render, new_render, 1)
+          elif new_render not in s:
+              raise SystemExit("Ticker settings render logic did not match; refusing to continue.")
+
+          old_save = "const displayIntervalSeconds=Math.max(2,Math.min(120,Number(document.getElementById('tickerDisplayIntervalSeconds')?.value)||WARITH_TICKER_DEFAULTS.displayIntervalSeconds));const quoteIntervalHours="
+          new_save = "const displayIntervalSeconds=Math.max(2,Math.min(120,Number(document.getElementById('tickerDisplayIntervalSeconds')?.value)||WARITH_TICKER_DEFAULTS.displayIntervalSeconds));const animationDurationMs=Math.max(200,Math.min(1500,Number(document.getElementById('tickerAnimationDurationMs')?.value)||650));const quoteIntervalHours="
+          if old_save in s:
+              s = s.replace(old_save, new_save, 1)
+          elif new_save not in s:
+              raise SystemExit("Ticker save logic did not match; refusing to continue.")
+
+          old_record = "welcomeText:document.getElementById('tickerWelcomeText')?.value?.trim()||'',introText:document.getElementById('tickerIntroText')?.value?.trim()||'',displayIntervalSeconds,quoteIntervalHours,"
+          new_record = "welcomeText:document.getElementById('tickerWelcomeText')?.value?.trim()||'',introText:document.getElementById('tickerIntroText')?.value?.trim()||'',displayIntervalSeconds,animationDurationMs,quoteIntervalHours,"
+          if old_record in s:
+              s = s.replace(old_record, new_record, 1)
+          elif new_record not in s:
+              raise SystemExit("Ticker settings record did not match; refusing to continue.")
+
+          start = s.find("function warithTickerShowNext(advance=false){")
+          end_marker = "\nfunction warithTickerApplyCycleInterval()"
+          end = s.find(end_marker, start)
+          if start < 0 or end < 0:
+              raise SystemExit("Ticker rotation function boundaries were not found; refusing to continue.")
+          new_function = """function warithTickerShowNext(advance=false){
+          const el=document.getElementById('warithTickerMessage');if(!el)return;
+          const messages=warithTickerBuildMessages();if(!messages.length)return;
+          let idx=messages.findIndex(m=>m.key===warithTickerCurrentKey);
+          if(!warithTickerStarted){idx=0;warithTickerStarted=true}
+          else if(advance){if(warithTickerCurrentKey==='visitors'&&typeof warithUpdateVisitorTicker==='function')warithUpdateVisitorTicker();if(idx<0)idx=warithTickerIndex;idx=(idx+1)%messages.length}
+          else if(idx<0)idx=Math.min(warithTickerIndex,messages.length-1);
+          warithTickerIndex=idx;
+          const msg=messages[idx],viewport=document.getElementById('warithTickerViewport');
+          const cfg=warithTickerSettings();
+          const motionMs=Math.max(200,Math.min(1500,Number(cfg.animationDurationMs??WARITH_TICKER_DEFAULTS.animationDurationMs)||650));
+          el.style.setProperty('--warithTickerMotionDuration',motionMs+'ms');
+          const fitText=()=>{el.style.fontSize='';if(viewport){let size=11;while(el.scrollWidth>viewport.clientWidth&&size>8){size=Math.max(8,size-.5);el.style.fontSize=size+'px'}}};
+          const putText=()=>{el.textContent=msg.text;fitText();el.classList.remove('wvtick-exit','wvtick-enter');void el.offsetWidth;el.classList.add('wvtick-enter')};
+          const oldText=el.textContent;
+          warithTickerCurrentKey=msg.key;
+          if(advance&&oldText&&oldText!==msg.text){
+            el.classList.remove('wvtick-enter');el.classList.add('wvtick-exit');
+            window.setTimeout(()=>{putText()},motionMs);
+          }else{
+            putText();
+          }
+          }"""
+          s = s[:start] + new_function + s[end:]
+
+          if s == original:
+              raise SystemExit("No changes were made; refusing to create an empty commit.")
+          p.write_text(s, encoding="utf-8")
+      - name: Commit ticker-only change
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No ticker changes needed."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Add smooth vertical ticker motion and editable timing"
+          git push
