@@ -408,6 +408,15 @@ header>.logo{order:1;width:120px;height:94px;flex:0 0 auto;border-radius:0;margi
 header>.notification-wrap{position:absolute;top:13px;left:64px}
 header>.header-auth-wrap{position:absolute;top:13px;right:15px;min-width:74px;max-width:104px}
 @media(max-width:380px){header{padding-top:60px}header>.icon{top:10px;left:10px}header>.brand{padding:0 8px}header>.brand b{font-size:13px}header>.header-auth-wrap{top:9px;right:10px}header>.notification-wrap{top:9px;left:57px}header>.logo{width:104px;height:82px}}
+</style><style id="family-filter-popup-style">
+.family-filter-popup-wrap{position:relative;width:100%;min-width:0}
+.family-filter-popup-select{display:none!important}
+.family-filter-popup-btn{width:100%;min-height:38px;text-align:right;border:1px solid #d7e3df;background:#fff;border-radius:9px;padding:8px 9px;font:inherit;font-size:12px;color:#41635b;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.family-filter-popup-menu{display:none;position:absolute;top:42px;right:0;left:0;min-width:190px;background:#fff;border:1px solid #d7e3df;border-radius:12px;padding:8px;z-index:30;box-shadow:0 8px 20px #0002;max-height:230px;overflow:auto}
+.family-filter-popup-menu.open{display:block}
+.family-filter-popup-option{display:flex;align-items:center;gap:8px;padding:7px 4px;font-size:12px;border-radius:7px;cursor:pointer}
+.family-filter-popup-option:hover{background:#f3f7f5}
+.family-filter-popup-option input{width:17px;height:17px;accent-color:#0f5c4d;flex:0 0 auto}
 </style></head>
 <body>
 <div class="app">
@@ -2294,7 +2303,54 @@ function deleteCentralFile(i){if(!hasAction('delete','files-center')){alert('ل�
 function goBackFromInKindDonations(){const u=currentUser();showScreen(u&&u.active!==false&&normalizeRole(u.role)==='مسؤول المخزن'&&!hasPermission('donations')?'inventory':'donations')}
 function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لديك صلاحية الوصول إلى هذا القسم.');return}document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-followup')renderFamilyFollowup();if(id==='add-family'&&editingFamilyCode===null){const fc=document.getElementById('f-code');if(fc){fc.value=String(nextFamilyCode());fc.readOnly=true;}}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor'&&editingDonorIndex===null)resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
 let familyQuickFilter='all';
-function toggleFamilyFilters(){const el=document.getElementById('familyAdvancedFilters');if(!el)return;const show=el.style.display==='none'||!el.style.display;el.style.display=show?'block':'none';if(show)populateFamilyFilterOptions();}
+
+const familyPopupFilterIds=['ff-status','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-addressCode','ff-identifier'];
+const familyPopupFilterLabels={'ff-status':'الحالة','ff-housing':'نوع السكن','ff-rights':'الموقف من الحقوق','ff-hasSalary':'هل لديه راتب','ff-job':'المهنة','ff-source':'الجهة المانحة','ff-members':'عدد الأفراد','ff-salary':'الراتب','ff-addressCode':'رمز العنوان','ff-identifier':'المعرف'};
+function initFamilyPopupFilters(){
+  familyPopupFilterIds.forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    let wrap=sel.closest('.family-filter-popup-wrap');
+    if(!wrap){
+      wrap=document.createElement('div');wrap.className='family-filter-popup-wrap';
+      sel.parentNode.insertBefore(wrap,sel);wrap.appendChild(sel);sel.classList.add('family-filter-popup-select');
+      const btn=document.createElement('button');btn.type='button';btn.className='family-filter-popup-btn';btn.dataset.filterId=id;
+      btn.addEventListener('click',e=>{e.stopPropagation();const menu=wrap.querySelector('.family-filter-popup-menu');const opening=!menu.classList.contains('open');document.querySelectorAll('.family-filter-popup-menu.open').forEach(m=>m.classList.remove('open'));if(opening)menu.classList.add('open');});
+      const menu=document.createElement('div');menu.className='family-filter-popup-menu';menu.addEventListener('click',e=>e.stopPropagation());
+      wrap.appendChild(btn);wrap.appendChild(menu);
+    }
+  });
+  if(!window.__familyPopupOutsideHandler){window.__familyPopupOutsideHandler=true;document.addEventListener('click',()=>document.querySelectorAll('.family-filter-popup-menu.open').forEach(m=>m.classList.remove('open')));}
+  refreshFamilyPopupFilters();
+}
+function refreshFamilyPopupFilters(){
+  familyPopupFilterIds.forEach(id=>{
+    const sel=document.getElementById(id);if(!sel)return;
+    const wrap=sel.closest('.family-filter-popup-wrap');if(!wrap)return;
+    const btn=wrap.querySelector('.family-filter-popup-btn'),menu=wrap.querySelector('.family-filter-popup-menu');
+    const selected=[...sel.options].filter(o=>o.selected).map(o=>o.value);
+    const active=selected.filter(v=>v!=='الكل');
+    btn.textContent=familyPopupFilterLabels[id]+': '+(!active.length||selected.includes('الكل')?'الكل':active.length<=2?active.join('، '):active.slice(0,2).join('، ')+' +'+(active.length-2));
+    menu.innerHTML='';
+    [...sel.options].forEach(opt=>{
+      const label=document.createElement('label');label.className='family-filter-popup-option';
+      const cb=document.createElement('input');cb.type='checkbox';cb.checked=opt.selected;cb.value=opt.value;
+      cb.addEventListener('change',()=>{
+        if(opt.value==='الكل'&&cb.checked){[...sel.options].forEach(o=>o.selected=o.value==='الكل');}
+        else{
+          const all=[...sel.options].find(o=>o.value==='الكل');if(all)all.selected=false;
+          opt.selected=cb.checked;
+          if(![...sel.options].some(o=>o.selected)&&all)all.selected=true;
+        }
+        refreshFamilyPopupFilters();
+        renderFamilies();
+      });
+      const text=document.createElement('span');text.textContent=opt.textContent;
+      label.appendChild(cb);label.appendChild(text);menu.appendChild(label);
+    });
+  });
+}
+
+function toggleFamilyFilters(){const el=document.getElementById('familyAdvancedFilters');if(!el)return;const show=el.style.display==='none'||!el.style.display;el.style.display=show?'block':'none';if(show){populateFamilyFilterOptions();initFamilyPopupFilters();}}
 function familyFilterValue(id){const el=document.getElementById(id);if(!el)return ['الكل'];if(el.multiple){const v=[...el.selectedOptions].map(o=>o.value);return !v.length||v.includes('الكل')?['الكل']:v;}return [el.value||'الكل'];}
 function normalizeSalaryValue(v){return Number(String(v??'').replace(/[^0-9.]/g,''))||0;}
 function normalizeArabicSearch(v){return String(v??'').normalize('NFKC').replace(/[أإآٱ]/g,'ا').replace(/[ًٌٍَُِّْـ]/g,'').trim().toLowerCase();}
@@ -2307,6 +2363,7 @@ function populateFamilyFilterOptions(){
   fill('ff-source',unique(families.map(x=>x.salarySource).filter(v=>v&&v!=='لا توجد')));
   fill('ff-addressCode',unique(families.map(x=>x.addressCode).filter(v=>v!==''&&v!==null)).sort((a,b)=>Number(a)-Number(b)));
   fill('ff-identifier',unique(families.map(x=>x.i)));
+  refreshFamilyPopupFilters();
 }
 function setFamilyQuickFilter(v){
   familyQuickFilter=v;
@@ -2316,9 +2373,10 @@ function setFamilyQuickFilter(v){
   else if(v.startsWith('housing:'))document.getElementById('ff-housing').value=v.split(':')[1];
   else if(v==='rights')document.getElementById('ff-rights').value='__HAS_RIGHTS__';
   document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick===v));
+  refreshFamilyPopupFilters();
   renderFamilies();
 }
-function resetFamilyFilters(){familyQuickFilter='all';const ids=['ff-status','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-addressCode','ff-identifier'];ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='الكل';});document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick==='all'));renderFamilies();}
+function resetFamilyFilters(){familyQuickFilter='all';const ids=['ff-status','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-addressCode','ff-identifier'];ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='الكل';});document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick==='all'));refreshFamilyPopupFilters();renderFamilies();}
 function familyMatchesFilters(x){
   const status=familyFilterValue('ff-status'),housing=familyFilterValue('ff-housing'),rights=familyFilterValue('ff-rights'),hasSalary=familyFilterValue('ff-hasSalary'),job=familyFilterValue('ff-job'),source=familyFilterValue('ff-source'),members=familyFilterValue('ff-members'),salary=familyFilterValue('ff-salary'),code=familyFilterValue('ff-addressCode'),identifier=familyFilterValue('ff-identifier');
   const matches=(selected,value)=>selected.includes('الكل')||selected.includes(value);
