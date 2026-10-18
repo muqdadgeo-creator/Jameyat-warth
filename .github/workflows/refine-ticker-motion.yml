@@ -1,0 +1,117 @@
+name: Refine moving ticker motion
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/refine-ticker-motion.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  refine-ticker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add stable ticker transition
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          marker = '<style id="warith-ticker-motion-refinement">'
+          if marker in s:
+              print("Ticker motion refinement already present")
+              raise SystemExit(0)
+
+          style = r'''<style id="warith-ticker-motion-refinement">
+          /* Keep the ticker on one line; soften item transitions without cloning text. */
+          [id*="ticker" i], [class*="ticker" i],
+          [id*="marquee" i], [class*="marquee" i],
+          [id*="moving-news" i], [class*="moving-news" i] {
+            overflow: hidden;
+          }
+          .warith-ticker-item-transition {
+            will-change: opacity, filter;
+            transition: opacity 360ms ease, filter 360ms ease;
+          }
+          .warith-ticker-item-transition.warith-ticker-leaving {
+            opacity: .12 !important;
+            filter: blur(1px);
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .warith-ticker-item-transition {
+              transition: none !important;
+            }
+          }
+          </style>'''
+
+          script = r'''<script id="warith-ticker-motion-refinement-script">
+          (() => {
+            if (window.__warithTickerMotionRefinement) return;
+            window.__warithTickerMotionRefinement = true;
+            const selector = '[id*="ticker" i], [class*="ticker" i], [id*="marquee" i], [class*="marquee" i], [id*="moving-news" i], [class*="moving-news" i]';
+            const eligible = (el) => {
+              if (!(el instanceof HTMLElement)) return false;
+              const key = ((el.id || '') + ' ' + (typeof el.className === 'string' ? el.className : '')).toLowerCase();
+              if (!/(ticker|marquee|moving-news)/.test(key)) return false;
+              if (el.children.length > 3) return false;
+              return !!(el.textContent || '').trim();
+            };
+            const attach = (root = document) => {
+              const found = [];
+              if (root instanceof HTMLElement && eligible(root)) found.push(root);
+              if (root.querySelectorAll) root.querySelectorAll(selector).forEach(el => {
+                if (eligible(el)) found.push(el);
+              });
+              found.forEach(el => {
+                if (el.dataset.warithTickerMotionAttached === '1') return;
+                el.dataset.warithTickerMotionAttached = '1';
+                el.classList.add('warith-ticker-item-transition');
+                let lastText = (el.textContent || '').trim();
+                let timer = 0;
+                const observer = new MutationObserver(() => {
+                  const nextText = (el.textContent || '').trim();
+                  if (!nextText || nextText === lastText) return;
+                  lastText = nextText;
+                  el.classList.add('warith-ticker-leaving');
+                  clearTimeout(timer);
+                  requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                      el.classList.remove('warith-ticker-leaving');
+                    });
+                  });
+                  timer = window.setTimeout(() => el.classList.remove('warith-ticker-leaving'), 420);
+                });
+                observer.observe(el, {subtree: true, childList: true, characterData: true});
+              });
+            };
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', () => attach(), {once: true});
+            } else attach();
+            new MutationObserver(records => records.forEach(record => {
+              record.addedNodes && record.addedNodes.forEach(node => {
+                if (node instanceof HTMLElement) attach(node);
+              });
+            })).observe(document.documentElement, {subtree: true, childList: true});
+          })();
+          </script>'''
+
+          if "</head>" not in s or "</body>" not in s:
+              raise SystemExit("Expected document head/body not found; leaving index unchanged")
+          s = s.replace("</head>", style + "</head>", 1)
+          s = s.replace("</body>", script + "</body>", 1)
+          p.write_text(s, encoding="utf-8")
+      - name: Commit ticker motion refinement
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Refine moving ticker text transitions"
+          git push
