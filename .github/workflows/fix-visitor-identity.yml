@@ -1,0 +1,47 @@
+name: Fix visitor identity fallback
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fix-visitor-identity.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  fix-visitor-identity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch visitor identity function only
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+
+          old_fn = "function warithVisitorBrowserKey(){const storageKey='warith_visitor_tracking_id';let visitorId='';try{visitorId=localStorage.getItem(storageKey)||''}catch(e){}if(!visitorId){try{visitorId=crypto.randomUUID()}catch(e){visitorId='v-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)}try{localStorage.setItem(storageKey,visitorId)}catch(e){}}return 'visitor:'+visitorId}"
+          new_fn = "function warithVisitorBrowserKey(){const storageKey='warith_visitor_tracking_id';if(window.warithVisitorBrowserKeyCache)return 'visitor:'+window.warithVisitorBrowserKeyCache;let visitorId='';try{visitorId=localStorage.getItem(storageKey)||''}catch(e){}if(!visitorId){try{visitorId=sessionStorage.getItem(storageKey+'_session')||''}catch(e){}}if(!visitorId){try{visitorId=crypto.randomUUID()}catch(e){visitorId='v-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2)}let saved=false;try{localStorage.setItem(storageKey,visitorId);const check=localStorage.getItem(storageKey);if(check){visitorId=check;saved=true}}catch(e){}if(!saved){try{sessionStorage.setItem(storageKey+'_session',visitorId);const check=sessionStorage.getItem(storageKey+'_session');if(check){visitorId=check;saved=true}}catch(e){}}}window.warithVisitorBrowserKeyCache=visitorId;return 'visitor:'+visitorId}"
+
+          count = s.count(old_fn)
+          if count != 1:
+              raise SystemExit(f"Expected exactly one visitor function match; found {count}. No changes made.")
+          s = s.replace(old_fn, new_fn, 1)
+          p.write_text(s, encoding="utf-8")
+
+      - name: Verify and commit visitor-only change
+        shell: bash
+        run: |
+          git diff --check
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          git diff --unified=0 -- index.html
+          if git diff --quiet -- index.html; then
+            echo "No visitor function changes needed."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Stabilize daily visitor identity fallback"
+          git push
