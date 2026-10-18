@@ -439,6 +439,44 @@ header>.brand{display:none!important}
     transition: none !important;
   }
 }
+</style><style id="warith-left-gap-sidebar-fix">
+/* Remove the oversized empty side gutters without global overflow rules. */
+.app {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+/* Keep the menu trigger visible above the header content. */
+header > .icon {
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Ensure the drawer opens above the app and its menu remains reachable. */
+.drawer {
+  z-index: 9999;
+}
+.drawer.open {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+.drawer.open .menu {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.drawer .menu {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  overflow-y: auto;
+}
 </style></head>
 <body>
 <div class="app">
