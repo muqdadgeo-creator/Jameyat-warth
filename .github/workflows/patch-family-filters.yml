@@ -1,0 +1,79 @@
+name: Patch family filters
+on:
+  push:
+    paths:
+      - "PATCH_FAMILY_FILTERS.txt"
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Apply guarded patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          replacements = [
+            ("const fill=(id,values)=>{const el=document.getElementById(id);if(!el)return;const current=el.value||'الكل';el.innerHTML='<option value=\"الكل\">الكل</option>'+values.map(v=>`<option value=\"${escapeHtml(v)}\">${escapeHtml(v)}</option>`).join('');if(current==='__HAS_RIGHTS__' || values.includes(current))el.value=current;};",
+             "const fill=(id,values)=>{const el=document.getElementById(id);if(!el)return;const current=el.multiple?[...el.selectedOptions].map(o=>o.value):[el.value||'الكل'];el.innerHTML='<option value=\"الكل\">الكل</option>'+values.map(v=>`<option value=\"${escapeHtml(v)}\">${escapeHtml(v)}</option>`).join('');[...el.options].forEach(o=>o.selected=current.includes(o.value));if(![...el.selectedOptions].length)el.options[0].selected=true;};"),
+            ("function familyFilterValue(id){return document.getElementById(id)?.value||'الكل';}",
+             "function familyFilterValue(id){const el=document.getElementById(id);if(!el)return ['الكل'];if(el.multiple){const v=[...el.selectedOptions].map(o=>o.value);return !v.length||v.includes('الكل')?['الكل']:v;}return [el.value||'الكل'];}"),
+            ("""function familyMatchesFilters(x){
+            const status=familyFilterValue('ff-status'),housing=familyFilterValue('ff-housing'),rights=familyFilterValue('ff-rights'),hasSalary=familyFilterValue('ff-hasSalary'),job=familyFilterValue('ff-job'),source=familyFilterValue('ff-source'),members=familyFilterValue('ff-members'),salary=familyFilterValue('ff-salary'),code=familyFilterValue('ff-addressCode'),identifier=familyFilterValue('ff-identifier');
+            if(status!=='الكل'&&x.st!==status)return false;
+            if(housing!=='الكل'&&x.h!==housing)return false;
+            if(rights==='__HAS_RIGHTS__'){if(!x.r||x.r==='غير محدد')return false;}else if(rights!=='الكل'&&x.r!==rights)return false;
+            if(hasSalary!=='الكل'&&x.hasSalary!==hasSalary)return false;
+            if(job!=='الكل'&&x.j!==job)return false;
+            if(source!=='الكل'&&x.salarySource!==source)return false;
+            const m=Number(x.m)||0;if(members==='1-3'&&(m<1||m>3))return false;if(members==='4-6'&&(m<4||m>6))return false;if(members==='7-9'&&(m<7||m>9))return false;if(members==='10+'&&m<10)return false;
+            const sv=normalizeSalaryValue(x.s);if(salary==='none'&&sv>0)return false;if(salary==='low'&&(sv<=0||sv>=250000))return false;if(salary==='mid'&&(sv<250000||sv>500000))return false;if(salary==='high'&&sv<=500000)return false;
+            if(code!=='الكل'&&String(x.addressCode??'')!==String(code))return false;
+            if(identifier!=='الكل'&&x.i!==identifier)return false;
+            return true;
+          }""",
+             """function familyMatchesFilters(x){
+            const status=familyFilterValue('ff-status'),housing=familyFilterValue('ff-housing'),rights=familyFilterValue('ff-rights'),hasSalary=familyFilterValue('ff-hasSalary'),job=familyFilterValue('ff-job'),source=familyFilterValue('ff-source'),members=familyFilterValue('ff-members'),salary=familyFilterValue('ff-salary'),code=familyFilterValue('ff-addressCode'),identifier=familyFilterValue('ff-identifier');
+            const matches=(selected,value)=>selected.includes('الكل')||selected.includes(value);
+            if(!matches(status,x.st))return false;
+            if(!matches(housing,x.h))return false;
+            if(rights.includes('__HAS_RIGHTS__')){if(!x.r||x.r==='غير محدد')return false;}else if(!matches(rights,x.r))return false;
+            if(!matches(hasSalary,x.hasSalary))return false;
+            if(!matches(job,x.j))return false;
+            if(!matches(source,x.salarySource))return false;
+            const m=Number(x.m)||0;
+            if(!members.includes('الكل')&&!members.some(v=>(v==='1-3'&&m>=1&&m<=3)||(v==='4-6'&&m>=4&&m<=6)||(v==='7-9'&&m>=7&&m<=9)||(v==='10+'&&m>=10)))return false;
+            const sv=normalizeSalaryValue(x.s);
+            if(!salary.includes('الكل')&&!salary.some(v=>(v==='none'&&sv===0)||(v==='low'&&sv>0&&sv<250000)||(v==='mid'&&sv>=250000&&sv<=500000)||(v==='high'&&sv>500000)))return false;
+            if(!matches(code,String(x.addressCode??'')))return false;
+            if(!matches(identifier,x.i))return false;
+            return true;
+          }""")
+          ]
+          for old, new in replacements:
+              n = s.count(old)
+              if n != 1:
+                  raise SystemExit(f"Safety stop: expected one match, found {n} for patch segment")
+              s = s.replace(old, new, 1)
+          ids = ['ff-status','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-addressCode','ff-identifier']
+          for fid in ids:
+              old = f'<select class="forminput" id="{fid}" onchange="renderFamilies()">'
+              new = f'<select class="forminput" id="{fid}" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار">'
+              if s.count(old) != 1:
+                  raise SystemExit(f"Safety stop: select {fid} expected once")
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding="utf-8")
+          PY
+      - name: Commit patched file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Enable multi-select family filters"
+          git push origin main
