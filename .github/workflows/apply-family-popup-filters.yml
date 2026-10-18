@@ -1,0 +1,191 @@
+name: Apply family popup filters
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/apply-family-popup-filters.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-family-filters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update family filters UI and fields
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+
+          # Add social status as the second filter, and address before address code.
+          old = '''<div><label class="fl">الحالة</label><select class="forminput" id="ff-status" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select></div>
+          <div><label class="fl">نوع السكن</label>'''
+          new = '''<div><label class="fl">الحالة</label><select class="forminput" id="ff-status" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option><option>مستمر</option><option>مفتوح</option><option>مغلق</option></select></div>
+          <div><label class="fl">الحالة الاجتماعية</label><select class="forminput" id="ff-social" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>
+          <div><label class="fl">نوع السكن</label>'''
+          if old not in s:
+              raise SystemExit("Could not find family status filter block")
+          s = s.replace(old, new, 1)
+
+          old = '''<div><label class="fl">رمز العنوان</label><select class="forminput" id="ff-addressCode" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>
+          <div><label class="fl">المعرف</label>'''
+          new = '''<div><label class="fl">العنوان</label><select class="forminput" id="ff-address" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>
+          <div><label class="fl">رمز العنوان</label><select class="forminput" id="ff-addressCode" multiple size="4" onchange="renderFamilies()" aria-label="يمكن اختيار أكثر من خيار"><option value="الكل">الكل</option></select></div>
+          <div><label class="fl">المعرف</label>'''
+          if old not in s:
+              raise SystemExit("Could not find address code filter block")
+          s = s.replace(old, new, 1)
+
+          # Include the two new filters in option population.
+          old = "  fill('ff-rights',unique(families.map(x=>x.r).filter(v=>v&&v!=='غير محدد')));"
+          new = """  fill('ff-social',unique(families.map(x=>x.social).filter(v=>v&&v!=='غير محدد')));
+          fill('ff-address',unique(families.map(x=>x.address).filter(v=>v&&v!=='غير محدد')));
+          fill('ff-rights',unique(families.map(x=>x.r).filter(v=>v&&v!=='غير محدد')));"""
+          if old not in s:
+              raise SystemExit("Could not find dynamic family option population")
+          s = s.replace(old, new, 1)
+
+          # Add new filters to reset and quick-filter lists.
+          s = s.replace("const ids=['ff-status','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-addressCode','ff-identifier'];",
+                        "const ids=['ff-status','ff-social','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-address','ff-addressCode','ff-identifier'];")
+
+          # Add social and address matching to the existing AND-based filter logic.
+          old = """  const status=familyFilterValue('ff-status'),housing=familyFilterValue('ff-housing'),rights=familyFilterValue('ff-rights'),hasSalary=familyFilterValue('ff-hasSalary'),job=familyFilterValue('ff-job'),source=familyFilterValue('ff-source'),members=familyFilterValue('ff-members'),salary=familyFilterValue('ff-salary'),code=familyFilterValue('ff-addressCode'),identifier=familyFilterValue('ff-identifier');
+          const matches=(selected,value)=>selected.includes('الكل')||selected.includes(value);
+          if(!matches(status,x.st))return false;
+          if(!matches(housing,x.h))return false;"""
+          new = """  const status=familyFilterValue('ff-status'),social=familyFilterValue('ff-social'),housing=familyFilterValue('ff-housing'),rights=familyFilterValue('ff-rights'),hasSalary=familyFilterValue('ff-hasSalary'),job=familyFilterValue('ff-job'),source=familyFilterValue('ff-source'),members=familyFilterValue('ff-members'),salary=familyFilterValue('ff-salary'),address=familyFilterValue('ff-address'),code=familyFilterValue('ff-addressCode'),identifier=familyFilterValue('ff-identifier');
+          const matches=(selected,value)=>selected.includes('الكل')||selected.includes(value);
+          if(!matches(status,x.st))return false;
+          if(!matches(social,x.social))return false;
+          if(!matches(housing,x.h))return false;"""
+          if old not in s:
+              raise SystemExit("Could not find family filter matching block")
+          s = s.replace(old, new, 1)
+          old = "  if(!matches(code,String(x.addressCode??'')))return false;"
+          new = "  if(!matches(address,x.address))return false;\n  if(!matches(code,String(x.addressCode??'')))return false;"
+          if old not in s:
+              raise SystemExit("Could not find address matching line")
+          s = s.replace(old, new, 1)
+
+          # Match the existing Programs section's popup/checkbox filter interaction.
+          css = """
+          <style id="family-popup-filters-style">
+          .family-popup-filter{position:relative;min-width:0}
+          .family-popup-filter select{display:none!important}
+          .family-popup-filter .program-filter-btn{width:100%;min-height:42px;text-align:right;white-space:normal}
+          .family-popup-filter .program-filter-menu{z-index:1200;max-height:230px;overflow:auto}
+          .family-popup-filter .program-filter-head{display:flex;gap:5px}
+          .family-popup-filter .program-filter-apply{flex:0 0 auto}
+          .family-popup-filter .family-filter-check{display:flex;align-items:center;gap:8px;padding:7px 9px;cursor:pointer}
+          .family-popup-filter .family-filter-check input{width:18px;height:18px;accent-color:#16845b}
+          </style>
+          """
+          script = r"""
+          <script id="family-popup-filters-script">
+          const FAMILY_POPUP_FILTERS = {
+            'ff-status':'الحالة','ff-social':'الحالة الاجتماعية','ff-housing':'نوع السكن',
+            'ff-rights':'الموقف من الحقوق','ff-hasSalary':'هل لديه راتب','ff-job':'المهنة',
+            'ff-source':'الجهة المانحة','ff-members':'عدد الأفراد','ff-salary':'الراتب',
+            'ff-address':'العنوان','ff-addressCode':'رمز العنوان','ff-identifier':'المعرف'
+          };
+          function initFamilyPopupFilters(){
+            Object.entries(FAMILY_POPUP_FILTERS).forEach(([id,label])=>{
+              const select=document.getElementById(id); if(!select)return;
+              let box=select.closest('.family-popup-filter');
+              if(!box){
+                box=document.createElement('div');box.className='program-filter-box family-popup-filter';
+                select.parentNode.insertBefore(box,select);box.appendChild(select);
+                const head=document.createElement('div');head.className='program-filter-head';
+                const btn=document.createElement('button');btn.type='button';btn.className='program-filter-btn';
+                btn.id=id+'PopupBtn';btn.onclick=()=>toggleFamilyPopupFilter(id);
+                const apply=document.createElement('button');apply.type='button';apply.className='program-filter-apply';apply.textContent='تطبيق';
+                apply.onclick=(e)=>{e.stopPropagation();applyFamilyPopupFilter(id);};
+                head.append(btn,apply);box.appendChild(head);
+                const menu=document.createElement('div');menu.className='program-filter-menu';menu.id=id+'PopupMenu';box.appendChild(menu);
+              }
+              const menu=document.getElementById(id+'PopupMenu');if(!menu)return;
+              const selected=[...select.selectedOptions].map(o=>o.value);
+              menu.innerHTML='';
+              [...select.options].forEach((opt,index)=>{
+                const value=opt.value;
+                const row=document.createElement('label');row.className='family-filter-check';
+                const cb=document.createElement('input');cb.type='checkbox';cb.value=value;
+                cb.checked=selected.includes(value);
+                cb.onchange=()=>{
+                  if(value==='الكل'&&cb.checked){
+                    menu.querySelectorAll('input[type=checkbox]').forEach(x=>{if(x!==cb)x.checked=false});
+                  }else if(cb.checked){
+                    const all=menu.querySelector('input[value="الكل"]');if(all)all.checked=false;
+                  }
+                };
+                const text=document.createElement('span');text.textContent=value==='الكل'?'الكل':opt.textContent;
+                row.append(cb,text);menu.appendChild(row);
+              });
+              const clear=document.createElement('button');clear.type='button';clear.className='program-filter-apply';clear.textContent='مسح الاختيار';clear.style.margin='7px';
+              clear.onclick=(e)=>{e.stopPropagation();menu.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=false);};
+              menu.appendChild(clear);
+              updateFamilyPopupLabel(id);
+            });
+          }
+          function updateFamilyPopupLabel(id){
+            const select=document.getElementById(id),btn=document.getElementById(id+'PopupBtn');if(!select||!btn)return;
+            const values=[...select.selectedOptions].map(o=>o.value).filter(v=>v!=='الكل');
+            const label=FAMILY_POPUP_FILTERS[id]||'الفلتر';
+            btn.textContent=label+': '+(values.length?values.length+' محدد':'الكل')+' ▾';
+          }
+          function toggleFamilyPopupFilter(id){
+            const menu=document.getElementById(id+'PopupMenu');if(!menu)return;
+            document.querySelectorAll('.family-popup-filter .program-filter-menu').forEach(m=>{if(m!==menu)m.classList.remove('open')});
+            menu.classList.toggle('open');
+          }
+          function applyFamilyPopupFilter(id){
+            const select=document.getElementById(id),menu=document.getElementById(id+'PopupMenu');if(!select||!menu)return;
+            const values=[...menu.querySelectorAll('input[type=checkbox]:checked')].map(cb=>cb.value);
+            [...select.options].forEach(o=>o.selected=values.includes(o.value));
+            if(!values.length){const all=select.querySelector('option[value="الكل"]');if(all)all.selected=true;}
+            updateFamilyPopupLabel(id);menu.classList.remove('open');renderFamilies();
+          }
+          document.addEventListener('click',e=>{if(!e.target.closest('.family-popup-filter'))document.querySelectorAll('.family-popup-filter .program-filter-menu').forEach(m=>m.classList.remove('open'));});
+          </script>
+          """
+          if 'id="family-popup-filters-style"' not in s:
+              if "</head>" not in s: raise SystemExit("Missing </head>")
+              s=s.replace("</head>",css+"</head>",1)
+          if 'id="family-popup-filters-script"' not in s:
+              marker="let familyQuickFilter='all';"
+              if marker not in s: raise SystemExit("Missing family filter JS anchor")
+              s=s.replace(marker,script+"\n"+marker,1)
+
+          # Refresh popup choices whenever dynamic options are repopulated.
+          marker="  fill('ff-identifier',unique(families.map(x=>x.i)));"
+          if marker not in s: raise SystemExit("Missing final family filter fill")
+          s=s.replace(marker,marker+"\n  initFamilyPopupFilters();",1)
+
+          # Ensure buttons and resets update visible popup labels and selection state.
+          old = "ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='الكل';});"
+          new = "ids.forEach(id=>{const el=document.getElementById(id);if(el){if(el.multiple){[...el.options].forEach(o=>o.selected=o.value==='الكل');}else el.value='الكل';}});"
+          s=s.replace(old,new)
+          s=s.replace("  renderFamilies();\n}\nfunction resetFamilyFilters()", "  initFamilyPopupFilters();\n  renderFamilies();\n}\nfunction resetFamilyFilters()",1)
+          s=s.replace("document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick==='all'));renderFamilies();}",
+                      "document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick==='all'));initFamilyPopupFilters();renderFamilies();}",1)
+
+          p.write_text(s, encoding="utf-8")
+          print("Patched family popup filters, social status and address. File bytes:", p.stat().st_size)
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Add popup family filters and social/address fields"
+          git push
