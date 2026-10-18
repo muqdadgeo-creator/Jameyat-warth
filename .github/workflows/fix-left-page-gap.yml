@@ -1,0 +1,59 @@
+name: Fix unexpected left-side page gap
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fix-left-page-gap.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  fix-layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add safe viewport alignment fix
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          marker = '<style id="warith-left-gap-layout-fix">'
+          if marker in s:
+              print("Left-gap layout fix already present")
+              raise SystemExit(0)
+          css = '''<style id="warith-left-gap-layout-fix">
+          /* Prevent horizontal overflow from shifting the page and leaving a blank gutter. */
+          html {
+            max-width: 100%;
+            overflow-x: clip;
+          }
+          body {
+            max-width: 100%;
+            min-width: 0;
+            margin-inline: 0;
+            overflow-x: clip;
+          }
+          *, *::before, *::after {
+            box-sizing: border-box;
+          }
+          img, video, canvas, iframe {
+            max-width: 100%;
+          }
+          </style>'''
+          if "</head>" not in s:
+              raise SystemExit("Could not find </head>; leaving index unchanged")
+          p.write_text(s.replace("</head>", css + "</head>", 1), encoding="utf-8")
+      - name: Commit layout fix
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Fix left-side page gap and horizontal overflow"
+          git push
