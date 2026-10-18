@@ -5357,7 +5357,9 @@ const news=(Array.isArray(window.warithPublicTickerData?.news)?window.warithPubl
   .sort((a,b)=>b.ts-a.ts);
 out.push(...news.map(({key,text})=>({key,text})));
 out.push({key:'visitors',text:warithTickerVisitorMessage()});
-return out
+/* منع تكرار الخبر نفسه إذا رجع من مصدر المزامنة بأكثر من سجل/معرّف. */
+const seenTickerMessages=new Set();
+return out.filter(item=>{const normalized=String(item.text||'').replace(/\s+/g,' ').trim();if(!normalized||seenTickerMessages.has(normalized))return false;seenTickerMessages.add(normalized);return true})
 }
 function warithTickerShowNext(advance=false){const el=document.getElementById('warithTickerMessage');if(!el)return;const messages=warithTickerBuildMessages();if(!messages.length)return;let idx=messages.findIndex(m=>m.key===warithTickerCurrentKey);if(!warithTickerStarted){idx=0;warithTickerStarted=true}else if(advance){if(warithTickerCurrentKey==='visitors'&&typeof warithUpdateVisitorTicker==='function')warithUpdateVisitorTicker();if(idx<0)idx=warithTickerIndex;idx=(idx+1)%messages.length}else if(idx<0)idx=Math.min(warithTickerIndex,messages.length-1);warithTickerIndex=idx;const msg=messages[idx];warithTickerCurrentKey=msg.key;el.textContent=msg.text;const viewport=document.getElementById('warithTickerViewport');el.style.fontSize='';if(viewport){let size=11;while(el.scrollWidth>viewport.clientWidth&&size>8){size=Math.max(8,size-.5);el.style.fontSize=size+'px'}}el.classList.remove('wvtick-enter');void el.offsetWidth;el.classList.add('wvtick-enter')}
 function warithTickerApplyCycleInterval(){if(window.warithTickerCycleTimer)window.clearInterval(window.warithTickerCycleTimer);const cfg=warithTickerSettings();const seconds=Math.max(2,Math.min(120,Number(cfg.displayIntervalSeconds??WARITH_TICKER_DEFAULTS.displayIntervalSeconds)||WARITH_TICKER_DEFAULTS.displayIntervalSeconds));window.warithTickerCycleTimer=window.setInterval(()=>warithTickerShowNext(true),seconds*1000)}
