@@ -1,0 +1,46 @@
+name: One-time repair cloud sync timestamps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fix-sync-timestamps.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Normalize timestamps before cloud sync writes
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          norm = "(()=>{const v=VALUE;const d=typeof v==='number'||/^\\d{10,13}$/.test(String(v||''))?new Date(Number(v)):new Date(v||Date.now());return Number.isNaN(d.getTime())?new Date().toISOString():d.toISOString()})()"
+          changes = [
+              ("updated_at:item.updatedAt||new Date().toISOString()", "updated_at:" + norm.replace("VALUE", "item.updatedAt")),
+              ("updated_at:item.updatedAt,", "updated_at:" + norm.replace("VALUE", "item.updatedAt") + ", "),
+              ("updated_at:payload.updatedAt,", "updated_at:" + norm.replace("VALUE", "payload.updatedAt") + ", "),
+              ("ts=item.updatedAt||item.updated_at||new Date().toISOString()", "ts=" + norm.replace("VALUE", "(item.updatedAt||item.updated_at)")),
+          ]
+          for old, new in changes:
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one occurrence of {old!r}, found {count}; refusing to edit.")
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding="utf-8")
+          print("Patched 4 timestamp paths safely.")
+      - name: Commit repaired sync code
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix timestamp normalization in cloud sync"
+          git push origin main
