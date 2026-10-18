@@ -1,0 +1,51 @@
+name: Fix association header layout
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fix-header-layout.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  fix-header:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply header-only CSS override
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          marker = '<style id="header-brand-layout-fix">'
+          if marker in s:
+              print("Header fix already present")
+              raise SystemExit(0)
+          css = '''<style id="header-brand-layout-fix">
+          header{padding:13px 15px 10px;display:flex;flex-direction:column;align-items:center;gap:7px}
+          header>.icon{position:absolute;top:13px;left:15px}
+          header>.brand{order:0;flex:0 0 auto;width:100%;text-align:center;padding:0 88px;min-width:0}
+          header>.brand b{display:block;font-size:clamp(12px,3.8vw,17px);white-space:nowrap;line-height:1.5}
+          header>.logo{order:1;width:120px;height:94px;flex:0 0 auto;border-radius:0;margin:0 auto}
+          header>.notification-wrap{position:absolute;top:13px;left:64px}
+          header>.header-auth-wrap{position:absolute;top:13px;right:15px;min-width:74px;max-width:104px}
+          @media(max-width:380px){header{padding-top:60px}header>.icon{top:10px;left:10px}header>.brand{padding:0 8px}header>.brand b{font-size:13px}header>.header-auth-wrap{top:9px;right:10px}header>.notification-wrap{top:9px;left:57px}header>.logo{width:104px;height:82px}}
+          </style>'''
+          if "</head>" not in s:
+              raise SystemExit("Could not find </head>; leaving index unchanged")
+          p.write_text(s.replace("</head>", css + "</head>", 1), encoding="utf-8")
+      - name: Commit header layout
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Adjust association header title and logo layout"
+          git push
