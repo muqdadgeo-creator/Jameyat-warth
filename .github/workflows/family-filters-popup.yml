@@ -1,0 +1,118 @@
+name: Family filters popup dropdown
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/family-filters-popup.yml"
+permissions:
+  contents: write
+jobs:
+  patch-family-filter-popup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add popup dropdowns matching program filters
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          css_marker = '<style id="family-filter-popup-style">'
+          if css_marker not in s:
+              css = """<style id="family-filter-popup-style">
+          .family-filter-popup-wrap{position:relative;width:100%;min-width:0}
+          .family-filter-popup-select{display:none!important}
+          .family-filter-popup-btn{width:100%;min-height:38px;text-align:right;border:1px solid #d7e3df;background:#fff;border-radius:9px;padding:8px 9px;font:inherit;font-size:12px;color:#41635b;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+          .family-filter-popup-menu{display:none;position:absolute;top:42px;right:0;left:0;min-width:190px;background:#fff;border:1px solid #d7e3df;border-radius:12px;padding:8px;z-index:30;box-shadow:0 8px 20px #0002;max-height:230px;overflow:auto}
+          .family-filter-popup-menu.open{display:block}
+          .family-filter-popup-option{display:flex;align-items:center;gap:8px;padding:7px 4px;font-size:12px;border-radius:7px;cursor:pointer}
+          .family-filter-popup-option:hover{background:#f3f7f5}
+          .family-filter-popup-option input{width:17px;height:17px;accent-color:#0f5c4d;flex:0 0 auto}
+          </style>"""
+              if "</head>" not in s:
+                  raise SystemExit("Could not find </head>; index unchanged")
+              s = s.replace("</head>", css + "</head>", 1)
+          js_marker = "function initFamilyPopupFilters(){"
+          if js_marker not in s:
+              js = r"""
+          const familyPopupFilterIds=['ff-status','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-addressCode','ff-identifier'];
+          const familyPopupFilterLabels={'ff-status':'الحالة','ff-housing':'نوع السكن','ff-rights':'الموقف من الحقوق','ff-hasSalary':'هل لديه راتب','ff-job':'المهنة','ff-source':'الجهة المانحة','ff-members':'عدد الأفراد','ff-salary':'الراتب','ff-addressCode':'رمز العنوان','ff-identifier':'المعرف'};
+          function initFamilyPopupFilters(){
+            familyPopupFilterIds.forEach(id=>{
+              const sel=document.getElementById(id);if(!sel)return;
+              let wrap=sel.closest('.family-filter-popup-wrap');
+              if(!wrap){
+                wrap=document.createElement('div');wrap.className='family-filter-popup-wrap';
+                sel.parentNode.insertBefore(wrap,sel);wrap.appendChild(sel);sel.classList.add('family-filter-popup-select');
+                const btn=document.createElement('button');btn.type='button';btn.className='family-filter-popup-btn';btn.dataset.filterId=id;
+                btn.addEventListener('click',e=>{e.stopPropagation();const menu=wrap.querySelector('.family-filter-popup-menu');const opening=!menu.classList.contains('open');document.querySelectorAll('.family-filter-popup-menu.open').forEach(m=>m.classList.remove('open'));if(opening)menu.classList.add('open');});
+                const menu=document.createElement('div');menu.className='family-filter-popup-menu';menu.addEventListener('click',e=>e.stopPropagation());
+                wrap.appendChild(btn);wrap.appendChild(menu);
+              }
+            });
+            if(!window.__familyPopupOutsideHandler){window.__familyPopupOutsideHandler=true;document.addEventListener('click',()=>document.querySelectorAll('.family-filter-popup-menu.open').forEach(m=>m.classList.remove('open')));}
+            refreshFamilyPopupFilters();
+          }
+          function refreshFamilyPopupFilters(){
+            familyPopupFilterIds.forEach(id=>{
+              const sel=document.getElementById(id);if(!sel)return;
+              const wrap=sel.closest('.family-filter-popup-wrap');if(!wrap)return;
+              const btn=wrap.querySelector('.family-filter-popup-btn'),menu=wrap.querySelector('.family-filter-popup-menu');
+              const selected=[...sel.options].filter(o=>o.selected).map(o=>o.value);
+              const active=selected.filter(v=>v!=='الكل');
+              btn.textContent=familyPopupFilterLabels[id]+': '+(!active.length||selected.includes('الكل')?'الكل':active.length<=2?active.join('، '):active.slice(0,2).join('، ')+' +'+(active.length-2));
+              menu.innerHTML='';
+              [...sel.options].forEach(opt=>{
+                const label=document.createElement('label');label.className='family-filter-popup-option';
+                const cb=document.createElement('input');cb.type='checkbox';cb.checked=opt.selected;cb.value=opt.value;
+                cb.addEventListener('change',()=>{
+                  if(opt.value==='الكل'&&cb.checked){[...sel.options].forEach(o=>o.selected=o.value==='الكل');}
+                  else{
+                    const all=[...sel.options].find(o=>o.value==='الكل');if(all)all.selected=false;
+                    opt.selected=cb.checked;
+                    if(![...sel.options].some(o=>o.selected)&&all)all.selected=true;
+                  }
+                  refreshFamilyPopupFilters();
+                  renderFamilies();
+                });
+                const text=document.createElement('span');text.textContent=opt.textContent;
+                label.appendChild(cb);label.appendChild(text);menu.appendChild(label);
+              });
+            });
+          }
+          """
+              anchor = "function toggleFamilyFilters(){"
+              if anchor not in s:
+                  raise SystemExit("Could not find toggleFamilyFilters; index unchanged")
+              s = s.replace(anchor, js + "\n" + anchor, 1)
+          old_toggle = "function toggleFamilyFilters(){const el=document.getElementById('familyAdvancedFilters');if(!el)return;const show=el.style.display==='none'||!el.style.display;el.style.display=show?'block':'none';if(show)populateFamilyFilterOptions();}"
+          new_toggle = "function toggleFamilyFilters(){const el=document.getElementById('familyAdvancedFilters');if(!el)return;const show=el.style.display==='none'||!el.style.display;el.style.display=show?'block':'none';if(show){populateFamilyFilterOptions();initFamilyPopupFilters();}}"
+          if old_toggle in s:
+              s = s.replace(old_toggle, new_toggle, 1)
+          elif new_toggle not in s:
+              raise SystemExit("Could not patch toggleFamilyFilters; index unchanged")
+          fill_anchor = "fill('ff-identifier',unique(families.map(x=>x.i)));"
+          if fill_anchor in s and "fill('ff-identifier',unique(families.map(x=>x.i)));\n  refreshFamilyPopupFilters();" not in s:
+              s = s.replace(fill_anchor, fill_anchor + "\n  refreshFamilyPopupFilters();", 1)
+          if "function resetFamilyFilters(){familyQuickFilter='all';" in s:
+              old_reset = "document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick==='all'));renderFamilies();}"
+              new_reset = "document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick==='all'));refreshFamilyPopupFilters();renderFamilies();}"
+              s=s.replace(old_reset,new_reset,1)
+          old_quick = "document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick===v));\n  renderFamilies();"
+          new_quick = "document.querySelectorAll('#familyQuickFilters .chip').forEach(b=>b.classList.toggle('active',b.dataset.familyQuick===v));\n  refreshFamilyPopupFilters();\n  renderFamilies();"
+          if old_quick in s:s=s.replace(old_quick,new_quick,1)
+          if "class=\"family-filter-popup-btn\"" not in s and "function initFamilyPopupFilters(){" not in s:
+              raise SystemExit("Popup patch validation failed")
+          p.write_text(s,encoding="utf-8")
+      - name: Commit popup filter update
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No family filter changes needed."
+            exit 0
+          fi
+          git commit -m "Use popup dropdowns for family filters"
+          git push
