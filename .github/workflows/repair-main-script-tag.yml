@@ -1,0 +1,50 @@
+name: Repair broken main script tag
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/repair-main-script-tag.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  repair-script-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Escape closing script tag inside print template
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          marker = '<script id="warith-ticker-motion-refinement-script">'
+          start = s.find(marker)
+          if start < 0:
+              raise SystemExit("Expected ticker refinement script was not found; no changes made")
+          end = s.find("</script>", start + len(marker))
+          if end < 0:
+              raise SystemExit("Closing script tag was not found; no changes made")
+          # Inside a JavaScript template literal, escape the slash so the HTML parser
+          # does not terminate the outer application script early.
+          s = s[:end] + "<\\/script>" + s[end + len("</script>"):]
+          p.write_text(s, encoding="utf-8")
+          print("Escaped the nested closing script tag.")
+      - name: Validate and commit
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s = Path("index.html").read_text(encoding="utf-8")
+          marker = '<script id="warith-ticker-motion-refinement-script">'
+          start = s.find(marker)
+          if start < 0 or '<\\/script>' not in s[start:]:
+              raise SystemExit("Validation failed: escaped closing tag missing")
+          print("Validation passed.")
+          PY
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          git add index.html
+          git commit -m "Fix broken main script caused by nested script tag"
+          git push
