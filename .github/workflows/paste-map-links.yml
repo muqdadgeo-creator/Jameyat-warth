@@ -58,6 +58,30 @@ jobs:
               s = s.replace(old_map, new_map, 1)
           elif new_map not in s:
               raise SystemExit("Appeal map save expression not found")
+          # Show a location action in appeal details for new, unregistered cases too.
+          phone_marker = "function openAppeal(i){"
+          map_helper = """function appealMapActions(a,family){
+           const raw=String(a?.ownerMap||family?.map||'').trim();
+           let url='';
+           try{const u=new URL(raw);if(['https:','http:'].includes(u.protocol))url=u.href;}catch(e){}
+           return url
+             ? `<a class="action" href="${escapeHtml(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 فتح الموقع</a>`
+             : '<span class="sub">الموقع غير مسجل</span>';
+          }
+          """
+          if "function appealMapActions(a,family)" not in s:
+              if s.count(phone_marker) != 1:
+                  raise SystemExit("Appeal detail function marker is not unique")
+              s = s.replace(phone_marker, map_helper + phone_marker, 1)
+          address_card = """  <div class="card" style="margin-top:9px"><div class="detail-label">العنوان</div><div class="detail-value">${escapeHtml(a.ownerAddress||family?.address||'غير مسجل')}</div></div>
+            <div class="card"><div class="detail-label">الملاحظات</div>"""
+          address_card_new = """  <div class="card" style="margin-top:9px"><div class="detail-label">العنوان</div><div class="detail-value">${escapeHtml(a.ownerAddress||family?.address||'غير مسجل')}</div></div>
+            <div class="card"><div class="detail-label">الموقع</div><div class="detail-value">${appealMapActions(a,family)}</div></div>
+            <div class="card"><div class="detail-label">الملاحظات</div>"""
+          if address_card in s:
+              s = s.replace(address_card, address_card_new, 1)
+          elif address_card_new not in s:
+              raise SystemExit("Appeal detail address card not found")
           p.write_text(s, encoding="utf-8")
           print("Map-link form patch applied to index.html")
           PY
