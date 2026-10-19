@@ -1702,6 +1702,14 @@ function appealPhoneActions(phone){
   const digits=intl.replace(/[^0-9]/g,'');
   return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b>${escapeHtml(raw)}</b><a class="action" href="tel:${escapeHtml(intl)}" onclick="event.stopPropagation()">📞 اتصال</a><a class="action" href="https://wa.me/${digits}" target="_blank" rel="noopener" onclick="event.stopPropagation()">💬 واتساب</a></div>`;
 }
+function appealMapActions(a,family){
+ const raw=String(a?.ownerMap||family?.map||'').trim();
+ let url='';
+ try{const u=new URL(raw);if(['https:','http:'].includes(u.protocol))url=u.href;}catch(e){}
+ return url
+   ? `<a class="action" href="${escapeHtml(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 فتح الموقع</a>`
+   : '<span class="sub">الموقع غير مسجل</span>';
+}
 function openAppeal(i){
   const a=appeals[i]; if(!a)return;
   selectedAppealIndex=i;
@@ -1725,6 +1733,7 @@ function openAppeal(i){
     <div class="info"><small>آخر تحديث</small><b>${new Date(a.updatedAt||a.createdAt||Date.now()).toLocaleDateString('ar-IQ')}</b></div>
   </div>
   <div class="card" style="margin-top:9px"><div class="detail-label">العنوان</div><div class="detail-value">${escapeHtml(a.ownerAddress||family?.address||'غير مسجل')}</div></div>
+  <div class="card"><div class="detail-label">الموقع</div><div class="detail-value">${appealMapActions(a,family)}</div></div>
   <div class="card"><div class="detail-label">الملاحظات</div><div class="detail-value">${escapeHtml(a.notes||'—')}</div></div>
   <div id="appealFinancialBox"></div>
   <div id="appealDonationsBox"></div>
