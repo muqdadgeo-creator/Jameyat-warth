@@ -12,43 +12,70 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Patch forms
-        shell: python
+        shell: bash
         run: |
+          python3 <<'PY'
           from pathlib import Path
-          p=Path("index.html")
-          s=p.read_text(encoding="utf-8")
-          pairs=[
-          ('<input class="forminput" id="f-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>','<input class="forminput" id="f-map" placeholder="الصق رابط الموقع من واتساب أو استخدم الزر" style="flex:1" type="url"/>\n<button class="action" onclick="applyPastedMapLink(\'f-map\',\'location-status\')" type="button">اعتماد الرابط</button>'),
-          ('<input class="forminput" id="a-map" placeholder="سيظهر رابط الموقع هنا" readonly style="flex:1" type="url"/>','<input class="forminput" id="a-map" placeholder="الصق رابط الموقع من واتساب أو استخدم الزر" style="flex:1" type="url"/>\n<button class="action" onclick="applyPastedMapLink(\'a-map\',\'a-location-status\')" type="button">اعتماد الرابط</button>'),
-          ('<input class="forminput" id="d-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>','<input class="forminput" id="d-map" placeholder="الصق رابط الموقع من واتساب أو استخدم الزر" style="flex:1" type="url"/>\n<button class="action" onclick="applyPastedMapLink(\'d-map\',\'donor-location-status\')" type="button">اعتماد الرابط</button>')]
-          for old,new in pairs:
-            if s.count(old)!=1: raise SystemExit("Could not uniquely locate map input: "+old[:80])
-            s=s.replace(old,new,1)
-          marker="function pickDonorLocation(){"
-          helper="""function applyPastedMapLink(inputId,statusId){
- const input=document.getElementById(inputId),status=document.getElementById(statusId);
- if(!input||!status)return;
- const raw=String(input.value||'').trim();
- if(!raw){status.textContent='الصق رابط الموقع أولاً.';input.focus();return;}
- const m=raw.match(/https?:\\/\\/[^\\s<>\\"']+/i);
- const url=(m?m[0]:raw).replace(/[),،؛;.]+$/,'');
- try{const u=new URL(url);if(!['https:','http:'].includes(u.protocol)||!u.hostname.includes('.'))throw Error();
- input.value=url;status.textContent='تم اعتماد الرابط، وسيُحفظ مع السجل عند الضغط على حفظ.';
- }catch(e){status.textContent='الرابط غير صالح. الصق رابط موقع صحيحاً من واتساب.';}
-}
-"""
-          if s.count(marker)!=1: raise SystemExit("Could not uniquely locate location helper")
-          s=s.replace(marker,helper+marker,1)
-          old="ownerMap:appealOwnerType==='new'?document.getElementById('a-map').value.trim():'',"
-          new="ownerMap:(document.getElementById('a-map')?.value||'').trim() || (familyCode!=null?String(families.find(x=>Number(x.c)===Number(familyCode))?.map||'').trim():''),"
-          if s.count(old)!=1: raise SystemExit("Could not uniquely locate appeal map save")
-          s=s.replace(old,new,1)
-          p.write_text(s,encoding="utf-8")
-          print("Patched family, appeal, donor map link inputs.")
-      - name: Commit
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          pairs = [
+              ('<input class="forminput" id="f-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>',
+               '<input class="forminput" id="f-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/>\n<button class="action" onclick="applyPastedMapLink(\'f-map\',\'location-status\')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button>'),
+              ('<input class="forminput" id="a-map" placeholder="سيظهر رابط الموقع هنا" readonly style="flex:1" type="url"/>',
+               '<input class="forminput" id="a-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/>\n<button class="action" onclick="applyPastedMapLink(\'a-map\',\'a-location-status\')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button>'),
+              ('<input class="forminput" id="d-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>',
+               '<input class="forminput" id="d-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/><button class="action" onclick="applyPastedMapLink(\'d-map\',\'donor-location-status\')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button>')
+          ]
+          for old, new in pairs:
+              if old in s:
+                  if s.count(old) != 1:
+                      raise SystemExit("Map input is not unique: " + old[:60])
+                  s = s.replace(old, new, 1)
+              elif new not in s:
+                  raise SystemExit("Could not find expected map input: " + old[:60])
+          marker = "function pickDonorLocation(){"
+          helper = """function applyPastedMapLink(inputId,statusId){
+           const input=document.getElementById(inputId),status=document.getElementById(statusId);
+           if(!input||!status)return;
+           const raw=String(input.value||'').trim();
+           if(!raw){status.textContent='الصق رابط الموقع أولاً.';input.focus();return;}
+           const candidate=raw.split(/\\s+/)[0].replace(/[),،؛;.]+$/,'');
+           try{
+            const u=new URL(candidate);
+            if(!['https:','http:'].includes(u.protocol)||!u.hostname.includes('.'))throw new Error('invalid');
+            input.value=candidate;
+            status.textContent='تم اعتماد الرابط، وسيُحفظ مع السجل عند الضغط على حفظ.';
+           }catch(e){status.textContent='الرابط غير صالح. الصق رابط موقع صحيحاً من واتساب.';}
+          }
+          """
+          if "function applyPastedMapLink(inputId,statusId)" not in s:
+              if s.count(marker) != 1:
+                  raise SystemExit("Location helper marker is not unique")
+              s = s.replace(marker, helper + marker, 1)
+          old_map = "ownerMap:appealOwnerType==='new'?document.getElementById('a-map').value.trim():'',"
+          new_map = "ownerMap:(document.getElementById('a-map')?.value||'').trim() || (familyCode!=null?String(families.find(x=>Number(x.c)===Number(familyCode))?.map||'').trim():''),"
+          if old_map in s:
+              s = s.replace(old_map, new_map, 1)
+          elif new_map not in s:
+              raise SystemExit("Appeal map save expression not found")
+          p.write_text(s, encoding="utf-8")
+          print("Map-link form patch applied to index.html")
+          PY
+      - name: Validate patch
+        run: |
+          grep -q 'applyPastedMapLink' index.html
+          grep -q 'id="f-map"' index.html
+          grep -q 'id="a-map"' index.html
+          grep -q 'id="d-map"' index.html
+      - name: Commit patch
+        shell: bash
         run: |
           git config user.name "muqdadgeo-creator"
           git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No changes required; patch already present."
+            exit 0
+          fi
           git add index.html
-          git commit -m "Add pasteable map links to forms"
+          git commit -m "Add pasteable map links to family appeal and donor forms"
           git push
