@@ -745,7 +745,7 @@ header > .icon {
 <div class="card">
 <label class="fl">رمز المتبرع</label><input class="forminput" id="d-code" placeholder="يُنشأ تلقائياً عند الحفظ" readonly=""/><label class="fl">اسم المتبرع</label><input class="forminput" id="d-name" placeholder="الاسم الكامل"/>
 <label class="fl">رقم الهاتف</label><div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap"><input class="forminput" id="d-phone" inputmode="tel" placeholder="0770xxxxxxxx" type="tel" style="flex:1;min-width:180px"/><button class="action" type="button" onclick="pickDonorContact()" style="flex:0 0 auto;white-space:nowrap">👤 جهات الاتصال</button></div><div id="contactNameHint" style="margin-top:6px;font-size:12px;opacity:.75"></div>
-<label class="fl">العنوان</label><input class="forminput" id="d-address" placeholder="العنوان"/><div style="margin-top:7px"><label class="fl">الموقع</label><div style="display:flex;gap:7px"><input class="forminput" id="d-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/><button class="action primary" onclick="pickDonorLocation()" style="flex:0 0 auto;padding:0 12px" type="button">📍 إضافة موقع</button></div><div class="sub" id="donor-location-status" style="margin-top:5px">اضغط «إضافة موقع» لتحديد الموقع.</div></div>
+<label class="fl">العنوان</label><input class="forminput" id="d-address" placeholder="العنوان"/><div style="margin-top:7px"><label class="fl">الموقع</label><div style="display:flex;gap:7px"><input class="forminput" id="d-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/><button class="action" onclick="applyPastedMapLink('d-map','donor-location-status')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button><button class="action primary" onclick="pickDonorLocation()" style="flex:0 0 auto;padding:0 12px" type="button">📍 إضافة موقع</button></div><div class="sub" id="donor-location-status" style="margin-top:5px">اضغط «إضافة موقع» لتحديد الموقع.</div></div>
 <label class="fl">ملاحظات</label><textarea class="forminput" id="d-notes" placeholder="ملاحظات" style="height:70px;resize:vertical"></textarea>
 </div>
 <button class="action primary" onclick="saveDonor()" style="width:100%">حفظ المتبرع</button>
@@ -823,7 +823,8 @@ header > .icon {
 </div>
 <div style="margin-top:7px"><label class="fl">الموقع</label>
 <div style="display:flex;gap:7px">
-<input class="forminput" id="f-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>
+<input class="forminput" id="f-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/>
+<button class="action" onclick="applyPastedMapLink('f-map','location-status')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button>
 <button class="action primary" onclick="pickLocation()" style="flex:0 0 auto;padding:0 12px" type="button">📍 إضافة موقع</button>
 </div>
 <div class="sub" id="location-status" style="margin-top:5px">اضغط «إضافة موقع» لتحديد الموقع.</div></div></div>
@@ -1078,7 +1079,8 @@ header > .icon {
 <input class="forminput" id="a-job" placeholder="مهنة رب الأسرة"/>
 <label class="fl">الموقع</label>
 <div style="display:flex;gap:7px">
-<input class="forminput" id="a-map" placeholder="سيظهر رابط الموقع هنا" readonly style="flex:1" type="url"/>
+<input class="forminput" id="a-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/>
+<button class="action" onclick="applyPastedMapLink('a-map','a-location-status')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button>
 <button class="action primary" onclick="pickAppealLocation()" style="flex:0 0 auto;padding:0 12px" type="button">📍 إضافة موقع</button>
 </div>
 <div class="sub" id="a-location-status" style="margin-top:5px">اضغط «إضافة موقع» لتحديد الموقع.</div>
@@ -1546,7 +1548,7 @@ async function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction
     ownerType:appealOwnerType,
     ownerName,ownerPhone,ownerAddress,
     ownerJob:appealOwnerType==='new'?document.getElementById('a-job').value.trim():'',
-    ownerMap:appealOwnerType==='new'?document.getElementById('a-map').value.trim():'',
+    ownerMap:(document.getElementById('a-map')?.value||'').trim() || (familyCode!=null?String(families.find(x=>Number(x.c)===Number(familyCode))?.map||'').trim():''),
     ownerLandmark:appealOwnerType==='new'?document.getElementById('a-landmark').value.trim():'',
     type:appealType,
     amount:Number(document.getElementById('a-amount').value||0),
@@ -3127,6 +3129,19 @@ field.placeholder=yes?'اسم الجهة المانحة':'يظهر عند اخت
 if(!yes)field.value='';
 }
 
+function applyPastedMapLink(inputId,statusId){
+ const input=document.getElementById(inputId),status=document.getElementById(statusId);
+ if(!input||!status)return;
+ const raw=String(input.value||'').trim();
+ if(!raw){status.textContent='الصق رابط الموقع أولاً.';input.focus();return;}
+ const candidate=raw.split(/\s+/)[0].replace(/[),،؛;.]+$/,'');
+ try{
+  const u=new URL(candidate);
+  if(!['https:','http:'].includes(u.protocol)||!u.hostname.includes('.'))throw new Error('invalid');
+  input.value=candidate;
+  status.textContent='تم اعتماد الرابط، وسيُحفظ مع السجل عند الضغط على حفظ.';
+ }catch(e){status.textContent='الرابط غير صالح. الصق رابط موقع صحيحاً من واتساب.';}
+}
 function pickDonorLocation(){
 const status=document.getElementById('donor-location-status');
 if(!navigator.geolocation){alert('المتصفح لا يدعم تحديد الموقع.');return}
