@@ -1,0 +1,54 @@
+name: Add pasteable map links
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/paste-map-links.yml"
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch forms
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path("index.html")
+          s=p.read_text(encoding="utf-8")
+          pairs=[
+          ('<input class="forminput" id="f-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>','<input class="forminput" id="f-map" placeholder="الصق رابط الموقع من واتساب أو استخدم الزر" style="flex:1" type="url"/>\n<button class="action" onclick="applyPastedMapLink(\'f-map\',\'location-status\')" type="button">اعتماد الرابط</button>'),
+          ('<input class="forminput" id="a-map" placeholder="سيظهر رابط الموقع هنا" readonly style="flex:1" type="url"/>','<input class="forminput" id="a-map" placeholder="الصق رابط الموقع من واتساب أو استخدم الزر" style="flex:1" type="url"/>\n<button class="action" onclick="applyPastedMapLink(\'a-map\',\'a-location-status\')" type="button">اعتماد الرابط</button>'),
+          ('<input class="forminput" id="d-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>','<input class="forminput" id="d-map" placeholder="الصق رابط الموقع من واتساب أو استخدم الزر" style="flex:1" type="url"/>\n<button class="action" onclick="applyPastedMapLink(\'d-map\',\'donor-location-status\')" type="button">اعتماد الرابط</button>')]
+          for old,new in pairs:
+            if s.count(old)!=1: raise SystemExit("Could not uniquely locate map input: "+old[:80])
+            s=s.replace(old,new,1)
+          marker="function pickDonorLocation(){"
+          helper="""function applyPastedMapLink(inputId,statusId){
+ const input=document.getElementById(inputId),status=document.getElementById(statusId);
+ if(!input||!status)return;
+ const raw=String(input.value||'').trim();
+ if(!raw){status.textContent='الصق رابط الموقع أولاً.';input.focus();return;}
+ const m=raw.match(/https?:\\/\\/[^\\s<>\\"']+/i);
+ const url=(m?m[0]:raw).replace(/[),،؛;.]+$/,'');
+ try{const u=new URL(url);if(!['https:','http:'].includes(u.protocol)||!u.hostname.includes('.'))throw Error();
+ input.value=url;status.textContent='تم اعتماد الرابط، وسيُحفظ مع السجل عند الضغط على حفظ.';
+ }catch(e){status.textContent='الرابط غير صالح. الصق رابط موقع صحيحاً من واتساب.';}
+}
+"""
+          if s.count(marker)!=1: raise SystemExit("Could not uniquely locate location helper")
+          s=s.replace(marker,helper+marker,1)
+          old="ownerMap:appealOwnerType==='new'?document.getElementById('a-map').value.trim():'',"
+          new="ownerMap:(document.getElementById('a-map')?.value||'').trim() || (familyCode!=null?String(families.find(x=>Number(x.c)===Number(familyCode))?.map||'').trim():''),"
+          if s.count(old)!=1: raise SystemExit("Could not uniquely locate appeal map save")
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding="utf-8")
+          print("Patched family, appeal, donor map link inputs.")
+      - name: Commit
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          git add index.html
+          git commit -m "Add pasteable map links to forms"
+          git push
