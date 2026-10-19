@@ -23,41 +23,6 @@ jobs:
           s2 = s.replace("unpaidDonorList", "unpaidDonationList")
           s2 = s2.replace("unpaidTotalCount", "unpaidDonationCount")
           s2 = s2.replace("warith-v-20261006-0046", "warith-v-20261006-0047")
-          pairs = [
-              ('<input class="forminput" id="f-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>', '<input class="forminput" id="f-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/>\\n<button class="action" onclick="applyPastedMapLink(\\'f-map\\',\\'location-status\\')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button>'),
-              ('<input class="forminput" id="a-map" placeholder="سيظهر رابط الموقع هنا" readonly style="flex:1" type="url"/>', '<input class="forminput" id="a-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/>\\n<button class="action" onclick="applyPastedMapLink(\\'a-map\\',\\'a-location-status\\')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button>'),
-              ('<input class="forminput" id="d-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>', '<input class="forminput" id="d-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/><button class="action" onclick="applyPastedMapLink(\\'d-map\\',\\'donor-location-status\\')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button>')
-          ]
-          for old_input, new_input in pairs:
-              if s2.count(old_input) == 1:
-                  s2 = s2.replace(old_input, new_input, 1)
-              elif s2.count(new_input) != 1:
-                  raise SystemExit("Map input not uniquely found: " + old_input[:60])
-          marker = "function pickDonorLocation(){"
-          helper = """function applyPastedMapLink(inputId,statusId){
-           const input=document.getElementById(inputId),status=document.getElementById(statusId);
-           if(!input||!status)return;
-           const raw=String(input.value||'').trim();
-           if(!raw){status.textContent='الصق رابط الموقع أولاً.';input.focus();return;}
-           const candidate=raw.split(/\\s+/)[0].replace(/[),،؛;.]+$/,'');
-           try{
-            const u=new URL(candidate);
-            if(!['https:','http:'].includes(u.protocol)||!u.hostname.includes('.'))throw new Error('invalid');
-            input.value=candidate;
-            status.textContent='تم اعتماد الرابط، وسيُحفظ مع السجل عند الضغط على حفظ.';
-           }catch(e){status.textContent='الرابط غير صالح. الصق رابط موقع صحيحاً من واتساب.';}
-          }
-          """
-          if "function applyPastedMapLink(inputId,statusId)" not in s2:
-              if s2.count(marker) != 1:
-                  raise SystemExit("Location function marker not unique")
-              s2 = s2.replace(marker, helper + marker, 1)
-          old_map = "ownerMap:appealOwnerType==='new'?document.getElementById('a-map').value.trim():'',"
-          new_map = "ownerMap:(document.getElementById('a-map')?.value||'').trim() || (familyCode!=null?String(families.find(x=>Number(x.c)===Number(familyCode))?.map||'').trim():''),"
-          if old_map in s2:
-              s2 = s2.replace(old_map, new_map, 1)
-          elif new_map not in s2:
-              raise SystemExit("Appeal map save expression not found")
           if s2 != s:
               p.write_text(s2, encoding="utf-8")
 
