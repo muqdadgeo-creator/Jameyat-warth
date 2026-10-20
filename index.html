@@ -480,7 +480,23 @@ header > .icon {
   height: 100%;
   overflow-y: auto;
 }
-</style></head>
+</style>
+<style id="header-height-reduction-20261021">
+/* Reduce the main green header height by about 50%, preserving its contents and behavior. */
+header{padding:6px 15px 5px!important;gap:3px!important}
+header>.logo{width:60px!important;height:47px!important;flex:0 0 auto!important}
+header>.icon{top:6px!important}
+header>.notification-wrap{top:6px!important}
+header>.header-auth-wrap{top:6px!important}
+@media(max-width:380px){
+  header{padding-top:30px!important;padding-bottom:5px!important}
+  header>.logo{width:52px!important;height:41px!important}
+  header>.icon{top:5px!important}
+  header>.header-auth-wrap{top:5px!important}
+  header>.notification-wrap{top:5px!important}
+}
+</style>
+</head>
 <body>
 <div class="app">
 <header><button class="icon" onclick="openMenu()">☰</button><div class="logo"><img alt="شعار جمعية أبي الخصيب الخيرية" src="assets/logo.png?v=20261020-1"/></div><div class="brand"><b>جمعية أبي الخصيب الخيرية</b><small></small></div><div class="notification-wrap" data-auth-only style="display:none"><button aria-label="الإشعارات" class="icon notification-bell" onclick="toggleNotifications()">🔔<span class="notification-count" id="notificationCount">0</span></button><div class="notification-panel" id="notificationPanel"><div class="notification-head"><div class="grow"><b>الإشعارات</b><div class="sub" id="notificationSummary">لا توجد إشعارات جديدة</div></div><button class="link" onclick="markAllNotificationsRead();event.stopPropagation()">تحديد الكل كمقروء</button></div><div id="notificationList"></div><div class="notification-actions"><button class="action" onclick="markAllNotificationsRead();toggleNotifications(false)">تمت القراءة</button><button class="action primary" onclick="requestNotificationPermission()">📱 تفعيل إشعارات الجهاز</button></div></div></div><div class="header-auth-wrap"><button aria-label="تسجيل الدخول" class="header-login-btn" id="headerLoginBtn" onclick="openLogin()" type="button">🔐 تسجيل الدخول</button><div class="header-current-user" id="headerCurrentUser" aria-live="polite"></div><button type="button" class="warith-sync-status" id="warithSyncStatus" data-state="busy" onclick="warithSyncManualRefresh()" title="اضغط لإعادة فحص المزامنة">فحص المزامنة…</button></div></header>
