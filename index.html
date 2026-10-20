@@ -496,6 +496,44 @@ header>.header-auth-wrap{top:6px!important}
   header>.notification-wrap{top:5px!important}
 }
 </style>
+
+<style id="header-content-proportion-20261021">
+/* Balance header controls and give the centered logo a more prominent place. */
+header{
+  min-height:0!important;
+  padding:8px 15px 7px!important;
+  gap:2px!important;
+  align-items:center!important;
+}
+header>.logo{
+  order:1!important;
+  width:150px!important;
+  height:94px!important;
+  flex:0 0 auto!important;
+  margin:0 auto!important;
+  display:grid!important;
+  place-items:center!important;
+}
+header>.logo img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+}
+header>.icon{top:8px!important;left:15px!important;width:48px!important;height:48px!important}
+header>.notification-wrap{top:8px!important;left:70px!important}
+header>.notification-wrap>.icon{width:48px!important;height:48px!important}
+header>.header-auth-wrap{top:8px!important;right:15px!important;min-width:78px!important;max-width:104px!important}
+header>.header-auth-wrap .header-login-btn{min-height:48px!important}
+@media(max-width:380px){
+  header{padding:8px 10px 6px!important}
+  header>.logo{width:145px!important;height:90px!important}
+  header>.icon{top:8px!important;left:10px!important;width:44px!important;height:44px!important}
+  header>.notification-wrap{top:8px!important;left:61px!important}
+  header>.notification-wrap>.icon{width:44px!important;height:44px!important}
+  header>.header-auth-wrap{top:8px!important;right:10px!important;min-width:72px!important;max-width:92px!important}
+  header>.header-auth-wrap .header-login-btn{min-height:44px!important;padding:7px 8px!important}
+}
+</style>
 </head>
 <body>
 <div class="app">
