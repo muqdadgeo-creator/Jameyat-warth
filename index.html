@@ -3348,42 +3348,53 @@ function updateContactNameHint(){
 async function pickDonorContact(){
   const input=document.getElementById('d-phone');
   const nameInput=document.getElementById('d-name');
-  const donorName=(nameInput?.value||'').trim();
   try{
-    if(!('contacts' in navigator) || typeof navigator.contacts.select!=='function'){
-      alert('اختيار جهة الاتصال غير مدعوم في هذا المتصفح. افتح النظام من Chrome على الهاتف وحاول مرة ثانية.');
+    if(!('contacts' in navigator)||typeof navigator.contacts.select!=='function'){
+      alert('اختيار جهات الاتصال غير مدعوم بهذا المتصفح. افتح النظام بمتصفح Chrome أو استخدم النسخ واللصق.');
       return;
     }
     const contacts=await navigator.contacts.select(['name','tel'],{multiple:false});
     if(!contacts||!contacts.length)return;
     const c=contacts[0]||{};
-    const rawPhones=c.tel??c.phoneNumbers??c.phone??c.telephone??[];
-    const phones=Array.isArray(rawPhones)?rawPhones:[rawPhones];
-    const phoneItem=phones.find(x=>{
-      const value=typeof x==='string'||typeof x==='number'?String(x):String(x?.value??x?.number??x?.tel??'');
-      return value.trim()!=='';
-    });
-    const phone=phoneItem==null?'':(typeof phoneItem==='string'||typeof phoneItem==='number'?String(phoneItem):String(phoneItem?.value??phoneItem?.number??phoneItem?.tel??'')).trim();
     const rawNames=c.name??c.names??[];
     const names=Array.isArray(rawNames)?rawNames:[rawNames];
-    const contactName=names.map(x=>typeof x==='string'?x:String(x?.value??x?.name??'')).find(x=>x.trim())||'';
-    if(!phone){
-      alert('جهة الاتصال المختارة ما بيها رقم هاتف متاح للموقع. اختَر جهة اتصال محفوظ بيها رقم، أو استخدم النسخ واللصق.');
+    const contactName=names.map(x=>typeof x==='string'?x:String(x?.value??x?.name??'')).find(x=>x.trim())?.trim()||'';
+    const rawPhones=c.tel??c.phoneNumbers??c.phone??c.telephone??[];
+    const phoneItems=Array.isArray(rawPhones)?rawPhones:[rawPhones];
+    const phoneOptions=phoneItems.map(x=>typeof x==='string'||typeof x==='number'?String(x).trim():String(x?.value??x?.number??x?.tel??'').trim()).filter(Boolean);
+    const uniquePhones=[...new Set(phoneOptions)];
+    if(!contactName){
+      alert('ما وصل اسم جهة الاتصال من الجهاز. جرّب اختيار جهة الاتصال مرة ثانية.');
       return;
     }
+    if(!uniquePhones.length){
+      alert('جهة الاتصال المختارة ما بيها رقم هاتف متاح. اختَر جهة اتصال محفوظ بيها رقم.');
+      return;
+    }
+    let phone=uniquePhones[0];
+    if(uniquePhones.length>1){
+      const options=uniquePhones.map((p,i)=>(i+1)+') '+p).join('\n');
+      const choice=prompt('جهة الاتصال: '+contactName+'\nاختَر رقم الهاتف المطلوب بكتابة رقمه بالقائمة:\n'+options,'1');
+      if(choice===null)return;
+      const index=Number.parseInt(choice,10)-1;
+      if(!Number.isInteger(index)||index<0||index>=uniquePhones.length){
+        alert('اختيار الرقم غير صحيح. أعد اختيار جهة الاتصال.');
+        return;
+      }
+      phone=uniquePhones[index];
+    }
+    nameInput.value=contactName;
     input.value=phone;
+    nameInput.dispatchEvent(new Event('input',{bubbles:true}));
+    nameInput.dispatchEvent(new Event('change',{bubbles:true}));
     input.dispatchEvent(new Event('input',{bubbles:true}));
     input.dispatchEvent(new Event('change',{bubbles:true}));
-    if(!donorName&&contactName&&nameInput){
-      nameInput.value=contactName.trim();
-      nameInput.dispatchEvent(new Event('input',{bubbles:true}));
-      nameInput.dispatchEvent(new Event('change',{bubbles:true}));
-    }
-    if(donorName){input.setAttribute('data-contact-search-name',donorName);input.title='جهة الاتصال المطلوبة: '+donorName;}
+    input.setAttribute('data-contact-search-name',contactName);
+    input.title='جهة الاتصال المختارة: '+contactName;
   }catch(e){
     if(e&&e.name==='AbortError')return;
     console.error('Contact Picker error',e);
-    alert('تعذر قراءة رقم جهة الاتصال. جرّب Chrome وحدّث الصفحة، أو استخدم النسخ واللصق مؤقتاً.');
+    alert('تعذر قراءة الاسم والرقم من جهات الاتصال. جرّب Chrome، أو استخدم النسخ واللصق مؤقتاً.');
   }
 } async function saveDonor(){
   const _edit=editingDonorIndex!==null;
