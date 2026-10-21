@@ -5641,7 +5641,55 @@ function warithSyncSetArray(entity,value){switch(entity){case'families':families
 function warithSyncLocalSet(cfg,arr){const data=JSON.stringify(arr||[]);warithSyncOriginalSetItem(cfg.key,data);if(cfg.entity==='families')warithSyncOriginalSetItem('warith_families',data)}
 function warithSyncRefreshUI(entity){try{if(entity==='ticker_settings'&&typeof renderWarithTickerSettings==='function')renderWarithTickerSettings();if((entity==='ticker_settings'||entity==='appeals'||entity==='help'||entity==='programs')&&typeof warithTickerShowNext==='function')warithTickerShowNext(false);if(entity==='ticker_settings'&&typeof warithTickerApplyCycleInterval==='function')warithTickerApplyCycleInterval();if(entity==='families'&&typeof renderFamilies==='function')renderFamilies();if(entity==='appeals'&&typeof renderAppeals==='function'){renderAppeals();if(typeof updateAppealDashboard==='function')updateAppealDashboard()}if(entity==='donors'&&typeof renderDonors==='function')renderDonors();if(entity==='donations'&&typeof renderDonations==='function')renderDonations();if(entity==='notifications'&&typeof renderNotificationBell==='function')renderNotificationBell();if(entity==='inventory'&&typeof renderInventory==='function')renderInventory();if((entity==='help'||entity==='programs'||entity==='expenses')&&typeof renderActivities==='function')renderActivities();if(document.getElementById('family-followup')?.classList.contains('active')&&typeof renderFamilyFollowup==='function')renderFamilyFollowup();if(typeof renderHomeDashboard==='function')renderHomeDashboard()}catch(e){console.warn('Warith sync UI refresh:',e)}}
 function warithSyncStampChanged(cfg,arr,now){const prev=warithSyncShadow[cfg.entity]||new Map(),next=Array.isArray(arr)?arr:[],stamp=new Date(now).toISOString(),currentKeys=new Set();for(const item of next){const key=cfg.id(item);if(!key||key==='undefined'||key==='null')continue;currentKeys.add(key);const old=prev.get(key);const oldBody=old?JSON.stringify({...old,updatedAt:undefined,updated_at:undefined}):'';const newBody=JSON.stringify({...item,updatedAt:undefined,updated_at:undefined});if(!old||oldBody!==newBody)item.updatedAt=stamp}for(const [key] of prev)if(!currentKeys.has(key))warithSyncDeleted[cfg.entity].set(key,stamp);return next}
-async function warithSyncPushChanges(entity,force=false){const cfg=warithSyncCfg(entity);if(!cfg||(!warithSyncReady&&!force)||!window.warithSupabase)return false;const arr=Array.isArray(warithSyncArray(entity))?warithSyncArray(entity):[],prev=warithSyncShadow[entity]||new Map(),rows=[],seen=new Set();for(const item of arr){const key=cfg.id(item);if(!key||seen.has(key))continue;seen.add(key);const old=prev.get(key),oldDeleted=!!old?.__warithDeleted,oldTs=Date.parse(old?.updatedAt||old?.updated_at||0)||0,itemTs=Date.parse(item.updatedAt||item.updated_at||0)||Date.now(),ts=(()=>{const v=(item.updatedAt||item.updated_at);const d=typeof v==='number'||/^\d{10,13}$/.test(String(v||''))?new Date(Number(v)):new Date(v||Date.now());return Number.isNaN(d.getTime())?new Date().toISOString():d.toISOString()})();if(oldDeleted&&itemTs<=oldTs)continue;if(!old||oldDeleted||JSON.stringify(old)!==JSON.stringify(item)||force)rows.push({entity,record_key:key,data:item,updated_at:ts,deleted:false})}for(const [key,ts] of warithSyncDeleted[entity]||new Map())rows.push({entity,record_key:key,data:null,updated_at:ts,deleted:true});if(!rows.length)return true;const {error}=await window.warithSupabase.from('client_sync_records').upsert(rows,{onConflict:'entity,record_key'});if(error)throw error;for(const r of rows)if(r.deleted)warithSyncDeleted[entity].delete(r.record_key);warithSyncShadow[entity]=new Map(arr.map(x=>[cfg.id(x),x]));for(const r of rows)if(r.deleted)warithSyncShadow[entity].set(r.record_key,{__warithDeleted:true,updatedAt:r.updated_at});return true}
+async function warithSyncPushChanges(entity,force=false){
+  const cfg=warithSyncCfg(entity);
+  if(!cfg||(!warithSyncReady&&!force)||!window.warithSupabase)return false;
+  const arr=Array.isArray(warithSyncArray(entity))?warithSyncArray(entity):[];
+  const prev=warithSyncShadow[entity]||new Map(),rows=[],seen=new Set();
+  for(const item of arr){
+    if(!item||typeof item!=='object')continue;
+    const key=String(cfg.id(item)||'');
+    if(!key||key==='undefined'||key==='null'||seen.has(key))continue;
+    seen.add(key);
+    const old=prev.get(key),oldDeleted=!!old?.__warithDeleted;
+    const oldTs=Date.parse(old?.updatedAt||old?.updated_at||0)||0;
+    const itemTs=Date.parse(item.updatedAt||item.updated_at||0)||Date.now();
+    const v=item.updatedAt||item.updated_at;
+    const d=typeof v==='number'||/^\d{10,13}$/.test(String(v||''))?new Date(Number(v)):new Date(v||Date.now());
+    const ts=Number.isNaN(d.getTime())?new Date().toISOString():d.toISOString();
+    if(oldDeleted&&itemTs<=oldTs)continue;
+    if(!old||oldDeleted||JSON.stringify(old)!==JSON.stringify(item)||force)
+      rows.push({entity,record_key:key,data:item,updated_at:ts,deleted:false});
+  }
+  for(const [key,ts] of warithSyncDeleted[entity]||new Map())
+    rows.push({entity,record_key:String(key),data:null,updated_at:ts,deleted:true});
+  if(!rows.length)return true;
+  const sb=window.warithSupabase,success=[];
+  // Try normal bulk writes first. If one bad row rejects a batch, isolate it.
+  for(let offset=0;offset<rows.length;offset+=100){
+    const batch=rows.slice(offset,offset+100);
+    const {error}=await sb.from('client_sync_records').upsert(batch,{onConflict:'entity,record_key'});
+    if(!error){success.push(...batch);continue}
+    console.warn('Warith cloud batch failed; retrying rows individually:',entity,error);
+    for(const row of batch){
+      const {error:rowError}=await sb.from('client_sync_records').upsert([row],{onConflict:'entity,record_key'});
+      if(rowError)console.warn('Warith cloud row failed:',entity,row.record_key,rowError);
+      else success.push(row);
+    }
+  }
+  for(const row of success){
+    if(row.deleted){
+      warithSyncDeleted[entity]?.delete(row.record_key);
+      warithSyncShadow[entity].set(row.record_key,{__warithDeleted:true,updatedAt:row.updated_at});
+    }else warithSyncShadow[entity].set(String(row.record_key),row.data);
+  }
+  if(success.length!==rows.length){
+    const succeeded=new Set(success);
+    const failedKeys=rows.filter(row=>!succeeded.has(row)).map(row=>row.record_key);
+    throw new Error('تعذر رفع '+failedKeys.length+' سجل/سجلات من '+entity+'؛ ستتم إعادة المحاولة. المفاتيح: '+failedKeys.slice(0,10).join(','));
+  }
+  return true;
+}
 function warithSyncQueueAll(){Object.values(WARITH_SYNC_CONFIG).forEach(cfg=>warithSyncPending.add(cfg.entity));warithSyncFlushSoon()}
 function warithSyncSchedule(entity){clearTimeout(warithSyncTimers[entity]);warithSyncPending.add(entity);warithSyncTimers[entity]=setTimeout(warithSyncFlushSoon,250)}
 async function warithSyncFlush(){if(!warithSyncReady||warithSyncPulling||!window.warithSupabase||!navigator.onLine)return;if(warithSyncRetryTimer){clearTimeout(warithSyncRetryTimer);warithSyncRetryTimer=null}const list=[...warithSyncPending];if(!list.length)return;for(const entity of list){try{await warithSyncPushChanges(entity);warithSyncPending.delete(entity)}catch(e){console.warn('Warith cloud push failed:',entity,e);warithSyncRetryTimer=setTimeout(warithSyncFlush,5000);break}}}
