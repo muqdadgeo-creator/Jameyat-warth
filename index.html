@@ -3370,7 +3370,52 @@ async function pickDonorContact(){
     console.error('Contact Picker error',e);
     alert('تعذر الوصول إلى جهات الاتصال. تأكد من السماح بالوصول من الجهاز والمتصفح.');
   }
-} function saveDonor(){const _edit=editingDonorIndex!==null; if(!hasAction(_edit?'edit':'add','donations')){alert('ليس لديك صلاحية هذه العملية.');return}const name=document.getElementById('d-name').value.trim(),phone=document.getElementById('d-phone').value.trim(),address=document.getElementById('d-address').value.trim(),map=document.getElementById('d-map').value.trim(),notes=document.getElementById('d-notes').value.trim();if(!name){alert('يرجى إدخال اسم المتبرع');return}if(editingDonorIndex!==null){donors[editingDonorIndex]={...donors[editingDonorIndex],name,phone,address,map,notes};}else{donors.unshift({id:Date.now(),donorCode:generateUniqueDonorCode(),name,phone,address,map,notes});}localStorage.setItem('warith_donors',JSON.stringify(donors));editingDonorIndex=null;resetDonorForm();alert('تم حفظ المتبرع بنجاح ✓');showScreen('donations');}
+} async function saveDonor(){
+  const _edit=editingDonorIndex!==null;
+  if(!hasAction(_edit?'edit':'add','donations')){alert('ليس لديك صلاحية هذه العملية.');return}
+  const name=document.getElementById('d-name').value.trim(),
+        phone=document.getElementById('d-phone').value.trim(),
+        address=document.getElementById('d-address').value.trim(),
+        map=document.getElementById('d-map').value.trim(),
+        notes=document.getElementById('d-notes').value.trim();
+  if(!name){alert('يرجى إدخال اسم المتبرع');return}
+  let record;
+  if(editingDonorIndex!==null){
+    record={...donors[editingDonorIndex],name,phone,address,map,notes,updatedAt:new Date().toISOString()};
+    donors[editingDonorIndex]=record;
+  }else{
+    record={id:Date.now(),donorCode:generateUniqueDonorCode(),name,phone,address,map,notes,updatedAt:new Date().toISOString()};
+    donors.unshift(record);
+  }
+  // Persist locally first, then confirm the same record in cloud before showing success.
+  localStorage.setItem('warith_donors',JSON.stringify(donors));
+  try{
+    const sb=window.warithSupabase||await window.warithSupabaseReady;
+    if(!sb)throw new Error('خدمة السحابة غير متاحة');
+    window.warithSupabase=sb;
+    if(!warithSyncReady)await initWarithCloudSync();
+    if(!warithSyncReady)throw new Error(warithSyncLastError||'المزامنة غير جاهزة؛ تأكد من تسجيل الدخول والاتصال');
+    await warithSyncPushChanges('donors');
+    const {data,error}=await sb.from('client_sync_records')
+      .select('record_key,data,deleted')
+      .eq('entity','donors')
+      .eq('record_key',String(record.id))
+      .maybeSingle();
+    if(error)throw error;
+    if(!data||data.deleted||!data.data||
+      !['id','name','phone','address','map','notes'].every(k=>String(data.data?.[k]??'')===String(record[k]??''))){
+      throw new Error('لم يتم تأكيد وصول التعديل إلى السحابة');
+    }
+    warithSyncPending.delete('donors');
+    editingDonorIndex=null;
+    resetDonorForm();
+    alert('تم حفظ المتبرع والتحقق من حفظه في السحابة بنجاح ✓');
+    showScreen('donations');
+  }catch(e){
+    console.error('حفظ المتبرع سحابياً فشل:',e);
+    alert('التعديل محفوظ على هذا الجهاز، لكن لم نتمكن من تأكيد حفظه في السحابة. لا تغلق الصفحة ولا تعِد إدخال السجل.\nالسبب: '+(e?.message||e));
+  }
+}
 function resetDonorForm(){editingDonorIndex=null;['d-code','d-name','d-phone','d-address','d-map','d-notes'].forEach(id=>{const e=document.getElementById(id);if(e)e.value=''});document.getElementById('donorFormTitle').textContent='إضافة متبرع';updateContactNameHint();}
 function editDonor(i){if(!hasAction('edit','donations')){alert('ليس لديك صلاحية تعديل المتبرعين.');return}const d=donors[i];if(!d)return;editingDonorIndex=i;document.getElementById('d-code').value=d.donorCode||'';document.getElementById('d-name').value=d.name||'';document.getElementById('d-phone').value=d.phone||'';document.getElementById('d-address').value=d.address||'';document.getElementById('d-map').value=d.map||'';document.getElementById('d-notes').value=d.notes||'';document.getElementById('donorFormTitle').textContent='تعديل المتبرع';showScreen('add-donor');}
 document.addEventListener('DOMContentLoaded',()=>{
