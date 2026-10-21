@@ -2735,7 +2735,42 @@ function doExportPrint(){
     });
   })).observe(document.documentElement, {subtree: true, childList: true});
 })();
-<\/script></body>
+<\/script>
+<style id="header-green-logo-layout-update-20261021">
+/* Logo framed by two dark-gold vertical lines; notification sits below the menu button. */
+header{padding:8px 12px 7px!important;min-height:0!important;position:sticky!important}
+header>.logo{
+  width:clamp(160px,48vw,190px)!important;
+  height:100px!important;
+  flex:0 0 auto!important;
+  margin:0 auto!important;
+  padding:0 10px!important;
+  border-left:2px solid #8c7133!important;
+  border-right:2px solid #8c7133!important;
+  box-sizing:border-box!important;
+  display:grid!important;
+  place-items:center!important;
+}
+header>.logo img{width:100%!important;height:100%!important;object-fit:contain!important}
+header>.icon{top:8px!important;left:12px!important;width:42px!important;height:42px!important}
+header>.notification-wrap{top:54px!important;left:12px!important}
+header>.notification-wrap>.icon{width:38px!important;height:38px!important}
+header>.notification-panel{top:42px!important;left:0!important;right:auto!important}
+header>.header-auth-wrap{top:8px!important;right:12px!important;min-width:72px!important;max-width:92px!important}
+header>.header-auth-wrap .header-login-btn{min-height:34px!important;padding:4px 7px!important;font-size:9px!important;line-height:1.2!important}
+header>.header-auth-wrap .warith-sync-status{font-size:8px!important}
+@media(max-width:380px){
+  header{padding:7px 8px 6px!important}
+  header>.logo{width:clamp(150px,46vw,170px)!important;height:92px!important;padding:0 8px!important}
+  header>.icon{top:7px!important;left:8px!important;width:38px!important;height:38px!important}
+  header>.notification-wrap{top:49px!important;left:8px!important}
+  header>.notification-wrap>.icon{width:34px!important;height:34px!important}
+  header>.header-auth-wrap{top:7px!important;right:8px!important;min-width:66px!important;max-width:82px!important}
+  header>.header-auth-wrap .header-login-btn{min-height:30px!important;padding:3px 5px!important;font-size:8px!important}
+}
+</style>
+
+</body>
 
 </html>`);w.document.close();w.focus();setTimeout(()=>w.print(),450);
 }
