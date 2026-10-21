@@ -20,14 +20,14 @@ jobs:
           s = p.read_text(encoding="utf-8")
           import re
           # Make the existing family-edit map field directly pasteable.
-          map_input = re.compile(r'<input\\b(?=[^>]*\\bid=["\\']e-map["\\'])[^>]*>', re.I)
+          map_input = re.compile(r'<input\b(?=[^>]*\bid=["\']e-map["\'])[^>]*>', re.I)
           found = list(map_input.finditer(s))
           if len(found) != 1:
               raise SystemExit(f"Expected exactly one family edit map input, found {len(found)}")
           old_tag = found[0].group(0)
-          new_tag = re.sub(r'\\sreadonly(?:=["\\']?readonly["\\']?)?', '', old_tag, flags=re.I)
-          new_tag = re.sub(r'\\splaceholder=["\\'][^"\\']*["\\']', '', new_tag, flags=re.I)
-          if re.search(r'\\splaceholder=', new_tag, re.I):
+          new_tag = re.sub(r'\sreadonly(?:=["\']?readonly["\']?)?', '', old_tag, flags=re.I)
+          new_tag = re.sub(r'\splaceholder=["\'][^"\']*["\']', '', new_tag, flags=re.I)
+          if re.search(r'\splaceholder=', new_tag, re.I):
               pass
           else:
               new_tag = new_tag[:-2] + ' placeholder="الصق رابط Google Maps هنا" />' if new_tag.endswith('/>') else new_tag[:-1] + ' placeholder="الصق رابط Google Maps هنا">'
@@ -54,7 +54,7 @@ jobs:
            if(!input||!status)return;
            const raw=String(input.value||'').trim();
            if(!raw){status.textContent='الصق رابط الموقع أولاً.';input.focus();return;}
-           const candidate=raw.split(/\\s+/)[0].replace(/[),،؛;.]+$/,'');
+           const candidate=raw.split(/\s+/)[0].replace(/[),،؛;.]+$/,'');
            try{
             const u=new URL(candidate);
             if(!['https:','http:'].includes(u.protocol)||!u.hostname.includes('.'))throw new Error('invalid');
