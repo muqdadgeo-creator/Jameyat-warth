@@ -3354,21 +3354,36 @@ async function pickDonorContact(){
       alert('اختيار جهة الاتصال غير مدعوم في هذا المتصفح. افتح النظام من Chrome على الهاتف وحاول مرة ثانية.');
       return;
     }
-    /* Contact Picker لا يسمح للموقع بإرسال اسم البحث إلى قائمة جهات الاتصال.
-       لذلك نحتفظ باسم المتبرع كاسم البحث المطلوب، ويختار المستخدم جهة الاتصال المطابقة. */
     const contacts=await navigator.contacts.select(['name','tel'],{multiple:false});
     if(!contacts||!contacts.length)return;
     const c=contacts[0]||{};
-    const phones=Array.isArray(c.tel)?c.tel:[];
-    const phone=phones.find(x=>String(x||'').trim())||'';
-    const contactName=(Array.isArray(c.name)?c.name:[]).find(x=>String(x||'').trim())||'';
-    if(phone) input.value=String(phone).trim();
-    if(!donorName && contactName && nameInput) nameInput.value=String(contactName).trim();
-    if(donorName){ input.setAttribute('data-contact-search-name',donorName); input.title='جهة الاتصال المطلوبة: '+donorName; }
+    const rawPhones=c.tel??c.phoneNumbers??c.phone??c.telephone??[];
+    const phones=Array.isArray(rawPhones)?rawPhones:[rawPhones];
+    const phoneItem=phones.find(x=>{
+      const value=typeof x==='string'||typeof x==='number'?String(x):String(x?.value??x?.number??x?.tel??'');
+      return value.trim()!=='';
+    });
+    const phone=phoneItem==null?'':(typeof phoneItem==='string'||typeof phoneItem==='number'?String(phoneItem):String(phoneItem?.value??phoneItem?.number??phoneItem?.tel??'')).trim();
+    const rawNames=c.name??c.names??[];
+    const names=Array.isArray(rawNames)?rawNames:[rawNames];
+    const contactName=names.map(x=>typeof x==='string'?x:String(x?.value??x?.name??'')).find(x=>x.trim())||'';
+    if(!phone){
+      alert('جهة الاتصال المختارة ما بيها رقم هاتف متاح للموقع. اختَر جهة اتصال محفوظ بيها رقم، أو استخدم النسخ واللصق.');
+      return;
+    }
+    input.value=phone;
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    if(!donorName&&contactName&&nameInput){
+      nameInput.value=contactName.trim();
+      nameInput.dispatchEvent(new Event('input',{bubbles:true}));
+      nameInput.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    if(donorName){input.setAttribute('data-contact-search-name',donorName);input.title='جهة الاتصال المطلوبة: '+donorName;}
   }catch(e){
-    if(e && e.name==='AbortError') return;
+    if(e&&e.name==='AbortError')return;
     console.error('Contact Picker error',e);
-    alert('تعذر الوصول إلى جهات الاتصال. تأكد من السماح بالوصول من الجهاز والمتصفح.');
+    alert('تعذر قراءة رقم جهة الاتصال. جرّب Chrome وحدّث الصفحة، أو استخدم النسخ واللصق مؤقتاً.');
   }
 } async function saveDonor(){
   const _edit=editingDonorIndex!==null;
