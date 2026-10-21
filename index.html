@@ -4582,7 +4582,25 @@ function exportProgramPDF(i){
     const f=families.find(z=>Number(z.c)===Number(v.familyCode))||{};
     return `<tr><td>${idx+1}</td><td>${esc(f.c??v.familyCode)}</td><td>${esc(f.head||f.n||'')}</td><td>${esc(f.phone||'')}</td><td>${esc(f.address||'')}</td><td>${esc(f.landmark||'')}</td><td>${v.received?'نعم':'لا'}</td></tr>`;
   }).join('');
-  w.document.open();w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>برنامج ${esc(x.name)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Tahoma,Arial,sans-serif;color:#172d27}h2{margin-bottom:8px}.meta{line-height:1.8;margin-bottom:14px}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #888;padding:6px;text-align:right;vertical-align:top}th{background:#e8f0ed}.num{text-align:center}@media print{button{display:none}}</style></head><body><h2>جمعية السيدة فاطمة الخيرية — ${esc(x.name)}</h2><div class="meta">التاريخ: ${esc(x.date||'—')}　 |　 الحالة: ${esc(x.status||'—')}<br>التفاصيل: ${esc(x.details||'بدون وصف')}<br>عدد العوائل: ${fs.length}　 |　 تم الاستلام: ${fs.filter(v=>v.received).length}</div><table><thead><tr><th>ت</th><th>رقم العائلة</th><th>رب الأسرة</th><th>الهاتف</th><th>عنوان السكن</th><th>أقرب نقطة</th><th>استلم</th></tr></thead><tbody>${rows||'<tr><td colspan="7">لا توجد عوائل مرتبطة بهذا البرنامج</td></tr>'}</tbody></table><script>window.onload=()=>{window.focus();window.print()}<\/script></body></html>`);w.document.close();
+  w.document.open();w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>برنامج ${esc(x.name)}</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:Tahoma,Arial,sans-serif;color:#172d27}h2{margin-bottom:8px}.meta{line-height:1.8;margin-bottom:14px}table{border-collapse:collapse;width:100%;font-size:11px}th,td{border:1px solid #888;padding:6px;text-align:right;vertical-align:top}th{background:#e8f0ed}.num{text-align:center}@media print{button{display:none}}</style>
+<style id="warith-ticker-vertical-motion-update-20261021">
+/* Only the moving ticker text: enter from below, leave through the top. */
+#warithTickerMessage.wvtick-enter {
+  animation: warithTickerVerticalEnter20261021 var(--warithTickerMotionDuration,650ms) cubic-bezier(.22,.7,.25,1) both !important;
+}
+#warithTickerMessage.wvtick-exit {
+  animation: warithTickerVerticalExit20261021 var(--warithTickerMotionDuration,650ms) cubic-bezier(.55,0,.8,.35) both !important;
+}
+@keyframes warithTickerVerticalEnter20261021 {
+  from { opacity: 0; transform: translateY(110%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes warithTickerVerticalExit20261021 {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-110%); }
+}
+</style>
+</head><body><h2>جمعية السيدة فاطمة الخيرية — ${esc(x.name)}</h2><div class="meta">التاريخ: ${esc(x.date||'—')}　 |　 الحالة: ${esc(x.status||'—')}<br>التفاصيل: ${esc(x.details||'بدون وصف')}<br>عدد العوائل: ${fs.length}　 |　 تم الاستلام: ${fs.filter(v=>v.received).length}</div><table><thead><tr><th>ت</th><th>رقم العائلة</th><th>رب الأسرة</th><th>الهاتف</th><th>عنوان السكن</th><th>أقرب نقطة</th><th>استلم</th></tr></thead><tbody>${rows||'<tr><td colspan="7">لا توجد عوائل مرتبطة بهذا البرنامج</td></tr>'}</tbody></table><script>window.onload=()=>{window.focus();window.print()}<\/script></body></html>`);w.document.close();
 }
 function renderPrograms(){const q=(document.getElementById('programQ')?.value||'').trim().toLowerCase();const all=sortRecords(programs.filter(x=>!isHiddenRecord(x)&&(x.name+' '+x.details+' '+x.status).toLowerCase().includes(q)), 'date', ['name']);const a=activityExpanded.program?all:all.slice(0,5);const c=document.getElementById('programMoreBtn');if(c)c.textContent=all.length>5?(activityExpanded.program?'عرض آخر 5':'عرض الكل'):'';const b=document.getElementById('programList');if(!b)return;b.innerHTML=a.map(x=>{const i=programs.indexOf(x),fs=normalizeProgramFamilies(x),received=fs.filter(v=>v.received).length;return `<div class="card"><div class="row"><div class="avatar">🎯</div><div class="grow"><div class="name">${escapeHtml(x.name)}</div><div class="sub">${escapeHtml(x.status)} · ${escapeHtml(x.date)}</div><div class="sub">العوائل: ${fs.length} · تم الاستلام: ${received}</div><div class="sub">${escapeHtml(x.details||'بدون وصف')}</div></div></div><div class="member-actions"><button class="action primary" onclick="openProgramDetail(${i})">👁️ العوائل</button><button class="action" onclick="exportProgramExcel(${i})">📊 Excel</button><button class="action" onclick="exportProgramPDF(${i})">📄 PDF</button><button class="action" onclick="openActivityForm('program',${i})">✏️ تعديل</button><button class="action" onclick="hideRecord('programs',${i},'البرنامج')">🚫 حجب</button><button class="action" onclick="deleteActivity('program',${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد برامج بعد</div>';} 
 function mapUrlForFamily(f){if(!f)return'';if(f.map)return f.map;const q=[f.address,f.landmark,f.head||f.n].filter(Boolean).join('، ');return q?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q):'';}
