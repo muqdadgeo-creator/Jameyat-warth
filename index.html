@@ -3349,29 +3349,42 @@ async function pickDonorContact(){
   const input=document.getElementById('d-phone');
   const nameInput=document.getElementById('d-name');
   try{
-    if(!('contacts' in navigator)||typeof navigator.contacts.select!=='function'){
-      alert('اختيار جهات الاتصال غير مدعوم بهذا المتصفح. افتح النظام بمتصفح Chrome أو استخدم النسخ واللصق.');
+    if(!navigator.contacts||typeof navigator.contacts.select!=='function'){
+      alert('متصفحك لا يدعم قراءة جهات الاتصال من الموقع. افتح النظام بمتصفح Chrome محدّث، أو استخدم النسخ واللصق.');
       return;
     }
-    const contacts=await navigator.contacts.select(['name','tel'],{multiple:false});
-    if(!contacts||!contacts.length)return;
+    if(typeof navigator.contacts.getProperties!=='function'){
+      alert('المتصفح لا يتيح فحص حقول جهات الاتصال المطلوبة. جرّب Chrome محدّثاً.');
+      return;
+    }
+    const supported=await navigator.contacts.getProperties();
+    const props=['name','tel'].filter(p=>supported.includes(p));
+    if(!props.includes('tel')){
+      alert('المتصفح لا يتيح مشاركة أرقام الهاتف مع الموقع. الحقول المتاحة: '+(supported.join('، ')||'لا توجد')+'.');
+      return;
+    }
+    const contacts=await navigator.contacts.select(props,{multiple:false});
+    if(!Array.isArray(contacts)||contacts.length===0){
+      alert('نافذة جهات الاتصال رجعت بدون بيانات للموقع. ما راح أغيّر أي حقل؛ جرّب فتح الموقع مباشرة بمتصفح Chrome ثم أعد المحاولة.');
+      return;
+    }
     const c=contacts[0]||{};
-    const rawNames=c.name??c.names??[];
-    const names=Array.isArray(rawNames)?rawNames:[rawNames];
-    const contactName=names.map(x=>typeof x==='string'?x:String(x?.value??x?.name??'')).find(x=>x.trim())?.trim()||'';
-    const rawPhones=c.tel??c.phoneNumbers??c.phone??c.telephone??[];
-    const phoneItems=Array.isArray(rawPhones)?rawPhones:[rawPhones];
-    const phoneOptions=[...new Set(phoneItems.map(x=>typeof x==='string'||typeof x==='number'?String(x).trim():String(x?.value??x?.number??x?.tel??'').trim()).filter(Boolean))];
+    const names=Array.isArray(c.name)?c.name:[];
+    const phones=Array.isArray(c.tel)?c.tel:[];
+    const contactName=names.map(x=>String(x||'').trim()).find(Boolean)||'';
+    const phoneOptions=[...new Set(phones.map(x=>String(x||'').trim()).filter(Boolean))];
     let phone='';
     if(phoneOptions.length===1) phone=phoneOptions[0];
     else if(phoneOptions.length>1){
       const choice=prompt('جهة الاتصال: '+(contactName||'بدون اسم')+'\nاختَر رقم الهاتف المطلوب بكتابة رقمه بالقائمة:\n'+phoneOptions.map((p,i)=>(i+1)+') '+p).join('\n'),'1');
       if(choice===null)return;
       const index=Number.parseInt(choice,10)-1;
-      if(!Number.isInteger(index)||index<0||index>=phoneOptions.length){alert('اختيار الرقم غير صحيح. أعد اختيار جهة الاتصال.');return;}
+      if(!Number.isInteger(index)||index<0||index>=phoneOptions.length){
+        alert('اختيار الرقم غير صحيح. أعد اختيار جهة الاتصال.');
+        return;
+      }
       phone=phoneOptions[index];
     }
-    // عبّي كل حقل بشكل مستقل حتى لا يمنع غياب الاسم وصول رقم الهاتف.
     if(contactName){
       nameInput.value=contactName;
       nameInput.dispatchEvent(new Event('input',{bubbles:true}));
@@ -3381,21 +3394,20 @@ async function pickDonorContact(){
       input.value=phone;
       input.dispatchEvent(new Event('input',{bubbles:true}));
       input.dispatchEvent(new Event('change',{bubbles:true}));
-      input.setAttribute('data-contact-search-name',contactName);
       input.title='جهة الاتصال المختارة: '+(contactName||'الرقم المختار');
     }
     if(!phone){
-      alert(contactName?'تم اختيار الاسم ('+contactName+') لكن الجهاز لم يرجّع رقم هاتف. تأكد أن الرقم محفوظ داخل جهة الاتصال.':'الجهاز لم يرجّع الاسم أو رقم الهاتف. جرّب Chrome أو استخدم النسخ واللصق.');
+      alert('المتصفح رجّع جهة الاتصال لكن بدون رقم هاتف للموقع (عدد الأرقام المستلمة: 0). إذا الرقم موجود فعلاً بجهات الاتصال، فالمشكلة من طريقة مشاركة المتصفح للبيانات، مو من حقل الهاتف.');
       return;
     }
     if(!contactName){
-      alert('تم وضع رقم الهاتف بالحقل، لكن الجهاز لم يرجّع اسم جهة الاتصال. اكتب اسم المتبرع يدوياً قبل الحفظ.');
+      alert('تم إدخال رقم الهاتف، لكن المتصفح لم يشارك اسم جهة الاتصال. اكتب الاسم يدوياً قبل الحفظ.');
       nameInput.focus();
     }
   }catch(e){
     if(e&&e.name==='AbortError')return;
-    console.error('Contact Picker error',e);
-    alert('تعذر قراءة الاسم والرقم من جهات الاتصال. جرّب Chrome، أو استخدم النسخ واللصق مؤقتاً.');
+    console.error('Contact Picker error:',e?.name||'Error',e?.message||'');
+    alert('تعذر استلام بيانات جهة الاتصال ('+(e?.name||'خطأ غير معروف')+'). افتح الموقع مباشرة بمتصفح Chrome محدّث ثم أعد المحاولة.');
   }
 } async function saveDonor(){
   const _edit=editingDonorIndex!==null;
