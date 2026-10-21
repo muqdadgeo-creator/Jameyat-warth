@@ -18,6 +18,21 @@ jobs:
           from pathlib import Path
           p = Path("index.html")
           s = p.read_text(encoding="utf-8")
+          import re
+          # Make the existing family-edit map field directly pasteable.
+          map_input = re.compile(r'<input\\b(?=[^>]*\\bid=["\\']e-map["\\'])[^>]*>', re.I)
+          found = list(map_input.finditer(s))
+          if len(found) != 1:
+              raise SystemExit(f"Expected exactly one family edit map input, found {len(found)}")
+          old_tag = found[0].group(0)
+          new_tag = re.sub(r'\\sreadonly(?:=["\\']?readonly["\\']?)?', '', old_tag, flags=re.I)
+          new_tag = re.sub(r'\\splaceholder=["\\'][^"\\']*["\\']', '', new_tag, flags=re.I)
+          if re.search(r'\\splaceholder=', new_tag, re.I):
+              pass
+          else:
+              new_tag = new_tag[:-2] + ' placeholder="الصق رابط Google Maps هنا" />' if new_tag.endswith('/>') else new_tag[:-1] + ' placeholder="الصق رابط Google Maps هنا">'
+          if old_tag != new_tag:
+              s = s[:found[0].start()] + new_tag + s[found[0].end():]
           pairs = [
               ('<input class="forminput" id="f-map" placeholder="سيظهر رابط الموقع هنا" readonly="" style="flex:1" type="url"/>',
                '<input class="forminput" id="f-map" placeholder="الصق رابط الموقع من واتساب أو استخدم تحديد الموقع" style="flex:1;min-width:150px" type="url"/>\n<button class="action" onclick="applyPastedMapLink(\'f-map\',\'location-status\')" style="flex:0 0 auto;padding:0 10px" type="button">اعتماد الرابط</button>'),
