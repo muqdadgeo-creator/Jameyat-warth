@@ -3361,36 +3361,37 @@ async function pickDonorContact(){
     const contactName=names.map(x=>typeof x==='string'?x:String(x?.value??x?.name??'')).find(x=>x.trim())?.trim()||'';
     const rawPhones=c.tel??c.phoneNumbers??c.phone??c.telephone??[];
     const phoneItems=Array.isArray(rawPhones)?rawPhones:[rawPhones];
-    const phoneOptions=phoneItems.map(x=>typeof x==='string'||typeof x==='number'?String(x).trim():String(x?.value??x?.number??x?.tel??'').trim()).filter(Boolean);
-    const uniquePhones=[...new Set(phoneOptions)];
-    if(!contactName){
-      alert('ما وصل اسم جهة الاتصال من الجهاز. جرّب اختيار جهة الاتصال مرة ثانية.');
-      return;
-    }
-    if(!uniquePhones.length){
-      alert('جهة الاتصال المختارة ما بيها رقم هاتف متاح. اختَر جهة اتصال محفوظ بيها رقم.');
-      return;
-    }
-    let phone=uniquePhones[0];
-    if(uniquePhones.length>1){
-      const options=uniquePhones.map((p,i)=>(i+1)+') '+p).join('\n');
-      const choice=prompt('جهة الاتصال: '+contactName+'\nاختَر رقم الهاتف المطلوب بكتابة رقمه بالقائمة:\n'+options,'1');
+    const phoneOptions=[...new Set(phoneItems.map(x=>typeof x==='string'||typeof x==='number'?String(x).trim():String(x?.value??x?.number??x?.tel??'').trim()).filter(Boolean))];
+    let phone='';
+    if(phoneOptions.length===1) phone=phoneOptions[0];
+    else if(phoneOptions.length>1){
+      const choice=prompt('جهة الاتصال: '+(contactName||'بدون اسم')+'\nاختَر رقم الهاتف المطلوب بكتابة رقمه بالقائمة:\n'+phoneOptions.map((p,i)=>(i+1)+') '+p).join('\n'),'1');
       if(choice===null)return;
       const index=Number.parseInt(choice,10)-1;
-      if(!Number.isInteger(index)||index<0||index>=uniquePhones.length){
-        alert('اختيار الرقم غير صحيح. أعد اختيار جهة الاتصال.');
-        return;
-      }
-      phone=uniquePhones[index];
+      if(!Number.isInteger(index)||index<0||index>=phoneOptions.length){alert('اختيار الرقم غير صحيح. أعد اختيار جهة الاتصال.');return;}
+      phone=phoneOptions[index];
     }
-    nameInput.value=contactName;
-    input.value=phone;
-    nameInput.dispatchEvent(new Event('input',{bubbles:true}));
-    nameInput.dispatchEvent(new Event('change',{bubbles:true}));
-    input.dispatchEvent(new Event('input',{bubbles:true}));
-    input.dispatchEvent(new Event('change',{bubbles:true}));
-    input.setAttribute('data-contact-search-name',contactName);
-    input.title='جهة الاتصال المختارة: '+contactName;
+    // عبّي كل حقل بشكل مستقل حتى لا يمنع غياب الاسم وصول رقم الهاتف.
+    if(contactName){
+      nameInput.value=contactName;
+      nameInput.dispatchEvent(new Event('input',{bubbles:true}));
+      nameInput.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    if(phone){
+      input.value=phone;
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+      input.dispatchEvent(new Event('change',{bubbles:true}));
+      input.setAttribute('data-contact-search-name',contactName);
+      input.title='جهة الاتصال المختارة: '+(contactName||'الرقم المختار');
+    }
+    if(!phone){
+      alert(contactName?'تم اختيار الاسم ('+contactName+') لكن الجهاز لم يرجّع رقم هاتف. تأكد أن الرقم محفوظ داخل جهة الاتصال.':'الجهاز لم يرجّع الاسم أو رقم الهاتف. جرّب Chrome أو استخدم النسخ واللصق.');
+      return;
+    }
+    if(!contactName){
+      alert('تم وضع رقم الهاتف بالحقل، لكن الجهاز لم يرجّع اسم جهة الاتصال. اكتب اسم المتبرع يدوياً قبل الحفظ.');
+      nameInput.focus();
+    }
   }catch(e){
     if(e&&e.name==='AbortError')return;
     console.error('Contact Picker error',e);
