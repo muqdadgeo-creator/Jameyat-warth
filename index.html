@@ -5545,6 +5545,7 @@ const warithSyncOriginalSetItem=localStorage.setItem.bind(localStorage);
 const warithSyncOriginalRemoveItem=localStorage.removeItem.bind(localStorage);
 const warithSyncClientId=(()=>{try{let x=localStorage.getItem('warith_sync_client_id');if(!x){x=crypto.randomUUID?.()||('c_'+Date.now()+'_'+Math.random().toString(36).slice(2));warithSyncOriginalSetItem('warith_sync_client_id',x)}return x}catch(e){return 'c_'+Date.now()}})();
 function warithSyncNormalizeRemoteData(entity,data){
+  if(entity==='notifications'&&data){const local=Array.isArray(notifications)?notifications.find(n=>String(n?.id)===String(data?.id)):null;return {...data,readBy:[...new Set([...(Array.isArray(data.readBy)?data.readBy:[]),...(Array.isArray(local?.readBy)?local.readBy:[])])]};}
   if(entity!=='donations'||!data)return data;
   const x={...data};
   const code=Number(x.beneficiary_family_id??x.beneficiaryFamilyId??0);
