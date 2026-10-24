@@ -4630,10 +4630,19 @@ function getProgramFilteredFamilies(){
       else {const months=(now-lastProgramDate)/monthMs;recencyMatch=recencyFilter==='older12'?months>12:months<=Number(recencyFilter);}
     }
     return (!q||text.includes(q))&&receiptMatch&&recencyMatch&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.members.length||st.members.includes(String(Number(f.m)||0)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.address.length||st.address.includes(normalizeProgramFilterValue(f.address)))&&(!st.addressCode.length||st.addressCode.includes(normalizeProgramFilterValue(f.addressCode)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))&&(!st.job.length||st.job.includes(normalizeProgramFilterValue(f.j)))&&(!st.social.length||st.social.includes(normalizeProgramFilterValue(f.social)))&&(!st.student.length||st.student.includes(student));
-  }).sort((a,b)=>{
-    const ac=Number(a.addressCode)||999999, bc=Number(b.addressCode)||999999;
-    return ac-bc || Number(a.c)-Number(b.c);
-  });
+  }).map((family,index)=>({family,index})).sort((a,b)=>{
+    // عند تعديل البرنامج: المستلمة أولاً، ثم المسجلة ولم تستلم، ثم بقية العوائل حسب رمز العنوان.
+    const ai=programSelectedFamilies.find(v=>Number(v.familyCode)===Number(a.family.c));
+    const bi=programSelectedFamilies.find(v=>Number(v.familyCode)===Number(b.family.c));
+    const ag=ai?(ai.received?0:1):2, bg=bi?(bi.received?0:1):2;
+    if(ag!==bg)return ag-bg;
+    // نحافظ على ترتيب العوائل المسجلة بالبرنامج داخل المجموعتين الأولى والثانية.
+    if(ag<2)return a.index-b.index;
+    const ac=Number(a.family.addressCode), bc=Number(b.family.addressCode);
+    const av=Number.isFinite(ac)&&a.family.addressCode!==''&&a.family.addressCode!==null?ac:999999;
+    const bv=Number.isFinite(bc)&&b.family.addressCode!==''&&b.family.addressCode!==null?bc:999999;
+    return av-bv || Number(a.family.c)-Number(b.family.c) || a.index-b.index;
+  }).map(item=>item.family);
 }
 function selectAllProgramFamilies(){getProgramFilteredFamilies().forEach(f=>{if(!programSelectedFamilies.some(v=>v.familyCode===Number(f.c)))programSelectedFamilies.push({familyCode:Number(f.c),received:false})});renderProgramFamilyPicker();}
 function clearAllProgramFamilies(){programSelectedFamilies=[];renderProgramFamilyPicker();}
