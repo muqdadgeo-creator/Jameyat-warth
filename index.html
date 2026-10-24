@@ -982,6 +982,10 @@ header>.header-auth-wrap .header-login-btn{min-height:30px!important;padding:3px
 <div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterSocialBtn" onclick="toggleProgramFilter('social')" type="button">الحالة الاجتماعية: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('social')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterSocialMenu"></div></div>
 <div class="program-filter-box"><div class="program-filter-head"><button class="program-filter-btn" id="programFilterStudentBtn" onclick="toggleProgramFilter('student')" type="button">الطلبة: الكل</button><button class="program-filter-apply" onclick="event.stopPropagation();applyProgramFilter('student')" type="button">تطبيق</button></div><div class="program-filter-menu" id="programFilterStudentMenu"></div></div>
 </div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px">
+<div><label class="fl">سجل استلام البرامج</label><select class="forminput" id="programFollowupReceipt" onchange="renderProgramFamilyPicker()"><option value="all">الكل</option><option value="received">استلمت برنامجاً سابقاً</option><option value="never">لم تستلم أي برنامج</option></select></div>
+<div><label class="fl">مدة آخر استلام</label><select class="forminput" id="programFollowupRecency" onchange="renderProgramFamilyPicker()"><option value="all">كل المدد</option><option value="3">خلال آخر 3 أشهر</option><option value="6">خلال آخر 6 أشهر</option><option value="12">خلال آخر 12 شهراً</option><option value="older12">أكثر من 12 شهراً</option></select></div>
+</div>
 <div class="search" style="margin-top:8px"><span>🔎</span><input id="programFamilyQ" oninput="renderProgramFamilyPicker()" placeholder="ابحث برقم العائلة أو اسم رب الأسرة أو المعرف"/></div>
 <div class="inline-note" id="programFilterActiveNote" style="margin-top:7px">الفلاتر جاهزة — اختر القيم ثم اضغط «تطبيق الفلاتر».</div>
 <div class="program-family-actions"><button class="action primary" onclick="applyProgramFilters()" type="button">تطبيق الفلاتر</button><button class="action" onclick="selectAllProgramFamilies()" type="button">تحديد الكل الظاهر</button><button class="action" onclick="clearAllProgramFamilies()" type="button">إلغاء التحديد</button></div>
@@ -4604,16 +4608,28 @@ function renderProgramFamilyPicker(){
   const list=getProgramFilteredFamilies();
   box.innerHTML=list.map(f=>{
     const code=Number(f.c), item=programSelectedFamilies.find(v=>v.familyCode===code), checked=!!item;
-    return `<label class="program-family-row"><input type="checkbox" ${checked?'checked':''} onchange="toggleProgramFamily(${code},this.checked)"><div class="pf-main"><div class="pf-name">رمز ${escapeHtml(f.addressCode??'غير محدد')} · #${escapeHtml(code)} · ${escapeHtml(f.head||f.n||'عائلة')}</div><div class="pf-meta">${escapeHtml(f.r||'غير محدد')} · ${escapeHtml(f.h||'غير محدد')} · ${escapeHtml(f.m||0)} أفراد</div></div></label>`;
+    const lastProgram=followupLatestReceivedProgram(code); const lastDate=lastProgram?.date?followupDateLabel(lastProgram.date):'—';
+    return `<label class="program-family-row"><input type="checkbox" ${checked?'checked':''} onchange="toggleProgramFamily(${code},this.checked)"><div class="pf-main"><div class="pf-name">رمز ${escapeHtml(f.addressCode??'غير محدد')} · #${escapeHtml(code)} · ${escapeHtml(f.head||f.n||'عائلة')}</div><div class="pf-meta">${escapeHtml(f.r||'غير محدد')} · ${escapeHtml(f.h||'غير محدد')} · ${escapeHtml(f.m||0)} أفراد</div><div class="pf-meta">${lastProgram?'آخر برنامج: '+escapeHtml(lastProgram.name||'برنامج')+' · الاستلام: '+lastDate:'لم تستلم أي برنامج مسجل'}</div></div></label>`;
   }).join('')||'<div class="empty">لا توجد عوائل مطابقة للفلاتر</div>';
   const c=document.getElementById('programSelectedCount'); if(c)c.textContent=`${programSelectedFamilies.length} محددة`;
 }
 function getProgramFilteredFamilies(){
   const q=(document.getElementById('programFamilyQ')?.value||'').trim().toLowerCase(),st=programFilterCommitted;
+  const receiptFilter=document.getElementById('programFollowupReceipt')?.value||'all';
+  const recencyFilter=document.getElementById('programFollowupRecency')?.value||'all';
+  const now=Date.now(),monthMs=30.4375*24*60*60*1000;
   return families.filter(f=>{
     const text=`${f.c||''} ${f.head||''} ${f.n||''} ${f.i||''}`.toLowerCase();
     const student=familyIsStudent(f)?'نعم':'لا';
-    return (!q||text.includes(q))&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.members.length||st.members.includes(String(Number(f.m)||0)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.address.length||st.address.includes(normalizeProgramFilterValue(f.address)))&&(!st.addressCode.length||st.addressCode.includes(normalizeProgramFilterValue(f.addressCode)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))&&(!st.job.length||st.job.includes(normalizeProgramFilterValue(f.j)))&&(!st.social.length||st.social.includes(normalizeProgramFilterValue(f.social)))&&(!st.student.length||st.student.includes(student));
+    const lastProgram=followupLatestReceivedProgram(f.c), lastProgramDate=followupDateValue(lastProgram?.date);
+    const hasProgram=!!lastProgram;
+    const receiptMatch=receiptFilter==='all'||(receiptFilter==='received'&&hasProgram)||(receiptFilter==='never'&&!hasProgram);
+    let recencyMatch=true;
+    if(recencyFilter!=='all'){
+      if(!hasProgram||!lastProgramDate)recencyMatch=false;
+      else {const months=(now-lastProgramDate)/monthMs;recencyMatch=recencyFilter==='older12'?months>12:months<=Number(recencyFilter);}
+    }
+    return (!q||text.includes(q))&&receiptMatch&&recencyMatch&&(!st.rights.length||st.rights.includes(normalizeProgramFilterValue(f.r)))&&(!st.members.length||st.members.includes(String(Number(f.m)||0)))&&(!st.housing.length||st.housing.includes(normalizeProgramFilterValue(f.h)))&&(!st.address.length||st.address.includes(normalizeProgramFilterValue(f.address)))&&(!st.addressCode.length||st.addressCode.includes(normalizeProgramFilterValue(f.addressCode)))&&(!st.status.length||st.status.includes(normalizeProgramFilterValue(f.st)))&&(!st.salary.length||st.salary.includes(normalizeProgramFilterValue(f.hasSalary)))&&(!st.job.length||st.job.includes(normalizeProgramFilterValue(f.j)))&&(!st.social.length||st.social.includes(normalizeProgramFilterValue(f.social)))&&(!st.student.length||st.student.includes(student));
   }).sort((a,b)=>{
     const ac=Number(a.addressCode)||999999, bc=Number(b.addressCode)||999999;
     return ac-bc || Number(a.c)-Number(b.c);
