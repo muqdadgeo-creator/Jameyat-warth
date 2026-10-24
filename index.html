@@ -1068,9 +1068,16 @@ header>.header-auth-wrap .header-login-btn{min-height:30px!important;padding:3px
 <div id="inv-out-fields" style="display:none;grid-column:1/-1">
 <div style="font-weight:700;margin-bottom:8px;color:#0f5c4d">👤 المستفيد من الإخراج</div>
 <div class="formgrid" style="margin:0">
-<label>نوع المستفيد<select class="forminput" id="inv-beneficiary-mode" onchange="toggleInventoryBeneficiaryMode()"><option value="appeal">مناشدة مسجلة</option><option value="new">غير مسجلة</option></select></label>
+<label>نوع المستفيد<select class="forminput" id="inv-beneficiary-mode" onchange="toggleInventoryBeneficiaryMode()"><option value="appeal">مناشدة مسجلة</option><option value="new">غير مسجلة / بدون مناشدة</option></select></label>
 <div id="inv-appeal-wrap"><label>رقم المناشدة<div style="display:flex;gap:7px;align-items:center"><select class="forminput" id="inv-appeal" onchange="onInventoryAppealChange()" style="flex:1"><option value="">اختر رقم المناشدة</option></select><button type="button" id="inv-open-appeal-btn" class="action primary" onclick="openSelectedInventoryAppeal()" style="display:none;white-space:nowrap;padding:9px 12px">فتح المناشدة</button></div></label></div>
-<label id="inv-new-head-wrap" style="display:none">اسم المستفيد<input class="forminput" id="inv-new-head" placeholder="اكتب اسم المستفيد / رب الأسرة"/></label>
+<div id="inv-new-head-wrap" style="display:none;grid-column:1/-1">
+<label>ربط بعائلة مسجلة (اختياري)
+<select class="forminput" id="inv-family-code" onchange="onInventoryFamilyChange()"><option value="">بدون ربط بعائلة</option></select>
+</label>
+<label style="margin-top:8px">اسم المستفيد (اختياري إذا اخترت عائلة)
+<input class="forminput" id="inv-new-head" oninput="updateInventoryBeneficiary()" placeholder="اكتب الاسم إذا ما تريد تختار عائلة"/></label>
+<div class="sub" style="margin-top:5px">تگدر تختار عائلة مسجلة حتى لو الاستلام بدون مناشدة، أو تكتب الاسم يدويًا، أو تتركه فارغًا.</div>
+</div>
 <div id="inv-beneficiary-info" style="grid-column:1/-1"></div>
 <label style="grid-column:1/-1">توثيق الإخراج
 <div class="attach-row" style="margin-top:5px">
@@ -4186,6 +4193,7 @@ function openInventoryMovement(move){
   document.getElementById('inv-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('inv-source').value=''; document.getElementById('inv-notes').value='';
   document.getElementById('inv-beneficiary').value=''; document.getElementById('inv-new-head').value='';
+  populateInventoryFamilies('');
   const proof=document.getElementById('inv-proof'); if(proof) proof.value='';
   const pp=document.getElementById('inv-proof-preview'); if(pp) pp.innerHTML='يمكن إرفاق صورة التوثيق.';
   populateInventoryAppeals();
@@ -4201,6 +4209,16 @@ function populateInventoryAppeals(selected=''){
   s.innerHTML='<option value="">اختر رقم المناشدة</option>'+list.map(a=>`<option value="${escapeHtml(a.id)}">#${escapeHtml(a.id)} · ${escapeHtml(a.type||'مناشدة')} · ${escapeHtml(a.status||'')}</option>`).join('');
   s.value=selected?String(selected):'';
 }
+function populateInventoryFamilies(selected=''){
+  const s=document.getElementById('inv-family-code'); if(!s)return;
+  const list=(Array.isArray(families)?families:[]).slice().sort((a,b)=>Number(a.c||0)-Number(b.c||0));
+  s.innerHTML='<option value="">بدون ربط بعائلة</option>'+list.map(f=>{
+    const code=String(f.c??''); const head=f.head||f.n||'عائلة بدون اسم';
+    return '<option value="'+escapeHtml(code)+'">#'+escapeHtml(code)+' · '+escapeHtml(head)+'</option>';
+  }).join('');
+  s.value=selected?String(selected):'';
+}
+function onInventoryFamilyChange(){ updateInventoryBeneficiary(); }
 function toggleInventoryBeneficiaryMode(){
   const out=document.getElementById('inv-out-fields'); const mode=document.getElementById('inv-beneficiary-mode')?.value||'appeal';
   const aw=document.getElementById('inv-appeal-wrap'), nw=document.getElementById('inv-new-head-wrap');
@@ -4224,7 +4242,13 @@ function openSelectedInventoryAppeal(){
 }
 function updateInventoryBeneficiary(){
   const mode=document.getElementById('inv-beneficiary-mode')?.value||'appeal';
-  if(mode==='appeal') onInventoryAppealChange(); else { const name=(document.getElementById('inv-new-head')?.value||'').trim(); document.getElementById('inv-beneficiary').value=name; renderInventoryBeneficiaryInfo(name?{name}:null); }
+  if(mode==='appeal'){ onInventoryAppealChange(); return; }
+  const familyCode=Number(document.getElementById('inv-family-code')?.value||0)||null;
+  const family=familyCode?families.find(f=>Number(f.c)===familyCode):null;
+  const manual=(document.getElementById('inv-new-head')?.value||'').trim();
+  const name=family?(family.head||family.n||manual):manual;
+  document.getElementById('inv-beneficiary').value=name||'';
+  renderInventoryBeneficiaryInfo(family?{name,familyCode:family.c,phone:family.phone,address:family.address,landmark:family.landmark,details:''}:(name?{name}:null));
 }
 function renderInventoryBeneficiaryInfo(info){
   const box=document.getElementById('inv-beneficiary-info'); if(!box)return; if(!info){box.innerHTML='';return;}
@@ -4269,14 +4293,16 @@ async function saveInventoryMovement(){const _edit=editingInventoryIndex!==null;
   const mode=document.getElementById('inv-beneficiary-mode')?.value||'appeal';
   const appealId=Number(document.getElementById('inv-appeal')?.value||0)||null;
   const manualBeneficiary=(document.getElementById('inv-new-head')?.value||'').trim();
+  const selectedFamilyCode=Number(document.getElementById('inv-family-code')?.value||0)||null;
+  const selectedFamily=selectedFamilyCode?families.find(f=>Number(f.c)===selectedFamilyCode):null;
   const appeal=appealId?appeals.find(a=>String(a.id)===String(appealId)):null;
-  const beneficiary=mode==='appeal'?(appeal?.ownerName||'').trim():manualBeneficiary;
-  const familyCode=mode==='appeal'?(Number(appeal?.familyCode||0)||null):null;
+  const beneficiary=mode==='appeal'?(appeal?.ownerName||'').trim():(selectedFamily?(selectedFamily.head||selectedFamily.n||manualBeneficiary).trim():manualBeneficiary);
+  const familyCode=mode==='appeal'?(Number(appeal?.familyCode||0)||null):(Number(selectedFamily?.c||0)||null);
 
   if(!name){alert('أدخل اسم الجهاز أو المادة');return}
   if(qty<=0){alert('أدخل عدد صحيح أكبر من صفر');return}
   if(move==='صادر' && mode==='appeal' && !appealId){alert('اختر رقم المناشدة');return}
-  if(move==='صادر' && mode==='new' && !manualBeneficiary){alert('اكتب اسم المستفيد');return}
+  // في الإخراج بدون مناشدة، ربط العائلة واسم المستفيد اختياريان.
 
   // لا نسمح بإخراج كمية أكبر من المتوفر، ونحسب المتوفر من سجل الحركات نفسه.
   // عند تعديل حركة إخراج نستثني الحركة القديمة حتى لا تُحسب مرتين.
@@ -4449,7 +4475,8 @@ function editInventoryMovement(i){if(!hasAction('edit','inventory')){alert('لي
   document.getElementById('inv-date').value=m.date||'';
   populateInventoryAppeals(m.appealId||'');
   document.getElementById('inv-beneficiary-mode').value=m.beneficiaryMode|| (m.appealId?'appeal':'new');
-  document.getElementById('inv-new-head').value=m.beneficiaryMode==='new'?(m.beneficiary||''):'';
+  populateInventoryFamilies(m.beneficiaryMode==='new'?(m.familyCode||''):'');
+  document.getElementById('inv-new-head').value=m.beneficiaryMode==='new'&&!m.familyCode?(m.beneficiary||''):'';
   document.getElementById('inv-beneficiary').value=m.beneficiary||'';
   toggleInventoryBeneficiaryMode();
   if(m.appealId) onInventoryAppealChange();
