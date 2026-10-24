@@ -4787,6 +4787,7 @@ function exportProgramPDF(i){
 function renderPrograms(){const q=(document.getElementById('programQ')?.value||'').trim().toLowerCase();const all=sortRecords(programs.filter(x=>!isHiddenRecord(x)&&(x.name+' '+x.details+' '+x.status).toLowerCase().includes(q)), 'date', ['name']);const a=activityExpanded.program?all:all.slice(0,5);const c=document.getElementById('programMoreBtn');if(c)c.textContent=all.length>5?(activityExpanded.program?'عرض آخر 5':'عرض الكل'):'';const b=document.getElementById('programList');if(!b)return;b.innerHTML=a.map(x=>{const i=programs.indexOf(x),fs=normalizeProgramFamilies(x),received=fs.filter(v=>v.received).length;return `<div class="card"><div class="row"><div class="avatar">🎯</div><div class="grow"><div class="name">${escapeHtml(x.name)}</div><div class="sub">${escapeHtml(x.status)} · ${escapeHtml(x.date)}</div><div class="sub">العوائل: ${fs.length} · تم الاستلام: ${received}</div><div class="sub">${escapeHtml(x.details||'بدون وصف')}</div></div></div><div class="member-actions"><button class="action primary" onclick="openProgramDetail(${i})">👁️ العوائل</button><button class="action" onclick="exportProgramExcel(${i})">📊 Excel</button><button class="action" onclick="exportProgramPDF(${i})">📄 PDF</button><button class="action" onclick="openActivityForm('program',${i})">✏️ تعديل</button><button class="action" onclick="hideRecord('programs',${i},'البرنامج')">🚫 حجب</button><button class="action" onclick="deleteActivity('program',${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد برامج بعد</div>';} 
 function mapUrlForFamily(f){if(!f)return'';if(f.map)return f.map;const q=[f.address,f.landmark,f.head||f.n].filter(Boolean).join('، ');return q?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q):'';}
 function openFamilyMap(f){const u=mapUrlForFamily(f);if(!u){alert('لا يوجد عنوان أو موقع محفوظ لهذه العائلة.');return}window.open(u,'_blank');}
+function openProgramFamilyMap(code){const f=families.find(z=>Number(z.c)===Number(code));openFamilyMap(f);}
 function openProgramPhone(phone){
   const raw=String(phone||'').trim();
   if(!raw){alert('رقم الهاتف غير مسجل لهذه العائلة.');return}
@@ -4819,11 +4820,12 @@ function openProgramDetail(i){
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">#${escapeHtml(v.familyCode)}</td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef;font-weight:900">${escapeHtml(f?.head||f?.n||'عائلة')}</td>
       <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef">${f?.phone?`<button type="button" class="program-map-btn" title="خيارات التواصل" onclick="openProgramPhone(${JSON.stringify(String(f.phone)).replace(/"/g,'&quot;')})">📞</button>`:'—'}</td>
+      <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef"><button type="button" class="program-map-btn" title="فتح موقع العائلة على الخريطة" aria-label="فتح موقع العائلة على الخريطة" onclick="openProgramFamilyMap(${Number(v.familyCode)})">📍</button></td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">${escapeHtml(f?.address||'غير مسجل')}</td>
       <td style="padding:9px;text-align:right;border-top:1px solid #edf1ef">${escapeHtml(f?.landmark||'غير مسجل')}</td>
       <td style="padding:9px;text-align:center;border-top:1px solid #edf1ef"><label class="program-received"><input type="checkbox" ${v.received?'checked':''} onchange="toggleProgramReceived(${i},${v.familyCode},this.checked)"> استلم</label></td>
     </tr>`;
-  }).join('')||'<tr><td colspan="7" class="empty" style="padding:18px">لا توجد عوائل مرتبطة بهذا البرنامج</td></tr>';
+  }).join('')||'<tr><td colspan="8" class="empty" style="padding:18px">لا توجد عوائل مرتبطة بهذا البرنامج</td></tr>';
   const box=document.createElement('div');
   box.id='programDetailOverlay';
   box.style.cssText='position:fixed;inset:0;background:#0006;z-index:30;padding:18px;overflow:auto';
@@ -4839,6 +4841,7 @@ function openProgramDetail(i){
           <th style="padding:10px;text-align:right">رقم العائلة</th>
           <th style="padding:10px;text-align:right">رب الأسرة</th>
           <th style="padding:10px;text-align:center">الهاتف</th>
+          <th style="padding:10px;text-align:center">الموقع</th>
           <th style="padding:10px;text-align:right">عنوان السكن</th>
           <th style="padding:10px;text-align:right">أقرب نقطة</th>
           <th style="padding:10px;text-align:center">استلم</th>
