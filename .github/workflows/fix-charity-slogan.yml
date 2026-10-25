@@ -1,0 +1,121 @@
+name: Fix charity slogan duplicate and color
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/fix-charity-slogan.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  fix-slogan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keep only the lower white transparent slogan
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+
+          style = r"""
+          <style id="charity-slogan-style">
+          #charity-slogan {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 2px auto 0;
+            padding: 0;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            color: #FFFFFF !important;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.05;
+            text-align: center;
+            direction: rtl;
+            min-height: 0;
+          }
+          @media (max-width: 600px) {
+            #charity-slogan {
+              margin-top: 1px;
+              font-size: 11px;
+              line-height: 1.05;
+            }
+          }
+          </style>
+          """
+          start = s.find('<style id="charity-slogan-style">')
+          if start >= 0:
+              end = s.find("</style>", start)
+              if end < 0:
+                  raise SystemExit("Unclosed slogan style; leaving index unchanged.")
+              s = s[:start] + style.strip() + s[end + len("</style>"):]
+          elif "</head>" in s:
+              s = s.replace("</head>", style + "\n</head>", 1)
+          else:
+              raise SystemExit("Could not find </head>; leaving index unchanged.")
+
+          # Extend the existing slogan script so any other standalone copy of the
+          # exact slogan is hidden, while preserving the dedicated lower slogan.
+          script_marker = '<script id="charity-slogan-script">'
+          script_start = s.find(script_marker)
+          if script_start >= 0:
+              script_end = s.find("</script>", script_start)
+              if script_end < 0:
+                  raise SystemExit("Unclosed slogan script; leaving index unchanged.")
+              script = r"""<script id="charity-slogan-script">
+          (() => {
+            const phrase = 'خدمة الناس مسؤولية وأمانة';
+            const cleanDuplicates = () => {
+              document.querySelectorAll('body *').forEach(el => {
+                if (el.id === 'charity-slogan' || el.closest('#charity-slogan')) return;
+                if (el.children.length === 0 && (el.textContent || '').trim() === phrase) {
+                  const logo = document.querySelector('header img, header .logo, header #logo');
+                  if (logo && (el === logo || el.contains(logo))) return;
+                  el.style.setProperty('display', 'none', 'important');
+                }
+              });
+            };
+            const addSlogan = () => {
+              const header = document.querySelector('header');
+              if (!header) return;
+              let slogan = document.getElementById('charity-slogan');
+              if (!slogan) {
+                slogan = document.createElement('div');
+                slogan.id = 'charity-slogan';
+                slogan.textContent = phrase;
+                const brand = header.querySelector('.brand, .header-title, .app-title, h1');
+                if (brand && brand.parentElement) brand.insertAdjacentElement('afterend', slogan);
+                else header.appendChild(slogan);
+              }
+              cleanDuplicates();
+            };
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', addSlogan, { once: true });
+            } else addSlogan();
+            const observer = new MutationObserver(addSlogan);
+            observer.observe(document.documentElement, { childList: true, subtree: true });
+          })();
+          </script>"""
+              s = s[:script_start] + script + s[script_end + len("</script>"):]
+          else:
+              raise SystemExit("Could not find existing slogan script; leaving index unchanged.")
+
+          p.write_text(s, encoding="utf-8")
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Remove duplicate slogan and set lower text white"
+          git push
