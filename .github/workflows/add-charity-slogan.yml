@@ -1,0 +1,95 @@
+name: Add slim gold charity slogan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/add-charity-slogan.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  add-slogan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add standalone transparent slogan below association name
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          marker = '<style id="charity-slogan-style">'
+          if marker in s:
+              print("Slogan style already exists; no duplicate changes made.")
+              raise SystemExit(0)
+
+          addition = r"""
+          <style id="charity-slogan-style">
+          #charity-slogan {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 2px auto 0;
+            padding: 0;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            color: #C6A04A !important;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.15;
+            text-align: center;
+            direction: rtl;
+            min-height: 0;
+          }
+          @media (max-width: 600px) {
+            #charity-slogan {
+              margin-top: 1px;
+              font-size: 11px;
+              line-height: 1.1;
+            }
+          }
+          </style>
+          <script id="charity-slogan-script">
+          (() => {
+            const addSlogan = () => {
+              const header = document.querySelector('header');
+              if (!header || document.getElementById('charity-slogan')) return;
+              const slogan = document.createElement('div');
+              slogan.id = 'charity-slogan';
+              slogan.textContent = 'خدمة الناس مسؤولية وأمانة';
+              const brand = header.querySelector('.brand, .header-title, .app-title, h1');
+              if (brand && brand.parentElement) {
+                brand.insertAdjacentElement('afterend', slogan);
+              } else {
+                header.appendChild(slogan);
+              }
+            };
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', addSlogan, { once: true });
+            } else {
+              addSlogan();
+            }
+            const observer = new MutationObserver(addSlogan);
+            observer.observe(document.documentElement, { childList: true, subtree: true });
+          })();
+          </script>
+          """
+          if "</head>" not in s:
+              raise SystemExit("Could not find </head>; index.html left unchanged.")
+          p.write_text(s.replace("</head>", addition + "\n</head>", 1), encoding="utf-8")
+      - name: Commit slogan update
+        shell: bash
+        run: |
+          git config user.name "muqdadgeo-creator"
+          git config user.email "muqdadgeo@gmail.com"
+          if git diff --quiet -- index.html; then
+            echo "No changes needed."
+            exit 0
+          fi
+          git add index.html
+          git commit -m "Add slim transparent gold charity slogan"
+          git push
