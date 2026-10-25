@@ -564,6 +564,58 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 <style id="association-slogan-gold-box">
 .association-slogan{width:fit-content;max-width:calc(100% - 32px);box-sizing:border-box;margin:10px auto 12px;padding:8px 22px;background:linear-gradient(180deg,#d8b45b 0%,#b88a2e 100%);color:#fff;border:1px solid #a77a24;border-radius:8px;text-align:center;font-weight:800;font-size:clamp(13px,3.5vw,17px);line-height:1.5;box-shadow:0 2px 5px rgba(120,85,20,.16)}
 </style>
+
+<style id="charity-slogan-style">
+#charity-slogan {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 2px auto 0;
+  padding: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: #C6A04A !important;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  direction: rtl;
+  min-height: 0;
+}
+@media (max-width: 600px) {
+  #charity-slogan {
+    margin-top: 1px;
+    font-size: 11px;
+    line-height: 1.1;
+  }
+}
+</style>
+<script id="charity-slogan-script">
+(() => {
+  const addSlogan = () => {
+    const header = document.querySelector('header');
+    if (!header || document.getElementById('charity-slogan')) return;
+    const slogan = document.createElement('div');
+    slogan.id = 'charity-slogan';
+    slogan.textContent = 'خدمة الناس مسؤولية وأمانة';
+    const brand = header.querySelector('.brand, .header-title, .app-title, h1');
+    if (brand && brand.parentElement) {
+      brand.insertAdjacentElement('afterend', slogan);
+    } else {
+      header.appendChild(slogan);
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addSlogan, { once: true });
+  } else {
+    addSlogan();
+  }
+  const observer = new MutationObserver(addSlogan);
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+})();
+</script>
+
 </head>
 <body>
 <div class="app">
