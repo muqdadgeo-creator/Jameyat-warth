@@ -26,7 +26,7 @@ jobs:
           @media print {
             img[src*="stamp.png"],
             [style*="stamp.png"] {
-              transform: translate(15mm, -1cm) rotate(-45deg) !important;
+              transform: translate(15mm, -1cm) rotate(-30deg) !important;
               transform-origin: center center !important;
             }
           }
