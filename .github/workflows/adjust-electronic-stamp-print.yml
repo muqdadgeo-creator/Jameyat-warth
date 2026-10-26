@@ -39,7 +39,7 @@ jobs:
                   raise SystemExit("Existing stamp adjustment style is not closed; no changes made.")
               s = s[:start] + style + s[end + len("</style>"):]
           elif "</head>" in s:
-              s = s.replace("</head>", style + "\\n</head>", 1)
+              s = s.replace("</head>", style + "\n</head>", 1)
           else:
               raise SystemExit("Could not find </head>; no changes made.")
 
