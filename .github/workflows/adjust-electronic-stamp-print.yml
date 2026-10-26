@@ -43,7 +43,7 @@ jobs:
           else:
               raise SystemExit("Could not find </head>; no changes made.")
 
-          p.write_text(s, encoding="utf-8")
+          # Repair a literal escaped newline left by an earlier run, if present.\n          s = s.replace("\\\\n</head>", "\\n</head>")\n\n          p.write_text(s, encoding="utf-8")
       - name: Commit and push report print adjustment
         shell: bash
         run: |
