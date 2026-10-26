@@ -5158,7 +5158,9 @@ function renderGeneralReport(){
   const deviceRows=['ثلاجة','مجمدة','سبلت','مكيف','هيتر','كيزر'];
   const caseRows=['زواج','طبية','سكن','معيشية','دراسية','اخرى'];
 
+  const reportPeriodText=((document.getElementById('reportFrom')?.value||'')||(document.getElementById('reportTo')?.value||''))?`${document.getElementById('reportFrom')?.value||'—'} إلى ${document.getElementById('reportTo')?.value||'—'}`:'كل الفترات';
   const body=`
+    <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml(reportPeriodText)}</b></div>
     <div class="report-detail-grid">
       ${stat('عدد العوائل',families.filter(x=>!isHiddenRecord(x)).length)}
       ${stat('عدد المناشدات المكتملة',aps.filter(x=>x.status==='مكتملة').length)}
@@ -5226,7 +5228,9 @@ function renderFamilyReport(){
   const helpRows=h=>`<div class="report-compact-row">${escapeHtml(h.type||'مساعدة')} · <b>${reportMoney(h.amount)}</b> · ${escapeHtml(h.date||'')}</div>`;
   const programRows=p=>`<div class="report-compact-row">${escapeHtml(p.name||'برنامج')} · ${escapeHtml(p.date||'')}</div>`;
   const donationRows=d=>`<div class="report-compact-row"><b>${reportMoney(d.amount)}</b> · ${escapeHtml(d.date||'')} · ${escapeHtml(d.paid||'')}</div>`;
+  const reportPeriodText=((document.getElementById('reportFrom')?.value||'')||(document.getElementById('reportTo')?.value||''))?`${document.getElementById('reportFrom')?.value||'—'} إلى ${document.getElementById('reportTo')?.value||'—'}`:'كل الفترات';
   box.innerHTML=reportCard(`👨‍👩‍👧 عائلة #${escapeHtml(f.c)} — ${escapeHtml(f.head||f.n||'')}`,`
+    <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml(reportPeriodText)}</b></div>
     <div class="actions"><button class="action" onclick="document.getElementById('reportFamily').dataset.family='';renderFamilyReport()">← سجل العوائل</button><button class="action primary" onclick="addAppealForFamily(${Number(f.c)})">＋ إضافة مناشدة</button></div>
     ${familyInfo}
     <div class="report-section-title">المناشدات (${fas.length})</div>${reportFamilySectionList(fas,appealRows)}
@@ -5303,7 +5307,9 @@ function renderDonorReport(){
     </tr>`;
   }).join('');
   const total=financial.reduce((n,x)=>n+Number(x.amount||0),0);
+  const reportPeriodText=((document.getElementById('reportFrom')?.value||'')||(document.getElementById('reportTo')?.value||''))?`${document.getElementById('reportFrom')?.value||'—'} إلى ${document.getElementById('reportTo')?.value||'—'}`:'كل الفترات';
   box.innerHTML=reportCard(`👤 ${escapeHtml(d?.name||'المتبرع')}`,`
+    <div class="report-period-line"><span>فترة التقرير</span><b>${escapeHtml(reportPeriodText)}</b></div>
     <style>
 .donor-allocation-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
 .donor-allocation-grid .donor-allocation-card{min-width:0;min-height:82px;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:14px 12px;border:1px solid #dce7e4;border-radius:14px;background:linear-gradient(145deg,#fff 0%,#f4f8f7 100%);box-shadow:0 3px 10px rgba(20,65,55,.06);text-align:center}
