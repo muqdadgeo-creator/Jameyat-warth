@@ -39,12 +39,12 @@ jobs:
                   raise SystemExit("Existing stamp adjustment style is not closed; no changes made.")
               s = s[:start] + style + s[end + len("</style>"):]
           elif "</head>" in s:
-              s = s.replace("</head>", style + "\\n</head>", 1)
+              s = s.replace("</head>", style + "\n</head>", 1)
           else:
               raise SystemExit("Could not find </head>; no changes made.")
 
           # Repair a literal escaped newline from any earlier workflow attempt.
-          s = s.replace("\\\\n</head>", "\\n</head>")
+          s = s.replace("\\n</head>", "\n</head>")
           p.write_text(s, encoding="utf-8")
       - name: Commit and push report print adjustment
         shell: bash
