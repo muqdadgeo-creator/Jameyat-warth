@@ -626,7 +626,15 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 })();
 </script>
 
-</head>
+<style id="electronic-stamp-a4-position-angle">
+@media print {
+  img[src*="stamp.png"],
+  [style*="stamp.png"] {
+    transform: translateY(-1cm) rotate(-45deg) !important;
+    transform-origin: center center !important;
+  }
+}
+</style>\n</head>
 <body>
 <div class="app">
 <header><button class="icon" onclick="openMenu()">☰</button><div class="logo"><img alt="شعار جمعية السيدة فاطمة عليها السلام الخيرية" src="assets/logo.png?v=20261020-1"/></div><div class="brand"><b>جمعية السيدة فاطمة عليها السلام الخيرية</b></div><div class="brand-slogan" role="note">خدمة الناس مسؤولية وأمانة</div><div class="notification-wrap" data-auth-only style="display:none"><button aria-label="الإشعارات" class="icon notification-bell" onclick="toggleNotifications()">🔔<span class="notification-count" id="notificationCount">0</span></button><div class="notification-panel" id="notificationPanel"><div class="notification-head"><div class="grow"><b>الإشعارات</b><div class="sub" id="notificationSummary">لا توجد إشعارات جديدة</div></div><button class="link" onclick="markAllNotificationsRead();event.stopPropagation()">تحديد الكل كمقروء</button></div><div id="notificationList"></div><div class="notification-actions"><button class="action" onclick="markAllNotificationsRead();toggleNotifications(false)">تمت القراءة</button><button class="action primary" onclick="requestNotificationPermission()">📱 تفعيل إشعارات الجهاز</button></div></div></div><div class="header-auth-wrap"><button aria-label="تسجيل الدخول" class="header-login-btn" id="headerLoginBtn" onclick="openLogin()" type="button">🔐 تسجيل الدخول</button><div class="header-current-user" id="headerCurrentUser" aria-live="polite"></div><button type="button" class="warith-sync-status" id="warithSyncStatus" data-state="busy" onclick="warithSyncManualRefresh()" title="اضغط لإعادة فحص المزامنة">فحص المزامنة…</button></div></header>
