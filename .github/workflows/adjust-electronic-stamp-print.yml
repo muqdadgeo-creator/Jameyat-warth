@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply A4 print stamp adjustment across reports
+      - name: Apply A4 print stamp position and angle across reports
         shell: python
         run: |
           from pathlib import Path
@@ -26,7 +26,7 @@ jobs:
           @media print {
             img[src*="stamp.png"],
             [style*="stamp.png"] {
-              transform: translateY(-1cm) rotate(-45deg) !important;
+              transform: translate(15mm, -1cm) rotate(-45deg) !important;
               transform-origin: center center !important;
             }
           }
