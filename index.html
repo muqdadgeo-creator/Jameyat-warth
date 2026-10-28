@@ -70,6 +70,15 @@ main{padding:12px 12px 65px}.screen{display:none!important}.screen.active{displa
 .donor-alloc-row{display:flex;justify-content:space-between;align-items:center;background:#f5f8f7;border-radius:8px;padding:7px 9px;margin-top:5px;font-size:10px}
 .donor-alloc-row b{font-size:11px;color:#0f5c4d}
 
+/* ===== جدول المتبرعين ===== */
+.donor-table-count{font-size:11px;color:#55736b;margin:8px 2px}
+.donor-list-table{min-width:920px}
+.donor-list-table th,.donor-list-table td{font-size:10px}
+.donor-table-allocations{min-width:145px}
+.donor-table-allocation{display:flex;justify-content:space-between;gap:10px;padding:4px 6px;margin:2px 0;background:#f4f8f6;border-radius:6px;white-space:nowrap}
+.donor-table-allocation b{color:#0f5c4d}
+.donor-table-actions{display:flex;gap:5px;flex-wrap:wrap;min-width:155px}
+.donor-table-actions button{padding:6px 8px}
 /* ===== سجل التبرعات كجدول ===== */
 .donation-table-wrap{width:100%;overflow-x:auto;background:#fff;border-radius:14px;box-shadow:0 2px 10px #0000000b;margin-top:8px}
 .donation-table{width:100%;min-width:650px;border-collapse:collapse;direction:rtl;font-size:11px}
@@ -3830,7 +3839,18 @@ async function markUnpaidDonationPaid(id){
 
 function donorAllocationTotals(donorId){const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];const totals={};cats.forEach(c=>totals[c]=0);donations.filter(d=>Number(d.donorId)===Number(donorId)&&d.type==='مالي').forEach(d=>{const c=cats.includes(d.allocation)?d.allocation:'أخرى';totals[c]+=Number(d.amount)||0});return totals;}
 function donorAllocationTotals(donorId){const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];const totals={};cats.forEach(c=>totals[c]=0);donations.filter(d=>Number(d.donorId)===Number(donorId)&&d.type==='مالي').forEach(d=>{const c=cats.includes(d.allocation)?d.allocation:'أخرى';totals[c]+=Number(d.amount)||0});return totals;}
-function renderDonors(){const q=(document.getElementById('donorQ')?.value||'').trim().toLowerCase();const a=sortRecords(donors.filter(d=>!isHiddenRecord(d)&&(d.name+' '+d.phone+' '+d.address).toLowerCase().includes(q)), '', ['name']);const box=document.getElementById('donorList');if(!box)return;box.innerHTML=a.map(d=>{const i=donors.indexOf(d),t=donorAllocationTotals(d.id);return `<div class="card"><div class="row"><div class="avatar">${(d.name||'م').charAt(0)}</div><div class="grow"><div class="name">${d.name}</div><div class="sub">رمز المتبرع: <b>${d.donorCode||'غير مسجل'}</b></div><div class="sub">الهاتف: ${d.phone||'غير مسجل'}</div><div class="sub">العنوان: ${d.address||'غير مسجل'}</div></div></div><div class="member-actions"><button class="action" type="button" onclick="openDonorLocationById(${d.id})">📍 الموقع</button></div><div class="donor-alloc"><div class="donor-alloc-title">💰 مجموع التبرعات حسب التخصيص</div><div class="donor-alloc-row"><span>خاص</span><b>${t['خاص'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>عام</span><b>${t['عام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>صناديق</span><b>${t['صناديق'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>خمس السادة خمس</span><b>${t['خمس السادة خمس'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>سهم الإمام</span><b>${t['سهم الإمام'].toLocaleString('en-US')} د.ع</b></div><div class="donor-alloc-row"><span>أخرى</span><b>${t['أخرى'].toLocaleString('en-US')} د.ع</b></div></div><div class="member-actions"><button class="action primary" onclick="editDonor(${i})">✏️ تعديل</button><button class="action" onclick="hideRecord('donors',${i},'المتبرع')">🚫 حجب</button><button class="action" onclick="deleteDonor(${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا يوجد متبرعون بعد</div>';}
+function renderDonors(){
+  const q=(document.getElementById('donorQ')?.value||'').trim().toLowerCase();
+  const a=sortRecords(donors.filter(d=>!isHiddenRecord(d)&&(String(d.name||'')+' '+String(d.phone||'')+' '+String(d.address||'')+' '+String(d.donorCode||'')).toLowerCase().includes(q)), '', ['name']);
+  const box=document.getElementById('donorList');if(!box)return;
+  if(!a.length){box.innerHTML='<div class="empty">لا يوجد متبرعون بعد</div>';return;}
+  const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];
+  box.innerHTML='<div class="donor-table-count">عدد المتبرعين: <b>'+a.length.toLocaleString('en-US')+'</b></div><div class="donation-table-wrap donor-table-wrap"><table class="donation-table donor-list-table"><thead><tr><th class="donation-no">ت</th><th>اسم المتبرع</th><th>رمز المتبرع</th><th>الهاتف</th><th>العنوان</th><th>مجموع التبرعات حسب التخصيص</th><th>الإجراءات</th></tr></thead><tbody>'+a.map((d,n)=>{
+    const i=donors.indexOf(d),t=donorAllocationTotals(d.id);
+    const allocationHtml=cats.map(c=>'<div class="donor-table-allocation"><span>'+escapeHtml(c)+'</span><b>'+Number(t[c]||0).toLocaleString('en-US')+' د.ع</b></div>').join('');
+    return '<tr><td>'+(n+1)+'</td><td><b>'+escapeHtml(d.name||'غير مسجل')+'</b></td><td>'+escapeHtml(d.donorCode||'غير مسجل')+'</td><td>'+escapeHtml(d.phone||'غير مسجل')+'</td><td>'+escapeHtml(d.address||'غير مسجل')+'</td><td><div class="donor-table-allocations">'+allocationHtml+'</div></td><td><div class="donor-table-actions"><button class="donation-edit-btn" type="button" onclick="openDonorLocationById('+Number(d.id)+')">📍 الموقع</button><button class="donation-edit-btn" type="button" onclick="editDonor('+i+')">✏️ تعديل</button><button class="donation-edit-btn" type="button" onclick="hideRecord(\'donors\','+i+',\'المتبرع\')">🚫 حجب</button><button class="donation-edit-btn" type="button" onclick="deleteDonor('+i+')">🗑 حذف</button></div></td></tr>';
+  }).join('')+'</tbody></table></div>';
+}
 function openDonationSearch(type){var id=type==='donor'?'dn-donor-search':'dn-beneficiary-search';var e=document.getElementById(id);if(e)e.focus();}
 function filterDonationDonorOptions(){var q=(document.getElementById('dn-donor-search')?.value||'').trim().toLowerCase(),s=document.getElementById('dn-donor');if(!s)return;[...s.options].forEach(o=>o.hidden=!!q&&!o.textContent.toLowerCase().includes(q));s.size=Math.min(8,Math.max(1,[...s.options].filter(o=>!o.hidden).length));}
 function filterDonationBeneficiaryOptions(){var q=(document.getElementById('dn-beneficiary-search')?.value||'').trim().toLowerCase(),s=document.getElementById('dn-beneficiary');if(!s)return;[...s.options].forEach(o=>o.hidden=!!q&&!o.textContent.toLowerCase().includes(q));s.size=Math.min(8,Math.max(1,[...s.options].filter(o=>!o.hidden).length));}
