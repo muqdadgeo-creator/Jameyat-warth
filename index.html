@@ -74,6 +74,7 @@ main{padding:12px 12px 65px}.screen{display:none!important}.screen.active{displa
 .donor-table-count{font-size:11px;color:#55736b;margin:8px 2px}
 .donor-list-table{min-width:920px}
 .donor-list-table th,.donor-list-table td{font-size:10px}
+.donor-list-table th,.donor-list-table td{text-align:right;vertical-align:middle}
 .donor-table-allocations{min-width:145px}
 .donor-table-allocation{display:flex;justify-content:space-between;gap:10px;padding:4px 6px;margin:2px 0;background:#f4f8f6;border-radius:6px;white-space:nowrap}
 .donor-table-allocation b{color:#0f5c4d}
@@ -3847,18 +3848,39 @@ async function markUnpaidDonationPaid(id){
 
 function donorAllocationTotals(donorId){const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];const totals={};cats.forEach(c=>totals[c]=0);donations.filter(d=>Number(d.donorId)===Number(donorId)&&d.type==='مالي').forEach(d=>{const c=cats.includes(d.allocation)?d.allocation:'أخرى';totals[c]+=Number(d.amount)||0});return totals;}
 function donorAllocationTotals(donorId){const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];const totals={};cats.forEach(c=>totals[c]=0);donations.filter(d=>Number(d.donorId)===Number(donorId)&&d.type==='مالي').forEach(d=>{const c=cats.includes(d.allocation)?d.allocation:'أخرى';totals[c]+=Number(d.amount)||0});return totals;}
+function openDonorAllocationsById(donorId){
+  const donor=donors.find(d=>Number(d.id)===Number(donorId));
+  if(!donor)return;
+  const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];
+  const totals=donorAllocationTotals(donor.id);
+  const sum=cats.reduce((acc,c)=>acc+(Number(totals[c])||0),0);
+  const existing=document.getElementById('donorAllocationsPopup');
+  if(existing)existing.remove();
+  const popup=document.createElement('div');
+  popup.id='donorAllocationsPopup';
+  popup.style.cssText='position:fixed;inset:0;z-index:9999;background:#0008;display:flex;align-items:center;justify-content:center;padding:18px';
+  popup.innerHTML='<div role="dialog" aria-modal="true" aria-label="تفاصيل تخصيصات التبرع" style="width:min(440px,100%);max-height:85vh;overflow:auto;background:#fff;border-radius:16px;padding:16px;box-shadow:0 12px 40px #0004;color:#193a33" onclick="event.stopPropagation()"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b style="font-size:16px">تخصيصات تبرعات '+escapeHtml(donor.name||'المتبرع')+'</b><button type="button" class="donation-edit-btn" onclick="document.getElementById(\'donorAllocationsPopup\')?.remove()" aria-label="إغلاق النافذة">✕ إغلاق</button></div><div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:7px">'+cats.map(c=>'<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;background:#f4f8f6;padding:10px;border-radius:9px;font-size:11px"><span>'+escapeHtml(c)+'</span><b style="white-space:nowrap;color:#0f5c4d">'+(Number(totals[c])||0).toLocaleString('en-US')+' د.ع</b></div>').join('')+'</div><div style="display:flex;justify-content:space-between;align-items:center;background:#e9f5f0;border-radius:10px;padding:12px;margin-top:10px;font-size:12px"><b>مجموع التبرعات</b><b style="color:#0f5c4d">'+sum.toLocaleString('en-US')+' د.ع</b></div></div>';
+  popup.addEventListener('click',()=>popup.remove());
+  document.body.appendChild(popup);
+}
 function renderDonors(){
   const q=(document.getElementById('donorQ')?.value||'').trim().toLowerCase();
-  const a=sortRecords(donors.filter(d=>!isHiddenRecord(d)&&(String(d.name||'')+' '+String(d.phone||'')+' '+String(d.address||'')+' '+String(d.donorCode||'')).toLowerCase().includes(q)), '', ['name']);
-  const box=document.getElementById('donorList');if(!box)return;
-  if(!a.length){box.innerHTML='<div class="empty">لا يوجد متبرعون بعد</div>';return;}
   const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];
-  const allocationHeaders=cats.map(c=>'<th style="white-space:nowrap">'+escapeHtml(c)+'</th>').join('');
-  box.innerHTML='<div class="donor-table-count">عدد المتبرعين: <b>'+a.length.toLocaleString('en-US')+'</b></div><div class="donation-table-wrap donor-table-wrap" style="overflow-x:auto"><table class="donation-table donor-list-table" style="min-width:1500px;width:max-content"><thead><tr><th class="donation-no">ت</th><th style="white-space:nowrap">رمز المتبرع</th><th style="white-space:nowrap">اسم المتبرع</th><th style="white-space:nowrap">الهاتف</th><th style="white-space:nowrap">العنوان</th>'+allocationHeaders+'<th style="white-space:nowrap">الموقع</th><th style="white-space:nowrap">تعديل</th><th style="white-space:nowrap">حجب</th><th style="white-space:nowrap">حذف</th></tr></thead><tbody>'+a.map((d,n)=>{
+  const a=sortRecords(donors.filter(d=>{
+    if(isHiddenRecord(d))return false;
+    const searchText=(String(d.name||'')+' '+String(d.phone||'')+' '+String(d.address||'')+' '+String(d.donorCode||'')).toLowerCase();
+    if(!searchText.includes(q))return false;
+    const totals=donorAllocationTotals(d.id);
+    return cats.reduce((sum,c)=>sum+(Number(totals[c])||0),0)>0;
+  }), '', ['name']);
+  const box=document.getElementById('donorList');if(!box)return;
+  if(!a.length){box.innerHTML='<div class="empty">لا يوجد متبرعون لديهم تبرعات مسجلة</div>';return;}
+  const allocationHeaders=cats.map(c=>'<th style="white-space:nowrap;text-align:right">'+escapeHtml(c)+'</th>').join('');
+  box.innerHTML='<div class="donor-table-count">عدد المتبرعين ذوي التبرعات المسجلة: <b>'+a.length.toLocaleString('en-US')+'</b></div><div class="donation-table-wrap donor-table-wrap" style="overflow-x:auto"><table class="donation-table donor-list-table" style="min-width:1250px;width:max-content"><thead><tr><th class="donation-no" style="text-align:right">ت</th><th style="white-space:nowrap;text-align:right">رمز المتبرع</th><th style="white-space:nowrap;text-align:right">اسم المتبرع</th><th style="white-space:nowrap;text-align:right">الهاتف</th><th style="white-space:nowrap;text-align:right">العنوان</th><th style="white-space:nowrap;text-align:right">الموقع</th><th style="white-space:nowrap;text-align:right">مجموع التبرعات</th><th style="white-space:nowrap;text-align:right">تعديل</th><th style="white-space:nowrap;text-align:right">حجب</th><th style="white-space:nowrap;text-align:right">حذف</th></tr></thead><tbody>'+a.map((d,n)=>{
     const i=donors.indexOf(d),t=donorAllocationTotals(d.id);
     const phone=String(d.phone||'').trim(),intl=phone?normalizeIraqPhone(phone):'',tel=intl,whatsapp=intl.replace(/[^0-9]/g,'');
-    const allocationCells=cats.map(c=>'<td class="donor-allocation-cell" style="white-space:nowrap"><b>'+Number(t[c]||0).toLocaleString('en-US')+' د.ع</b></td>').join('');
-    return '<tr><td>'+(n+1)+'</td><td><b>'+escapeHtml(d.donorCode||'غير مسجل')+'</b></td><td><b>'+escapeHtml(d.name||'غير مسجل')+'</b></td><td>'+(phone?'<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span>'+escapeHtml(phone)+'</span><a class="donor-phone-link" href="tel:'+escapeHtml(tel)+'" aria-label="اتصال بالمتبرع '+escapeHtml(d.name||'')+'" title="اتصال">📞 اتصال</a><a class="donor-phone-link" href="https://wa.me/'+whatsapp+'" target="_blank" rel="noopener noreferrer" aria-label="مراسلة المتبرع عبر واتساب '+escapeHtml(d.name||'')+'" title="واتساب" style="color:#16834a">💬 واتساب</a></div>':'غير مسجل')+'</td><td>'+escapeHtml(d.address||'غير مسجل')+'</td>'+allocationCells+'<td><button class="donation-edit-btn" type="button" onclick="openDonorLocationById('+Number(d.id)+')">📍 الموقع</button></td><td><button class="donation-edit-btn" type="button" onclick="editDonor('+i+')">✏️ تعديل</button></td><td><button class="donation-edit-btn" type="button" onclick="hideRecord(&quot;donors&quot;,'+i+',&quot;المتبرع&quot;)">🚫 حجب</button></td><td><button class="donation-edit-btn" type="button" onclick="deleteDonor('+i+')">🗑 حذف</button></td></tr>';
+    const total=cats.reduce((sum,c)=>sum+(Number(t[c])||0),0);
+    return '<tr><td style="text-align:right">'+(n+1)+'</td><td style="text-align:right"><b>'+escapeHtml(d.donorCode||'غير مسجل')+'</b></td><td style="text-align:right"><b>'+escapeHtml(d.name||'غير مسجل')+'</b></td><td style="text-align:right">'+(phone?'<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span>'+escapeHtml(phone)+'</span><a class="donor-phone-link" href="tel:'+escapeHtml(tel)+'" aria-label="اتصال بالمتبرع '+escapeHtml(d.name||'')+'" title="اتصال">📞 اتصال</a><a class="donor-phone-link" href="https://wa.me/'+whatsapp+'" target="_blank" rel="noopener noreferrer" aria-label="مراسلة المتبرع عبر واتساب '+escapeHtml(d.name||'')+'" title="واتساب" style="color:#16834a">💬 واتساب</a></div>':'غير مسجل')+'</td><td style="text-align:right">'+escapeHtml(d.address||'غير مسجل')+'</td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="openDonorLocationById('+Number(d.id)+')">📍 الموقع</button></td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="openDonorAllocationsById('+Number(d.id)+')" title="عرض تفاصيل تخصيصات التبرع">'+total.toLocaleString('en-US')+' د.ع　📊 التفاصيل</button></td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="editDonor('+i+')">✏️ تعديل</button></td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="hideRecord(&quot;donors&quot;,'+i+',&quot;المتبرع&quot;)">🚫 حجب</button></td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="deleteDonor('+i+')">🗑 حذف</button></td></tr>';
   }).join('')+'</tbody></table></div>';
 }
 function openDonationSearch(type){var id=type==='donor'?'dn-donor-search':'dn-beneficiary-search';var e=document.getElementById(id);if(e)e.focus();}
