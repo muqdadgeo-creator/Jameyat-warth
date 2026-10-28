@@ -305,6 +305,14 @@ textarea.forminput{height:80px;resize:vertical}
 /* Compact buttons only on the homepage's in-progress appeal cards */
 .home-follow-list .home-appeal-actions .home-appeal-details-btn,
 .home-follow-list .home-appeal-actions .appeal-donate-btn{padding:7px 5px;font-size:10px;line-height:1.35;min-height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center}
+
+/* جدول المتبرعين: عمود مستقل لكل تخصيص ولكل إجراء */
+.donor-table-count{font-size:11px;color:#55736b;margin:8px 2px}
+.donor-list-table{min-width:1550px}
+.donor-list-table th,.donor-list-table td{font-size:10px;white-space:nowrap}
+.donor-list-table .donor-allocation-cell{min-width:125px;text-align:center}
+.donor-phone-link{color:#087b54;font-weight:900;text-decoration:none;white-space:nowrap}
+.donor-phone-link:active{opacity:.7}
 </style>
 <style id="report-layout-v2">
 /* ===== تنسيق رأس التقرير: اسم الجمعية مقابل الشعار ===== */
@@ -3845,10 +3853,12 @@ function renderDonors(){
   const box=document.getElementById('donorList');if(!box)return;
   if(!a.length){box.innerHTML='<div class="empty">لا يوجد متبرعون بعد</div>';return;}
   const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];
-  box.innerHTML='<div class="donor-table-count">عدد المتبرعين: <b>'+a.length.toLocaleString('en-US')+'</b></div><div class="donation-table-wrap donor-table-wrap"><table class="donation-table donor-list-table"><thead><tr><th class="donation-no">ت</th><th>اسم المتبرع</th><th>رمز المتبرع</th><th>الهاتف</th><th>العنوان</th><th>مجموع التبرعات حسب التخصيص</th><th>الإجراءات</th></tr></thead><tbody>'+a.map((d,n)=>{
+  const allocationHeaders=cats.map(c=>'<th>'+escapeHtml(c)+'</th>').join('');
+  box.innerHTML='<div class="donor-table-count">عدد المتبرعين: <b>'+a.length.toLocaleString('en-US')+'</b></div><div class="donation-table-wrap donor-table-wrap"><table class="donation-table donor-list-table"><thead><tr><th class="donation-no">ت</th><th>رمز المتبرع</th><th>اسم المتبرع</th><th>الهاتف</th><th>العنوان</th>'+allocationHeaders+'<th>الموقع</th><th>تعديل</th><th>حجب</th><th>حذف</th></tr></thead><tbody>'+a.map((d,n)=>{
     const i=donors.indexOf(d),t=donorAllocationTotals(d.id);
-    const allocationHtml=cats.map(c=>'<div class="donor-table-allocation"><span>'+escapeHtml(c)+'</span><b>'+Number(t[c]||0).toLocaleString('en-US')+' د.ع</b></div>').join('');
-    return '<tr><td>'+(n+1)+'</td><td><b>'+escapeHtml(d.name||'غير مسجل')+'</b></td><td>'+escapeHtml(d.donorCode||'غير مسجل')+'</td><td>'+escapeHtml(d.phone||'غير مسجل')+'</td><td>'+escapeHtml(d.address||'غير مسجل')+'</td><td><div class="donor-table-allocations">'+allocationHtml+'</div></td><td><div class="donor-table-actions"><button class="donation-edit-btn" type="button" onclick="openDonorLocationById('+Number(d.id)+')">📍 الموقع</button><button class="donation-edit-btn" type="button" onclick="editDonor('+i+')">✏️ تعديل</button><button class="donation-edit-btn" type="button" onclick="hideRecord(\'donors\','+i+',\'المتبرع\')">🚫 حجب</button><button class="donation-edit-btn" type="button" onclick="deleteDonor('+i+')">🗑 حذف</button></div></td></tr>';
+    const phone=String(d.phone||'').trim(),tel=phone.replace(/[^\\d+]/g,'');
+    const allocationCells=cats.map(c=>'<td class="donor-allocation-cell"><b>'+Number(t[c]||0).toLocaleString('en-US')+' د.ع</b></td>').join('');
+    return '<tr><td>'+(n+1)+'</td><td><b>'+escapeHtml(d.donorCode||'غير مسجل')+'</b></td><td><b>'+escapeHtml(d.name||'غير مسجل')+'</b></td><td>'+(phone?'<a class="donor-phone-link" href="tel:'+escapeHtml(tel)+'">'+escapeHtml(phone)+' 📞</a>':'غير مسجل')+'</td><td>'+escapeHtml(d.address||'غير مسجل')+'</td>'+allocationCells+'<td><button class="donation-edit-btn" type="button" onclick="openDonorLocationById('+Number(d.id)+')">📍 الموقع</button></td><td><button class="donation-edit-btn" type="button" onclick="editDonor('+i+')">✏️ تعديل</button></td><td><button class="donation-edit-btn" type="button" onclick="hideRecord(\\'donors\\','+i+',\\'المتبرع\\')">🚫 حجب</button></td><td><button class="donation-edit-btn" type="button" onclick="deleteDonor('+i+')">🗑 حذف</button></td></tr>';
   }).join('')+'</tbody></table></div>';
 }
 function openDonationSearch(type){var id=type==='donor'?'dn-donor-search':'dn-beneficiary-search';var e=document.getElementById(id);if(e)e.focus();}
