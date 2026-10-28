@@ -307,11 +307,14 @@ textarea.forminput{height:80px;resize:vertical}
 .home-follow-list .home-appeal-actions .home-appeal-details-btn,
 .home-follow-list .home-appeal-actions .appeal-donate-btn{padding:7px 5px;font-size:10px;line-height:1.35;min-height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center}
 
-/* جدول المتبرعين: عمود مستقل لكل تخصيص ولكل إجراء */
+/* جدول المتبرعين: أعمدة مضغوطة حسب المحتوى الفعلي */
 .donor-table-count{font-size:11px;color:#55736b;margin:8px 2px}
-.donor-list-table{min-width:1550px}
-.donor-list-table th,.donor-list-table td{font-size:10px;white-space:nowrap}
-.donor-list-table .donor-allocation-cell{min-width:125px;text-align:center}
+.donor-list-table{min-width:0!important;width:max-content;table-layout:auto}
+.donor-list-table th,.donor-list-table td{font-size:10px;white-space:nowrap;padding:5px 7px!important}
+.donor-list-table .donation-edit-btn{padding:4px 6px!important;font-size:10px;line-height:1.25;white-space:nowrap}
+.donor-list-table [data-donor-col="number"]{padding-left:5px!important;padding-right:5px!important}
+.donor-list-table [data-donor-col="phone"] .donor-phone-link{display:inline-flex;align-items:center;justify-content:center;min-width:20px;min-height:24px;font-size:15px}
+.donor-list-table .donor-allocation-cell{min-width:0;text-align:right}
 .donor-phone-link{color:#087b54;font-weight:900;text-decoration:none;white-space:nowrap}
 .donor-phone-link:active{opacity:.7}
 </style>
@@ -3931,7 +3934,7 @@ function renderDonors(){
     ];
     return '<tr>'+cells.join('')+'</tr>';
   }).join('');
-  box.innerHTML=columnFilter+count+'<div class="donation-table-wrap donor-table-wrap" style="overflow-x:auto"><table class="donation-table donor-list-table" style="min-width:900px;width:max-content"><thead><tr>'+header+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  box.innerHTML=columnFilter+count+'<div class="donation-table-wrap donor-table-wrap" style="overflow-x:auto"><table class="donation-table donor-list-table" style="min-width:0;width:max-content;table-layout:auto"><thead><tr>'+header+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 function openDonationSearch(type){var id=type==='donor'?'dn-donor-search':'dn-beneficiary-search';var e=document.getElementById(id);if(e)e.focus();}
 function filterDonationDonorOptions(){var q=(document.getElementById('dn-donor-search')?.value||'').trim().toLowerCase(),s=document.getElementById('dn-donor');if(!s)return;[...s.options].forEach(o=>o.hidden=!!q&&!o.textContent.toLowerCase().includes(q));s.size=Math.min(8,Math.max(1,[...s.options].filter(o=>!o.hidden).length));}
