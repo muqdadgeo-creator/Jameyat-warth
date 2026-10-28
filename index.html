@@ -3863,9 +3863,44 @@ function openDonorAllocationsById(donorId){
   popup.addEventListener('click',()=>popup.remove());
   document.body.appendChild(popup);
 }
+const DONOR_TABLE_COLUMNS=[
+  {key:'number',label:'ت'},
+  {key:'code',label:'رمز المتبرع'},
+  {key:'name',label:'اسم المتبرع'},
+  {key:'phone',label:'الهاتف'},
+  {key:'address',label:'العنوان'},
+  {key:'location',label:'الموقع'},
+  {key:'total',label:'مجموع التبرعات'},
+  {key:'edit',label:'تعديل'},
+  {key:'hide',label:'حجب'},
+  {key:'delete',label:'حذف'}
+];
+function donorVisibleColumns(){
+  const all=DONOR_TABLE_COLUMNS.map(c=>c.key);
+  try{
+    const saved=JSON.parse(localStorage.getItem('warith_donor_visible_columns')||'null');
+    return Array.isArray(saved)?all.filter(k=>saved.includes(k)):all;
+  }catch(e){return all;}
+}
+function setDonorColumnVisibility(key,visible){
+  const all=DONOR_TABLE_COLUMNS.map(c=>c.key);
+  let shown=donorVisibleColumns();
+  shown=visible?(shown.includes(key)?shown:shown.concat(key)):shown.filter(k=>k!==key);
+  if(!shown.length){shown=[key];const cb=document.querySelector('[data-donor-column-toggle="'+key+'"]');if(cb)cb.checked=true;}
+  try{localStorage.setItem('warith_donor_visible_columns',JSON.stringify(shown));}catch(e){}
+  const box=document.getElementById('donorList');
+  if(box){
+    box.querySelectorAll('[data-donor-col]').forEach(el=>{el.style.display=shown.includes(el.getAttribute('data-donor-col'))?'':'none';});
+  }
+}
+function resetDonorColumns(){
+  try{localStorage.removeItem('warith_donor_visible_columns');}catch(e){}
+  renderDonors();
+}
 function renderDonors(){
   const q=(document.getElementById('donorQ')?.value||'').trim().toLowerCase();
   const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];
+  const shownColumns=donorVisibleColumns();
   const a=sortRecords(donors.filter(d=>{
     if(isHiddenRecord(d))return false;
     const searchText=(String(d.name||'')+' '+String(d.phone||'')+' '+String(d.address||'')+' '+String(d.donorCode||'')).toLowerCase();
@@ -3874,14 +3909,29 @@ function renderDonors(){
     return cats.reduce((sum,c)=>sum+(Number(totals[c])||0),0)>0;
   }), '', ['name']);
   const box=document.getElementById('donorList');if(!box)return;
-  if(!a.length){box.innerHTML='<div class="empty">لا يوجد متبرعون لديهم تبرعات مسجلة</div>';return;}
-  const allocationHeaders=cats.map(c=>'<th style="white-space:nowrap;text-align:right">'+escapeHtml(c)+'</th>').join('');
-  box.innerHTML='<div class="donor-table-count">عدد المتبرعين ذوي التبرعات المسجلة: <b>'+a.length.toLocaleString('en-US')+'</b></div><div class="donation-table-wrap donor-table-wrap" style="overflow-x:auto"><table class="donation-table donor-list-table" style="min-width:1250px;width:max-content"><thead><tr><th class="donation-no" style="text-align:right">ت</th><th style="white-space:nowrap;text-align:right">رمز المتبرع</th><th style="white-space:nowrap;text-align:right">اسم المتبرع</th><th style="white-space:nowrap;text-align:right">الهاتف</th><th style="white-space:nowrap;text-align:right">العنوان</th><th style="white-space:nowrap;text-align:right">الموقع</th><th style="white-space:nowrap;text-align:right">مجموع التبرعات</th><th style="white-space:nowrap;text-align:right">تعديل</th><th style="white-space:nowrap;text-align:right">حجب</th><th style="white-space:nowrap;text-align:right">حذف</th></tr></thead><tbody>'+a.map((d,n)=>{
+  const columnFilter='<details class="donor-column-filter" style="position:relative;display:inline-block;margin:8px 0"><summary class="donation-edit-btn" style="cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:6px;padding:9px 12px">☷ اختيار الأعمدة　⌄</summary><div style="position:absolute;z-index:1000;right:0;top:calc(100% + 5px);width:min(280px,85vw);max-height:65vh;overflow:auto;background:#fff;border:1px solid #d5e3dd;border-radius:12px;padding:12px;box-shadow:0 8px 24px #0002;color:#193a33"><div style="font-weight:800;margin-bottom:8px">اختار الأعمدة الظاهرة</div>'+DONOR_TABLE_COLUMNS.map(c=>'<label style="display:flex;align-items:center;gap:9px;padding:7px 2px;cursor:pointer;border-bottom:1px solid #edf2ef"><input type="checkbox" data-donor-column-toggle="'+c.key+'" '+(shownColumns.includes(c.key)?'checked':'')+' onchange="setDonorColumnVisibility(\''+c.key+'\',this.checked)"> <span>'+escapeHtml(c.label)+'</span></label>').join('')+'<button type="button" class="donation-edit-btn" style="margin-top:10px;width:100%" onclick="resetDonorColumns()">إظهار كل الأعمدة</button></div></details>';
+  const count='<div class="donor-table-count">عدد المتبرعين ذوي التبرعات المسجلة: <b>'+a.length.toLocaleString('en-US')+'</b></div>';
+  if(!a.length){box.innerHTML=columnFilter+count+'<div class="empty">لا يوجد متبرعون لديهم تبرعات مسجلة</div>';return;}
+  const header=DONOR_TABLE_COLUMNS.map(c=>'<th data-donor-col="'+c.key+'" style="white-space:nowrap;text-align:right;'+(shownColumns.includes(c.key)?'':'display:none;')+'">'+escapeHtml(c.label)+'</th>').join('');
+  const rows=a.map((d,n)=>{
     const i=donors.indexOf(d),t=donorAllocationTotals(d.id);
     const phone=String(d.phone||'').trim(),intl=phone?normalizeIraqPhone(phone):'',tel=intl,whatsapp=intl.replace(/[^0-9]/g,'');
     const total=cats.reduce((sum,c)=>sum+(Number(t[c])||0),0);
-    return '<tr><td style="text-align:right">'+(n+1)+'</td><td style="text-align:right"><b>'+escapeHtml(d.donorCode||'غير مسجل')+'</b></td><td style="text-align:right"><b>'+escapeHtml(d.name||'غير مسجل')+'</b></td><td style="text-align:right">'+(phone?'<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span>'+escapeHtml(phone)+'</span><a class="donor-phone-link" href="tel:'+escapeHtml(tel)+'" aria-label="اتصال بالمتبرع '+escapeHtml(d.name||'')+'" title="اتصال">📞 اتصال</a><a class="donor-phone-link" href="https://wa.me/'+whatsapp+'" target="_blank" rel="noopener noreferrer" aria-label="مراسلة المتبرع عبر واتساب '+escapeHtml(d.name||'')+'" title="واتساب" style="color:#16834a">💬 واتساب</a></div>':'غير مسجل')+'</td><td style="text-align:right">'+escapeHtml(d.address||'غير مسجل')+'</td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="openDonorLocationById('+Number(d.id)+')">📍 الموقع</button></td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="openDonorAllocationsById('+Number(d.id)+')" title="عرض تفاصيل تخصيصات التبرع">'+total.toLocaleString('en-US')+' د.ع　📊 التفاصيل</button></td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="editDonor('+i+')">✏️ تعديل</button></td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="hideRecord(&quot;donors&quot;,'+i+',&quot;المتبرع&quot;)">🚫 حجب</button></td><td style="text-align:right"><button class="donation-edit-btn" type="button" onclick="deleteDonor('+i+')">🗑 حذف</button></td></tr>';
-  }).join('')+'</tbody></table></div>';
+    const cells=[
+      '<td data-donor-col="number" style="text-align:right;'+(shownColumns.includes('number')?'':'display:none;')+'">'+(n+1)+'</td>',
+      '<td data-donor-col="code" style="text-align:right;'+(shownColumns.includes('code')?'':'display:none;')+'"><b>'+escapeHtml(d.donorCode||'غير مسجل')+'</b></td>',
+      '<td data-donor-col="name" style="text-align:right;'+(shownColumns.includes('name')?'':'display:none;')+'"><b>'+escapeHtml(d.name||'غير مسجل')+'</b></td>',
+      '<td data-donor-col="phone" style="text-align:right;'+(shownColumns.includes('phone')?'':'display:none;')+'">'+(phone?'<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span>'+escapeHtml(phone)+'</span><a class="donor-phone-link" href="tel:'+escapeHtml(tel)+'" aria-label="اتصال بالمتبرع '+escapeHtml(d.name||'')+'" title="اتصال">📞 اتصال</a><a class="donor-phone-link" href="https://wa.me/'+whatsapp+'" target="_blank" rel="noopener noreferrer" aria-label="مراسلة المتبرع عبر واتساب '+escapeHtml(d.name||'')+'" title="واتساب" style="color:#16834a">💬 واتساب</a></div>':'غير مسجل')+'</td>',
+      '<td data-donor-col="address" style="text-align:right;'+(shownColumns.includes('address')?'':'display:none;')+'">'+escapeHtml(d.address||'غير مسجل')+'</td>',
+      '<td data-donor-col="location" style="text-align:right;'+(shownColumns.includes('location')?'':'display:none;')+'"><button class="donation-edit-btn" type="button" onclick="openDonorLocationById('+Number(d.id)+')">📍 الموقع</button></td>',
+      '<td data-donor-col="total" style="text-align:right;'+(shownColumns.includes('total')?'':'display:none;')+'"><button class="donation-edit-btn" type="button" onclick="openDonorAllocationsById('+Number(d.id)+')" title="عرض تفاصيل تخصيصات التبرع">'+total.toLocaleString('en-US')+' د.ع　📊 التفاصيل</button></td>',
+      '<td data-donor-col="edit" style="text-align:right;'+(shownColumns.includes('edit')?'':'display:none;')+'"><button class="donation-edit-btn" type="button" onclick="editDonor('+i+')">✏️ تعديل</button></td>',
+      '<td data-donor-col="hide" style="text-align:right;'+(shownColumns.includes('hide')?'':'display:none;')+'"><button class="donation-edit-btn" type="button" onclick="hideRecord(&quot;donors&quot;,'+i+',&quot;المتبرع&quot;)">🚫 حجب</button></td>',
+      '<td data-donor-col="delete" style="text-align:right;'+(shownColumns.includes('delete')?'':'display:none;')+'"><button class="donation-edit-btn" type="button" onclick="deleteDonor('+i+')">🗑 حذف</button></td>'
+    ];
+    return '<tr>'+cells.join('')+'</tr>';
+  }).join('');
+  box.innerHTML=columnFilter+count+'<div class="donation-table-wrap donor-table-wrap" style="overflow-x:auto"><table class="donation-table donor-list-table" style="min-width:900px;width:max-content"><thead><tr>'+header+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 function openDonationSearch(type){var id=type==='donor'?'dn-donor-search':'dn-beneficiary-search';var e=document.getElementById(id);if(e)e.focus();}
 function filterDonationDonorOptions(){var q=(document.getElementById('dn-donor-search')?.value||'').trim().toLowerCase(),s=document.getElementById('dn-donor');if(!s)return;[...s.options].forEach(o=>o.hidden=!!q&&!o.textContent.toLowerCase().includes(q));s.size=Math.min(8,Math.max(1,[...s.options].filter(o=>!o.hidden).length));}
