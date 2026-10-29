@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية السيدة فاطمة عليها السلام الخيرية</title>
-<script>(()=>{try{const v='fatima-v-20261025-slogan-0003';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='fatima-v-20261029-inventory-materials-0001';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -718,9 +718,9 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 <div class="home-card-note">محسوبة لهذا الشهر</div>
 </div>
 <div class="home-card home-inventory-card">
-<div class="home-card-title">📦 <b>تم تجهيز (لهذا الشهر)</b></div>
+<div class="home-card-title">📦 <b>مواد تم تجهيزها هذا الشهر</b></div>
 <div class="home-inventory-list" id="homeInventoryItems"><div class="home-empty">لا توجد حركات إخراج لهذا الشهر</div></div>
-<div class="home-card-note">حسب اسم الجهاز والعدد</div>
+<div class="home-card-note">حسب اسم الجهاز أو المادة والعدد</div>
 </div>
 </div>
 <div class="home-donate-general">
@@ -2146,7 +2146,7 @@ function renderHomeDashboard(){
 
   // تم تجهيز: تجميع كل الأجهزة والمواد التي خرجت من المخزن خلال هذا الشهر حسب الاسم والكمية.
   const prepared={};
-  visibleInventory.filter(x=>x.type==='جهاز'&&x.move==='صادر'&&homeIsCurrentMonth(x.date)).forEach(x=>{
+  visibleInventory.filter(x=>(x.type==='جهاز'||x.type==='مواد')&&x.move==='صادر'&&homeIsCurrentMonth(x.date)).forEach(x=>{
     const name=(x.name||'غير محدد').trim()||'غير محدد';
     prepared[name]=(prepared[name]||0)+Number(x.qty||0);
   });
