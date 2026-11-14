@@ -2642,6 +2642,30 @@ function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لد
   let saveTimer=null;
   let pendingSaveScreen=null;
 
+  /* حفظ واستعادة التبويبات الداخلية لكل قسم */
+  const TAB_FUNCTIONS=['switchDonationTab','switchActivityTab','showFamilyTab','switchInventoryRecord','switchReportTab'];
+  function rememberTab(name,args){
+    if(restoreInProgress)return;
+    const screenId=activeScreen();
+    const drafts=readDrafts();
+    const draft=drafts[screenId]||{fields:[],state:collectEditState()};
+    draft.tabs=draft.tabs||{};
+    draft.tabs[name]=Array.from(args).map(value=>value===undefined?null:value);
+    draft.savedAt=Date.now();
+    drafts[screenId]=draft;
+    writeDrafts(drafts);
+  }
+  TAB_FUNCTIONS.forEach(name=>{
+    const original=window[name];
+    if(typeof original!=='function'||original.__warithDraftWrapped)return;
+    const wrapped=function(){
+      rememberTab(name,arguments);
+      return original.apply(this,arguments);
+    };
+    wrapped.__warithDraftWrapped=true;
+    window[name]=wrapped;
+  });
+
   function readDrafts(){
     try{const value=JSON.parse(localStorage.getItem(DRAFT_KEY)||'{}');return value&&typeof value==='object'?value:{}}catch(e){return {}}
   }
@@ -2752,6 +2776,12 @@ function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لد
     try{
       applyEditState(draft.state);
       applyFields(screenId,draft.fields);
+      if(draft.tabs&&typeof draft.tabs==='object'){
+        const wasRestoring=restoreInProgress;
+        restoreInProgress=true;
+        try{TAB_FUNCTIONS.forEach(name=>{if(Array.isArray(draft.tabs[name])&&typeof window[name]==='function'){try{window[name].apply(window,draft.tabs[name])}catch(e){console.warn('تعذرت استعادة التبويب:',name,e)}}})}
+        finally{restoreInProgress=wasRestoring}
+      }
       if(Number.isFinite(Number(draft.scrollY)))window.scrollTo(0,Number(draft.scrollY));
     }catch(e){console.warn('تعذرت استعادة مسودة الصفحة:',e)}
     finally{restoreInProgress=false}
@@ -2781,7 +2811,9 @@ function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لد
     window.showScreen=function(id){
       const previous=activeScreen();
       if(previous)captureScreen(previous);
-      const result=originalShowScreen.apply(this,arguments);
+      let result;
+      restoreInProgress=true;
+      try{result=originalShowScreen.apply(this,arguments)}finally{restoreInProgress=false}
       const current=activeScreen();
       try{sessionStorage.setItem(ACTIVE_KEY,current)}catch(e){}
       if(pendingSaveScreen===previous&&current!==previous){
