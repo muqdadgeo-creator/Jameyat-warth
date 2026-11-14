@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية السيدة فاطمة عليها السلام الخيرية</title>
-<script>(()=>{try{const v='fatima-v-20261029-inventory-materials-0001';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='fatima-v-20261114-session-drafts-0001';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -2631,6 +2631,179 @@ function deleteCentralFile(i){if(!hasAction('delete','files-center')){alert('ل�
 
 function goBackFromInKindDonations(){const u=currentUser();showScreen(u&&u.active!==false&&normalizeRole(u.role)==='مسؤول المخزن'&&!hasPermission('donations')?'inventory':'donations')}
 function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لديك صلاحية الوصول إلى هذا القسم.');return}document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-followup')renderFamilyFollowup();if(id==='add-family'&&editingFamilyCode===null){const fc=document.getElementById('f-code');if(fc){fc.value=String(nextFamilyCode());fc.readOnly=true;}}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor'&&editingDonorIndex===null)resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
+
+/* ===== استعادة الصفحة والمسودات غير المحفوظة على الجهاز ===== */
+(function initWarithSessionDrafts(){
+  const DRAFT_KEY='warith_session_drafts_v1';
+  const ACTIVE_KEY='warith_active_screen_v1';
+  const EDIT_STATE_KEYS=['selectedFamilyCode','editingFamilyCode','editingMemberIndex','editingAppealIndex','selectedAppealIndex','selectedAid','editingDonorIndex','editingDonationIndex','editingInventoryIndex','editingActivityIndex','editingActivityType'];
+  const excludedTypes=new Set(['password','file','button','submit','reset','image']);
+  let restoreInProgress=false;
+  let saveTimer=null;
+  let pendingSaveScreen=null;
+
+  function readDrafts(){
+    try{const value=JSON.parse(localStorage.getItem(DRAFT_KEY)||'{}');return value&&typeof value==='object'?value:{}}catch(e){return {}}
+  }
+  function writeDrafts(value){
+    try{localStorage.setItem(DRAFT_KEY,JSON.stringify(value))}catch(e){console.warn('تعذر حفظ مسودات الجمعية على هذا الجهاز:',e)}
+  }
+  function activeScreen(){
+    return document.querySelector('.screen.active')?.id||'home';
+  }
+  function collectEditState(){
+    const state={};
+    EDIT_STATE_KEYS.forEach(key=>{try{if(typeof window[key]!=='undefined')state[key]=window[key]}catch(e){}});
+    try{if(typeof editingFamilyCode!=='undefined')state.editingFamilyCode=editingFamilyCode}catch(e){}
+    try{if(typeof editingMemberIndex!=='undefined')state.editingMemberIndex=editingMemberIndex}catch(e){}
+    try{if(typeof editingAppealIndex!=='undefined')state.editingAppealIndex=editingAppealIndex}catch(e){}
+    try{if(typeof selectedAppealIndex!=='undefined')state.selectedAppealIndex=selectedAppealIndex}catch(e){}
+    try{if(typeof editingDonorIndex!=='undefined')state.editingDonorIndex=editingDonorIndex}catch(e){}
+    try{if(typeof editingDonationIndex!=='undefined')state.editingDonationIndex=editingDonationIndex}catch(e){}
+    try{if(typeof editingInventoryIndex!=='undefined')state.editingInventoryIndex=editingInventoryIndex}catch(e){}
+    try{if(typeof editingActivityIndex!=='undefined')state.editingActivityIndex=editingActivityIndex}catch(e){}
+    try{if(typeof editingActivityType!=='undefined')state.editingActivityType=editingActivityType}catch(e){}
+    try{if(typeof selectedAid!=='undefined')state.selectedAid=selectedAid}catch(e){}
+    try{if(typeof selectedFamilyCode!=='undefined')state.selectedFamilyCode=selectedFamilyCode}catch(e){}
+    return state;
+  }
+  function applyEditState(state){
+    if(!state||typeof state!=='object')return;
+    Object.entries(state).forEach(([key,value])=>{
+      try{
+        switch(key){
+          case 'selectedFamilyCode': if(typeof selectedFamilyCode!=='undefined')selectedFamilyCode=value; break;
+          case 'editingFamilyCode': if(typeof editingFamilyCode!=='undefined')editingFamilyCode=value; break;
+          case 'editingMemberIndex': if(typeof editingMemberIndex!=='undefined')editingMemberIndex=value; break;
+          case 'editingAppealIndex': if(typeof editingAppealIndex!=='undefined')editingAppealIndex=value; break;
+          case 'selectedAppealIndex': if(typeof selectedAppealIndex!=='undefined')selectedAppealIndex=value; break;
+          case 'selectedAid': if(typeof selectedAid!=='undefined')selectedAid=value; break;
+          case 'editingDonorIndex': if(typeof editingDonorIndex!=='undefined')editingDonorIndex=value; break;
+          case 'editingDonationIndex': if(typeof editingDonationIndex!=='undefined')editingDonationIndex=value; break;
+          case 'editingInventoryIndex': if(typeof editingInventoryIndex!=='undefined')editingInventoryIndex=value; break;
+          case 'editingActivityIndex': if(typeof editingActivityIndex!=='undefined')editingActivityIndex=value; break;
+          case 'editingActivityType': if(typeof editingActivityType!=='undefined')editingActivityType=value; break;
+        }
+      }catch(e){}
+    });
+  }
+  function fieldSnapshot(el){
+    const type=String(el.type||'').toLowerCase();
+    if(excludedTypes.has(type)||el.disabled||!el.id)return null;
+    if(type==='checkbox'||type==='radio')return {id:el.id,type,checked:!!el.checked,value:el.value};
+    if(el.tagName==='SELECT')return {id:el.id,type:'select',multiple:!!el.multiple,value:el.multiple?Array.from(el.selectedOptions).map(o=>o.value):el.value};
+    if(el.tagName==='TEXTAREA')return {id:el.id,type:'textarea',value:el.value};
+    if(el.tagName==='INPUT')return {id:el.id,type:type||'text',value:el.value};
+    return null;
+  }
+  function captureScreen(screenId){
+    const screen=document.getElementById(screenId);
+    if(!screen)return;
+    const fields=[];
+    screen.querySelectorAll('input,textarea,select').forEach(el=>{
+      const item=fieldSnapshot(el);if(item)fields.push(item);
+    });
+    const drafts=readDrafts();
+    drafts[screenId]={fields,state:collectEditState(),scrollY:window.scrollY||0,savedAt:Date.now()};
+    writeDrafts(drafts);
+    try{sessionStorage.setItem(ACTIVE_KEY,screenId)}catch(e){}
+  }
+  function applyFields(screenId,fields){
+    const screen=document.getElementById(screenId);if(!screen||!Array.isArray(fields))return;
+    const byId=new Map();
+    screen.querySelectorAll('input,textarea,select').forEach(el=>{
+      if(!el.id)return;
+      if(!byId.has(el.id))byId.set(el.id,[]);
+      byId.get(el.id).push(el);
+    });
+    fields.forEach(item=>{
+      const list=byId.get(item.id);if(!list?.length)return;
+      const el=list.shift();
+      if(item.type==='checkbox'||item.type==='radio'){el.checked=!!item.checked;return}
+      if(item.type==='select'&&el.tagName==='SELECT'){
+        if(el.multiple&&Array.isArray(item.value)){
+          Array.from(el.options).forEach(o=>o.selected=item.value.includes(o.value));
+        }else el.value=item.value??'';
+        return;
+      }
+      if(el.type!=='file'&&el.type!=='password')el.value=item.value??'';
+    });
+    fields.forEach(item=>{
+      const el=screen.querySelector('[id="'+String(item.id).replace(/"/g,'\\"')+'"]');
+      if(!el)return;
+      if(el.hasAttribute('onchange'))el.dispatchEvent(new Event('change',{bubbles:true}));
+      else if(el.hasAttribute('oninput'))el.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    /* بعض الحقول تتأثر بدوال التغيير؛ أعد تثبيت القيم بعد تحديث الواجهة. */
+    const second=new Map();
+    screen.querySelectorAll('input,textarea,select').forEach(el=>{if(el.id){if(!second.has(el.id))second.set(el.id,[]);second.get(el.id).push(el)}});
+    fields.forEach(item=>{
+      const list=second.get(item.id);if(!list?.length)return;const el=list.shift();
+      if(item.type==='checkbox'||item.type==='radio')el.checked=!!item.checked;
+      else if(item.type==='select'&&el.tagName==='SELECT'){
+        if(el.multiple&&Array.isArray(item.value))Array.from(el.options).forEach(o=>o.selected=item.value.includes(o.value));
+        else el.value=item.value??'';
+      }else if(el.type!=='file'&&el.type!=='password')el.value=item.value??'';
+    });
+  }
+  function restoreScreen(screenId){
+    const drafts=readDrafts(),draft=drafts[screenId];if(!draft)return;
+    restoreInProgress=true;
+    try{
+      applyEditState(draft.state);
+      applyFields(screenId,draft.fields);
+      if(Number.isFinite(Number(draft.scrollY)))window.scrollTo(0,Number(draft.scrollY));
+    }catch(e){console.warn('تعذرت استعادة مسودة الصفحة:',e)}
+    finally{restoreInProgress=false}
+  }
+  function queueCapture(screenId){
+    if(restoreInProgress)return;
+    if(saveTimer)clearTimeout(saveTimer);
+    saveTimer=setTimeout(()=>captureScreen(screenId||activeScreen()),180);
+  }
+  document.addEventListener('input',e=>{
+    if(e.target?.matches?.('input,textarea,select'))queueCapture(e.target.closest('.screen')?.id);
+  },true);
+  document.addEventListener('change',e=>{
+    if(e.target?.matches?.('input,textarea,select'))queueCapture(e.target.closest('.screen')?.id);
+  },true);
+  document.addEventListener('click',e=>{
+    const button=e.target?.closest?.('button');
+    if(!button)return;
+    const label=(button.innerText||button.textContent||'').trim();
+    if(/حفظ|تحديث|تسجيل الحركة|اعتماد/i.test(label))pendingSaveScreen=activeScreen();
+  },true);
+  window.addEventListener('pagehide',()=>{if(saveTimer)clearTimeout(saveTimer);captureScreen(activeScreen())});
+  window.addEventListener('beforeunload',()=>captureScreen(activeScreen()));
+
+  const originalShowScreen=window.showScreen;
+  if(typeof originalShowScreen==='function'){
+    window.showScreen=function(id){
+      const previous=activeScreen();
+      if(previous)captureScreen(previous);
+      const result=originalShowScreen.apply(this,arguments);
+      const current=activeScreen();
+      try{sessionStorage.setItem(ACTIVE_KEY,current)}catch(e){}
+      if(pendingSaveScreen===previous&&current!==previous){
+        const drafts=readDrafts();delete drafts[previous];writeDrafts(drafts);
+      }
+      pendingSaveScreen=null;
+      setTimeout(()=>restoreScreen(current),80);
+      return result;
+    };
+  }
+  function restoreLastPage(){
+    let saved='home';try{saved=sessionStorage.getItem(ACTIVE_KEY)||'home'}catch(e){}
+    if(!document.getElementById(saved))saved='home';
+    const drafts=readDrafts();
+    if(drafts[saved]?.state)applyEditState(drafts[saved].state);
+    if(typeof window.showScreen==='function'&&saved!=='home')window.showScreen(saved);
+    else if(saved==='home')restoreScreen('home');
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(restoreLastPage,120),{once:true});
+  else setTimeout(restoreLastPage,120);
+})();
+
 let familyQuickFilter='all';
 
 const familyPopupFilterIds=['ff-status','ff-social','ff-housing','ff-rights','ff-hasSalary','ff-job','ff-source','ff-members','ff-salary','ff-address','ff-addressCode','ff-identifier'];
