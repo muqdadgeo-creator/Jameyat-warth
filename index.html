@@ -326,6 +326,12 @@ textarea.forminput{height:80px;resize:vertical}
 .donor-list-table .donor-allocation-cell{min-width:0;text-align:right}
 .donor-phone-link{color:#087b54;font-weight:900;text-decoration:none;white-space:nowrap}
 .donor-phone-link:active{opacity:.7}
+
+/* أزرار سجلات المخزن */
+.inventory-record-tabs{display:flex;direction:rtl;gap:7px;margin:12px 0 10px;align-items:stretch}
+.inventory-record-tabs .inventory-record-tab{flex:1 1 0;min-width:0;margin:0;padding:10px 5px;white-space:normal;line-height:1.35;font-size:11px;text-align:center;justify-content:center}
+.inventory-record-tabs .inventory-record-tab:not(.primary){background:var(--card,#fff)}
+.inventory-record-panel{min-width:0}
 </style>
 <style id="report-layout-v2">
 /* ===== تنسيق رأس التقرير: اسم الجمعية مقابل الشعار ===== */
@@ -1127,6 +1133,12 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 <span>🔎</span>
 <input id="inventoryQ" oninput="renderInventory()" placeholder="ابحث باسم الجهاز أو المادة"/>
 </div>
+<div class="inventory-record-tabs" role="tablist" aria-label="سجلات المخزن">
+<button type="button" class="action primary inventory-record-tab" id="inventoryTabStatus" role="tab" aria-selected="true" aria-controls="inventoryRecordStatus" onclick="switchInventoryRecord('status')">الموقف</button>
+<button type="button" class="action inventory-record-tab" id="inventoryTabPriority" role="tab" aria-selected="false" aria-controls="inventoryRecordPriority" onclick="switchInventoryRecord('priority')">أولوية التسليم</button>
+<button type="button" class="action inventory-record-tab" id="inventoryTabMovements" role="tab" aria-selected="false" aria-controls="inventoryRecordMovements" onclick="switchInventoryRecord('movements')">حركة الأجهزة والمواد</button>
+</div>
+<div class="inventory-record-panel" id="inventoryRecordStatus" role="tabpanel" aria-labelledby="inventoryTabStatus">
 <div class="section"><b>الموقف</b></div>
 <div class="card" style="padding:0;overflow:hidden">
 <div style="overflow-x:auto">
@@ -1142,8 +1154,12 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 </table>
 </div>
 </div>
+</div>
+<div class="inventory-record-panel" id="inventoryRecordPriority" role="tabpanel" aria-labelledby="inventoryTabPriority" style="display:none">
 <div class="section"><b>🏠 أولوية تسليم الأجهزة والأثاث</b><span class="count">حسب أولوية المناشدة</span></div>
 <div class="card" id="inventoryAppealPriorityBox" style="padding:0;overflow:hidden"></div>
+</div>
+<div class="inventory-record-panel" id="inventoryRecordMovements" role="tabpanel" aria-labelledby="inventoryTabMovements" style="display:none">
 <div class="section"><b>سجل حركة الأجهزة والمواد</b></div>
 <div class="card" style="padding:0;overflow:hidden">
 <div style="overflow-x:auto">
@@ -1163,6 +1179,7 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 </thead>
 <tbody id="inventoryMovementBody"></tbody>
 </table>
+</div>
 </div>
 </div>
 </section>
@@ -4657,6 +4674,21 @@ function openInventoryForAppeal(id){
   openInventoryMovement('out');
   const sel=document.getElementById('inv-appeal');
   if(sel){sel.value=String(id);onInventoryAppealChange();}
+}
+
+function switchInventoryRecord(tab){
+  const records={
+    status:{button:'inventoryTabStatus',panel:'inventoryRecordStatus'},
+    priority:{button:'inventoryTabPriority',panel:'inventoryRecordPriority'},
+    movements:{button:'inventoryTabMovements',panel:'inventoryRecordMovements'}
+  };
+  Object.entries(records).forEach(([key,item])=>{
+    const active=key===tab;
+    const button=document.getElementById(item.button);
+    const panel=document.getElementById(item.panel);
+    if(button){button.classList.toggle('primary',active);button.setAttribute('aria-selected',active?'true':'false');}
+    if(panel)panel.style.display=active?'block':'none';
+  });
 }
 
 function renderInventory(){
