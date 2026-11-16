@@ -711,8 +711,8 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 <style id="files-center-approved-layout">
 #files-center{min-width:0;overflow-x:hidden}
 #files-center .files-note{background:var(--card,#fff);border:1px solid #e5e9e6;border-right:4px solid #c8a96b;border-radius:12px;padding:11px 13px;margin:0 0 12px;font-size:13px;line-height:1.9;color:var(--text,#35584f)}
-#files-center .files-nav{display:flex!important;flex-direction:column!important;align-items:stretch;gap:7px;margin:10px 0 14px;position:sticky;top:84px;z-index:7;background:var(--screen-bg,#f4f6f5);padding:6px 0}
-#files-center .files-nav-btn{display:flex!important;align-items:center;justify-content:flex-start;width:100%;min-height:42px;padding:9px 14px;border:1px solid var(--border,#dce5e0);border-radius:10px;background:var(--card,#fff);color:var(--text,#284b42);text-align:right;font:700 14px Tahoma,Arial,sans-serif;box-shadow:0 2px 6px #0000000a;cursor:pointer}
+#files-center .files-nav{display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:stretch;gap:7px;margin:10px 0 14px;position:sticky;top:84px;z-index:7;background:var(--screen-bg,#f4f6f5);padding:6px 0}
+#files-center .files-nav-btn{display:flex!important;flex:1 1 140px;align-items:center;justify-content:center;width:auto;min-height:42px;padding:9px 12px;border:1px solid var(--border,#dce5e0);border-radius:10px;background:var(--card,#fff);color:var(--text,#284b42);text-align:right;font:700 14px Tahoma,Arial,sans-serif;box-shadow:0 2px 6px #0000000a;cursor:pointer}
 #files-center .files-nav-btn.active{background:#0f5c4d;color:#fff;border-color:#0f5c4d;box-shadow:0 3px 9px #0f5c4d22}
 #files-center .files-stats{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 16px}
 #files-center .files-stat{min-width:0;background:var(--card,#fff);border:1px solid var(--border,#e5eae7);border-radius:11px;padding:9px 5px;text-align:center;box-shadow:0 2px 7px #00000008}
@@ -862,10 +862,8 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 </section>
 <section class="screen" id="files-center">
 <div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">الملفات والتوثيق</div><div class="count" id="filesCount"></div></div>
-<div class="files-note">🔐 أرشيف الجمعية المركزي. تُعرض الوثائق من سجلاتها الأصلية دون إنشاء نسخ مكررة، وتبقى صلاحيات الوصول والحذف مطبقة.</div>
 <div class="files-nav" id="filesNav">
 <button class="files-nav-btn active" onclick="setFilesView('overview')">📊 نظرة عامة</button>
-<button class="files-nav-btn" onclick="setFilesView('all')">📁 جميع الملفات</button>
 <button class="files-nav-btn" onclick="setFilesView('categories')">🗂️ التصنيفات</button>
 <button class="files-nav-btn" onclick="setFilesView('linked')">🔗 الملفات المرتبطة</button>
 </div>
@@ -2704,7 +2702,7 @@ function renderFilesCenter(){
   const q=(document.getElementById('filesQ')?.value||'').trim().toLowerCase();
   let rows=all.filter(f=>!q||[f.name,f.sourceLabel,f.recordLabel,f.recordKey,f.category].join(' ').toLowerCase().includes(q));
   const count=document.getElementById('filesCount');if(count)count.textContent=rows.length+' ملف';
-  document.querySelectorAll('#filesNav .files-nav-btn').forEach((b,i)=>b.classList.toggle('active',['overview','all','categories','linked'][i]===filesView));
+  document.querySelectorAll('#filesNav .files-nav-btn').forEach((b,i)=>b.classList.toggle('active',['overview','categories','linked'][i]===filesView));
   box.innerHTML='';content.innerHTML='';
   if(filesView==='overview'){
     const cats=FILE_CATEGORIES.map(cat=>({cat,n:all.filter(f=>f.category===cat).length}));
@@ -2719,8 +2717,7 @@ function renderFilesCenter(){
     content.innerHTML='<div class="files-vertical-list">'+FILE_SOURCES.map(([key,label])=>`<button class="files-option ${filesSource===key?'active':''}" onclick="setFilesSource('${key}')"><span>🔗 ${label}</span><b>${all.filter(f=>key==='الكل'||f.source===key).length.toLocaleString('en-US')}</b></button>`).join('')+'</div>';
     rows=rows.filter(f=>filesSource==='الكل'||f.source===filesSource);renderFilesList(rows);return;
   }
-  content.innerHTML='<div class="files-vertical-list">'+['الكل',...FILE_CATEGORIES].map(cat=>`<button class="files-option ${filesCategory===cat?'active':''}" onclick="setFilesCategory('${cat}')"><span>${cat==='الكل'?'📁':'🗂️'} ${cat}</span><b>${(cat==='الكل'?all.length:all.filter(f=>f.category===cat).length).toLocaleString('en-US')}</b></button>`).join('')+'</div>';
-  rows=rows.filter(f=>filesCategory==='الكل'||f.category===filesCategory);renderFilesList(rows);
+
 }
 function openCentralFile(i){const f=window._visibleFiles?.[i];openFileViewer(f);}
 function deleteCentralFile(i){if(!hasAction('delete','files-center')){alert('ليس لديك صلاحية حذف المرفقات.');return}const f=window._visibleFiles?.[i];if(!f)return;if(!confirm('حذف هذا المرفق نهائياً من السجل؟'))return;const arr=window[f.source];if(!Array.isArray(arr)||!arr[f.recordIndex]){const rec=arr?.find(x=>String(x.id)===String(f.recordKey)||String(x.c)===String(f.recordKey));if(!rec?.attachments?.[f.index])return;rec.attachments.splice(f.index,1);}else{arr[f.recordIndex].attachments.splice(f.index,1);}localStorage.setItem({families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'}[f.source],JSON.stringify(arr));if(f.source==='families')localStorage.setItem('warith_families',JSON.stringify(arr));renderFilesCenter();}
