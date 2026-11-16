@@ -6060,13 +6060,16 @@ try{renderHomeDashboard();}catch(e){}
 </script>
 
 <style>
-/* JAMEYAT-IN-KIND-LAYOUT-V2 */
+/* JAMEYAT-IN-KIND-LAYOUT-V3 */
 #in-kind-donations{flex-direction:column!important}#in-kind-donations.active{display:flex!important}
+/* ترتيب الصفحة: العنوان والرجوع، التنقل الرئيسي، الإحصائيات، التبويبات الداخلية، البحث، السجلات */
 #in-kind-donations>.top{order:1}
-#in-kind-donations>.in-kind-tabs{order:2;display:flex!important;gap:7px!important;margin:8px 0 12px!important}
-#in-kind-donations>.search{order:3;margin-bottom:10px!important}
+#in-kind-donations>.in-kind-main-tabs{order:2;display:flex!important;gap:7px!important;margin:8px 0 12px!important}
+#in-kind-donations>.stats{order:3}
+#in-kind-donations>.in-kind-tabs{order:4;display:flex!important;gap:7px!important;margin:8px 0 12px!important}
+#in-kind-donations>.search{order:5;margin-bottom:10px!important}
 #in-kind-donations>.stats{
-  order:4;
+  order:3;
   display:grid!important;
   grid-template-columns:repeat(3,minmax(0,1fr))!important;
   gap:10px!important;
@@ -6075,14 +6078,14 @@ try{renderHomeDashboard();}catch(e){}
 }
 #in-kind-donations #inKindQuantityTotal{display:none!important}
 #in-kind-donations>.jw-inkind-divider{
-  order:5;
+  order:6;
   display:block!important;
   width:100%!important;
   border-top:2px dashed #c9d7d2!important;
   margin:12px 2px 12px!important;
   height:0!important;
 }
-#in-kind-donations>#inKindDonationList{order:6;width:100%!important}
+#in-kind-donations>#inKindDonationList{order:7;width:100%!important}
 #in-kind-donations .in-kind-contact-card{
   width:100%!important;
   box-sizing:border-box!important;
