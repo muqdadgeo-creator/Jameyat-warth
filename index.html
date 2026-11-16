@@ -2059,8 +2059,10 @@ function openAppeal(i){
   renderAppealHelps(a);
 }
 let selectedAppealIndex=null;
-function openAppealAttachment(i,j){
-  const f=appeals[i]?.attachments?.[j]; if(!f?.data)return;
+async function openAppealAttachment(i,j){
+  let f=appeals[i]?.attachments?.[j]; if(!f)return;
+  try{f=await warithStorageResolveFile(f)}catch(e){alert(e?.message||'تعذر فتح المرفق');return}
+  if(!f?.data)return;
   const w=window.open(); if(!w)return;
   w.document.write(`<title>${escapeHtml(f.name)}</title><iframe src="${f.data}" style="border:0;width:100vw;height:100vh"></iframe>`);
 }
@@ -3638,7 +3640,8 @@ async function downloadAppealCardPng(){
 function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
 function renderFamilyAttachments(){const x=getFamily();if(!x)return;const list=x.attachments||[];const ownHtml=list.map((a,i)=>`<div class="attachment"><div>📄</div><div class="grow"><button type="button" class="file-link" onclick="openAttachment(${i})">${escapeHtml(a.name||'ملف')}</button><div class="fmeta">${escapeHtml(a.type||'ملف')} · ${formatFileSize(a.size||0)}</div></div><button type="button" class="more" title="فتح الملف" onclick="openAttachment(${i})">👁️</button><button type="button" class="more" title="حذف المرفق" onclick="deleteAttachment(${i})">🗑</button></div>`).join('');const linked=[];appeals.filter(a=>Number(a.familyCode)===Number(x.c)).forEach((a)=>{const ai=appeals.indexOf(a);(a.attachments||[]).forEach((f,j)=>linked.push(`<div class="attachment"><div>🔗</div><div class="grow"><button type="button" class="file-link" onclick="openAppealAttachment(${ai},${j})">${escapeHtml(f.name||'ملف')}</button><div class="fmeta">${escapeHtml(f.type||'ملف')} · مرتبط بالمناشدة #${escapeHtml(a.id||'')}</div></div><button type="button" class="more" title="فتح الملف" onclick="openAppealAttachment(${ai},${j})">👁️</button></div>`));});const html=[ownHtml,linked.join('')].filter(Boolean).join('')||'<div class="empty" style="padding:15px">لا توجد مرفقات</div>';const box=document.getElementById('familyAttachments');if(box)box.innerHTML=html;const tabBox=document.getElementById('familyAttachmentsTabList');if(tabBox)tabBox.innerHTML=html;}
 function addFamilyAttachment(input){const x=getFamily();const file=input?.files?.[0];if(!x||!file)return;if(file.size>5*1024*1024){alert('حجم الملف أكبر من 5 MB.');input.value='';return}chooseAttachmentCategory(cat=>{const reader=new FileReader();reader.onload=()=>{if(!x.attachments)x.attachments=[];x.attachments.push({name:file.name,type:file.type,size:file.size,data:reader.result,category:cat});try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);renderFamilyAttachments();const box=document.getElementById('new-family-attachments');if(box)box.innerHTML='<div class="sub">تمت إضافة المرفق وسيظهر ضمن سجل العائلة.</div>';alert('تم حفظ المرفق بنجاح ✓');}catch(e){x.attachments.pop();alert('تعذر حفظ المرفق. قد تكون مساحة التخزين غير كافية.');}input.value='';};reader.readAsDataURL(file);});}
-function openFileViewer(file){
+async function openFileViewer(file){
+  try{file=await warithStorageResolveFile(file)}catch(e){alert(e?.message||'تعذر فتح الملف');return}
   if(!file?.data)return;
   const back=document.getElementById('fileViewerBackdrop'),body=document.getElementById('fileViewerBody'),title=document.getElementById('fileViewerTitle');
   if(!back||!body)return;
@@ -6443,6 +6446,49 @@ function warithSyncSetArray(entity,value){switch(entity){case'families':families
 function warithSyncLocalSet(cfg,arr){const data=JSON.stringify(arr||[]);warithSyncOriginalSetItem(cfg.key,data);if(cfg.entity==='families')warithSyncOriginalSetItem('warith_families',data)}
 function warithSyncRefreshUI(entity){try{if(entity==='ticker_settings'&&typeof renderWarithTickerSettings==='function')renderWarithTickerSettings();if((entity==='ticker_settings'||entity==='appeals'||entity==='help'||entity==='programs')&&typeof warithTickerShowNext==='function')warithTickerShowNext(false);if(entity==='ticker_settings'&&typeof warithTickerApplyCycleInterval==='function')warithTickerApplyCycleInterval();if(entity==='families'&&typeof renderFamilies==='function')renderFamilies();if(entity==='appeals'&&typeof renderAppeals==='function'){renderAppeals();if(typeof updateAppealDashboard==='function')updateAppealDashboard()}if(entity==='donors'&&typeof renderDonors==='function')renderDonors();if(entity==='donations'&&typeof renderDonations==='function')renderDonations();if(entity==='notifications'&&typeof renderNotificationBell==='function')renderNotificationBell();if(entity==='inventory'&&typeof renderInventory==='function')renderInventory();if((entity==='help'||entity==='programs'||entity==='expenses')&&typeof renderActivities==='function')renderActivities();if(document.getElementById('family-followup')?.classList.contains('active')&&typeof renderFamilyFollowup==='function')renderFamilyFollowup();if(typeof renderHomeDashboard==='function')renderHomeDashboard()}catch(e){console.warn('Warith sync UI refresh:',e)}}
 function warithSyncStampChanged(cfg,arr,now){const prev=warithSyncShadow[cfg.entity]||new Map(),next=Array.isArray(arr)?arr:[],stamp=new Date(now).toISOString(),currentKeys=new Set();for(const item of next){const key=cfg.id(item);if(!key||key==='undefined'||key==='null')continue;currentKeys.add(key);const old=prev.get(key);const oldBody=old?JSON.stringify({...old,updatedAt:undefined,updated_at:undefined}):'';const newBody=JSON.stringify({...item,updatedAt:undefined,updated_at:undefined});if(!old||oldBody!==newBody)item.updatedAt=stamp}for(const [key] of prev)if(!currentKeys.has(key))warithSyncDeleted[cfg.entity].set(key,stamp);return next}
+
+/* Supabase Storage: keep local Base64 for offline use, store only object keys in cloud sync. */
+function warithStorageSafeName(value){return String(value||'file').normalize('NFKC').replace(/[^\\p{L}\\p{N}._-]+/gu,'_').slice(-100)||'file'}
+function warithStorageDataUrlBlob(value){
+  const m=String(value||'').match(/^data:([^;,]+)?(;base64)?,(.*)$/s);if(!m)throw new Error('صيغة الملف غير صالحة');
+  const type=m[1]||'application/octet-stream';
+  if(m[2]){const raw=atob(m[3]);const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);return new Blob([bytes],{type})}
+  return new Blob([decodeURIComponent(m[3])],{type});
+}
+async function warithStoragePrepareCloudRecord(entity,key,item){
+  const sb=window.warithSupabase;if(!sb)throw new Error('Supabase غير متاح لرفع المرفقات');
+  const copy=JSON.parse(JSON.stringify(item));
+  const walk=async(local,remote,path)=>{
+    if(!local||typeof local!=='object')return;
+    if(Array.isArray(local)){for(let i=0;i<local.length;i++){if(local[i]&&typeof local[i]==='object'){remote[i]=remote[i]||{};await walk(local[i],remote[i],path+'/'+i)}}return}
+    if(typeof local.data==='string'&&local.data.startsWith('data:')){
+      let objectKey=String(local.storagePath||'');
+      if(!objectKey){
+        const blob=warithStorageDataUrlBlob(local.data);
+        if(blob.size>5*1024*1024)throw new Error('الملف '+(local.name||'')+' يتجاوز الحد المسموح 5 MB');
+        const id=(crypto.randomUUID?.()||('f'+Date.now().toString(36)+Math.random().toString(36).slice(2)));
+        objectKey=entity+'/'+warithStorageSafeName(key)+'/'+id+'-'+warithStorageSafeName(local.name);
+        const {error}=await sb.storage.from('attachments').upload(objectKey,blob,{contentType:local.type||blob.type||'application/octet-stream',upsert:false});
+        if(error)throw new Error('تعذر رفع '+(local.name||'المرفق')+': '+error.message);
+        local.storagePath=objectKey;
+      }
+      remote.storagePath=objectKey;delete remote.data;
+    }else if(local.storagePath){remote.storagePath=local.storagePath;delete remote.data}
+    for(const k of Object.keys(local)){if(k==='data'||k==='storagePath')continue;const v=local[k];if(v&&typeof v==='object'){remote[k]=remote[k]??(Array.isArray(v)?[]:{});await walk(v,remote[k],path+'/'+k)}}
+  };
+  await walk(item,copy,'');
+  return copy;
+}
+async function warithStorageResolveFile(file){
+  if(!file||file.data||!file.storagePath)return file;
+  const sb=window.warithSupabase||await window.warithSupabaseReady;
+  if(!sb)throw new Error('اتصال Supabase غير متاح');
+  const {data,error}=await sb.storage.from('attachments').download(file.storagePath);
+  if(error)throw new Error('تعذر فتح الملف: '+error.message);
+  const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error||new Error('تعذرت قراءة الملف'));reader.readAsDataURL(data)});
+  return {...file,data:dataUrl};
+}
+
 async function warithSyncPushChanges(entity,force=false){
   const cfg=warithSyncCfg(entity);
   if(!cfg||(!warithSyncReady&&!force)||!window.warithSupabase)return false;
@@ -6461,7 +6507,7 @@ async function warithSyncPushChanges(entity,force=false){
     const ts=Number.isNaN(d.getTime())?new Date().toISOString():d.toISOString();
     if(oldDeleted&&itemTs<=oldTs)continue;
     if(!old||oldDeleted||JSON.stringify(old)!==JSON.stringify(item)||force)
-      rows.push({entity,record_key:key,data:item,updated_at:ts,deleted:false});
+      const cloudData=await warithStoragePrepareCloudRecord(entity,key,item);rows.push({entity,record_key:key,data:cloudData,updated_at:ts,deleted:false});
   }
   for(const [key,ts] of warithSyncDeleted[entity]||new Map())
     rows.push({entity,record_key:String(key),data:null,updated_at:ts,deleted:true});
