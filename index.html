@@ -4395,6 +4395,12 @@ function renderTempAttachments(listId,list,removeFn){
   const box=document.getElementById(listId); if(!box)return;
   box.innerHTML=(list||[]).map((f,i)=>`<div class="attachment"><div>${fileTypeIcon(f)}</div><div class="grow"><button type="button" class="file-link" onclick='openFileViewer(${JSON.stringify({name:f.name,type:f.type,size:f.size,data:f.data,category:f.category}).replace(/'/g,"&#39;")})'>${escapeHtml(f.name||'ملف')}</button><div class="fmeta">${escapeHtml(f.category||'ملفات')} · ${escapeHtml(f.type||'ملف')} · ${formatFileSize(f.size||0)}</div></div><button type="button" class="more" title="فتح الملف" onclick='openFileViewer(${JSON.stringify({name:f.name,type:f.type,size:f.size,data:f.data,category:f.category}).replace(/'/g,"&#39;")})'>👁️</button><button type="button" class="more" title="حذف المرفق" onclick="${removeFn}(${i})">🗑</button></div>`).join('')||'<div class="empty" style="padding:12px">لا توجد مرفقات</div>';
 }
+function getTempAttachmentList(listName){
+  if(listName==='donationAttachments')return donationAttachments;
+  if(listName==='helpAttachments')return helpAttachments;
+  if(listName==='expenseAttachments')return expenseAttachments;
+  throw new Error('قائمة المرفقات غير معروفة: '+listName);
+}
 function addTempAttachment(input,listName,renderId,removeFn){
   const file=input?.files?.[0]; if(!file)return;
   if(file.size>5*1024*1024){alert('الحد الأقصى للمرفق 5 MB');input.value='';return}
@@ -4404,8 +4410,9 @@ function addTempAttachment(input,listName,renderId,removeFn){
       reader.onload=()=>{
         try{
           if(typeof reader.result!=='string'||!reader.result.startsWith('data:'))throw new Error('تعذرت قراءة محتوى الملف');
-          window[listName].push({name:file.name,type:file.type||'application/octet-stream',size:file.size,data:reader.result,category});
-          renderTempAttachments(renderId,window[listName],removeFn);
+          const attachmentList=getTempAttachmentList(listName);
+          attachmentList.push({name:file.name,type:file.type||'application/octet-stream',size:file.size,data:reader.result,category});
+          renderTempAttachments(renderId,attachmentList,removeFn);
           alert('تمت إضافة المرفق إلى السجل. اضغط «حفظ التبرع» لإكمال الحفظ.');
         }catch(e){console.error('تعذر تجهيز المرفق:',e);alert('تعذرت معالجة المرفق: '+(e?.message||e));}
         finally{input.value='';}
