@@ -4399,9 +4399,20 @@ function addTempAttachment(input,listName,renderId,removeFn){
   const file=input?.files?.[0]; if(!file)return;
   if(file.size>5*1024*1024){alert('الحد الأقصى للمرفق 5 MB');input.value='';return}
   attachmentCategory(category=>{
-    const reader=new FileReader();
-    reader.onload=()=>{window[listName].push({name:file.name,type:file.type||'application/octet-stream',size:file.size,data:reader.result,category});renderTempAttachments(renderId,window[listName],removeFn);input.value='';};
-    reader.readAsDataURL(file);
+    try{
+      const reader=new FileReader();
+      reader.onload=()=>{
+        try{
+          if(typeof reader.result!=='string'||!reader.result.startsWith('data:'))throw new Error('تعذرت قراءة محتوى الملف');
+          window[listName].push({name:file.name,type:file.type||'application/octet-stream',size:file.size,data:reader.result,category});
+          renderTempAttachments(renderId,window[listName],removeFn);
+          alert('تمت إضافة المرفق إلى السجل. اضغط «حفظ التبرع» لإكمال الحفظ.');
+        }catch(e){console.error('تعذر تجهيز المرفق:',e);alert('تعذرت معالجة المرفق: '+(e?.message||e));}
+        finally{input.value='';}
+      };
+      reader.onerror=()=>{console.error('FileReader failed:',reader.error);alert('تعذرت قراءة الملف من الجهاز. جرّب اختيار الملف مرة أخرى.');input.value='';};
+      reader.readAsDataURL(file);
+    }catch(e){console.error('Attachment selection failed:',e);alert('تعذرت إضافة المرفق: '+(e?.message||e));input.value='';}
   },()=>{input.value='';});
 }
 function addDonationAttachment(input){addTempAttachment(input,'donationAttachments','donationAttachmentsList','removeDonationAttachment')}
@@ -4489,15 +4500,18 @@ async function saveDonation(){
     if(!sessionResult?.data?.session?.user)throw new Error('جلسة Supabase غير صالحة أو منتهية');
     const key=String(item.id||'');
     if(!key)throw new Error('مفتاح التبرع غير صالح');
+    // Upload attachment binaries to Supabase Storage before saving the donation row.
+    // Keep the full data URLs only in the local copy; store storagePath references in the cloud record.
+    const cloudItem=await warithStoragePrepareCloudRecord('donations',key,item);
     const {error}=await sb.from('client_sync_records').upsert({
       entity:'donations',
       record_key:key,
-      data:item,
+      data:cloudItem,
       updated_at:(()=>{const v=item.updatedAt;const d=typeof v==='number'||/^\d{10,13}$/.test(String(v||''))?new Date(Number(v)):new Date(v||Date.now());return Number.isNaN(d.getTime())?new Date().toISOString():d.toISOString()})(), 
       deleted:false
     },{onConflict:'entity,record_key'});
     if(error)throw error;
-    if(warithSyncShadow.donations)warithSyncShadow.donations.set(key,{...item});
+    if(warithSyncShadow.donations)warithSyncShadow.donations.set(key,cloudItem);
     if(warithSyncDeleted.donations)warithSyncDeleted.donations.delete(key);
   }catch(e){
     console.error('حفظ التبرع سحابياً فشل:',e);
