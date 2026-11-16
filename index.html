@@ -1784,7 +1784,7 @@ function resetAppealForm(){
   document.getElementById('appeal-attachment-input').value='';
 }
 const ATTACHMENT_CATEGORY_OPTIONS=[{value:'شخصية',icon:'🪪',label:'شخصية'},{value:'طبية',icon:'🩺',label:'طبية'},{value:'مالية',icon:'💰',label:'مالية'},{value:'توثيقية',icon:'🗂️',label:'توثيقية'},{value:'رسمية',icon:'🏛️',label:'رسمية'},{value:'ملفات',icon:'📄',label:'ملفات'}];
-function chooseAttachmentCategory(onChoose){
+function chooseAttachmentCategory(onChoose,onCancel){
   const old=document.getElementById('attachmentCategoryPicker');if(old)old.remove();
   let selected='ملفات';
   const overlay=document.createElement('div');overlay.id='attachmentCategoryPicker';overlay.className='attachment-category-overlay';
@@ -1793,7 +1793,7 @@ function chooseAttachmentCategory(onChoose){
   const close=()=>overlay.remove();
   overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
   overlay.querySelector('.attachment-category-options').addEventListener('click',e=>{const btn=e.target.closest('[data-category]');if(!btn)return;selected=btn.dataset.category;overlay.querySelectorAll('.attachment-category-option').forEach(b=>b.classList.toggle('selected',b===btn));});
-  overlay.querySelector('.attachment-category-cancel').onclick=close;
+  overlay.querySelector('.attachment-category-cancel').onclick=()=>{close();if(onCancel)onCancel();};
   overlay.querySelector('.attachment-category-confirm').onclick=()=>{close();onChoose(selected);};
 }
 function addAppealAttachment(input){
@@ -4375,7 +4375,7 @@ function addTempAttachment(input,listName,renderId,removeFn){
     const reader=new FileReader();
     reader.onload=()=>{window[listName].push({name:file.name,type:file.type||'application/octet-stream',size:file.size,data:reader.result,category});renderTempAttachments(renderId,window[listName],removeFn);input.value='';};
     reader.readAsDataURL(file);
-  });
+  },()=>{input.value='';});
 }
 function addDonationAttachment(input){addTempAttachment(input,'donationAttachments','donationAttachmentsList','removeDonationAttachment')}
 function addHelpAttachment(input){addTempAttachment(input,'helpAttachments','helpAttachmentsList','removeHelpAttachment')}
