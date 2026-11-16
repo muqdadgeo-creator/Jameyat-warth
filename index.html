@@ -2061,9 +2061,9 @@ function openAppeal(i){
 let selectedAppealIndex=null;
 async function openAppealAttachment(i,j){
   let f=appeals[i]?.attachments?.[j]; if(!f)return;
-  try{f=await warithStorageResolveFile(f)}catch(e){alert(e?.message||'تعذر فتح المرفق');return}
-  if(!f?.data)return;
-  const w=window.open(); if(!w)return;
+  const w=window.open('about:blank','_blank'); if(!w){alert('اسمح بفتح النوافذ المنبثقة لعرض المرفق.');return}
+  try{f=await warithStorageResolveFile(f)}catch(e){w.close();alert(e?.message||'تعذر فتح المرفق');return}
+  if(!f?.data){w.close();return}
   w.document.write(`<title>${escapeHtml(f.name)}</title><iframe src="${f.data}" style="border:0;width:100vw;height:100vh"></iframe>`);
 }
 function editAppeal(){if(!hasAction('edit','appeals')){alert('ليس لديك صلاحية تعديل المناشدات.');return}
@@ -4927,7 +4927,7 @@ function readInventoryProof(){
 }
 function openInventoryProof(index){
   const item=inventoryMovements[index];
-  if(item?.proof?.data) openFileViewer(item.proof);
+  if(item?.proof&&(item.proof.data||item.proof.storagePath)) openFileViewer(item.proof);
 }
 
 async function saveInventoryMovement(){const _edit=editingInventoryIndex!==null; if(!hasAction(_edit?'edit':'add','inventory')){alert('ليس لديك صلاحية هذه العملية.');return}
