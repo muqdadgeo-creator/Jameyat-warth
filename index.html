@@ -6485,7 +6485,7 @@ function warithSyncRefreshUI(entity){try{if(entity==='ticker_settings'&&typeof r
 function warithSyncStampChanged(cfg,arr,now){const prev=warithSyncShadow[cfg.entity]||new Map(),next=Array.isArray(arr)?arr:[],stamp=new Date(now).toISOString(),currentKeys=new Set();for(const item of next){const key=cfg.id(item);if(!key||key==='undefined'||key==='null')continue;currentKeys.add(key);const old=prev.get(key);const oldBody=old?JSON.stringify({...old,updatedAt:undefined,updated_at:undefined}):'';const newBody=JSON.stringify({...item,updatedAt:undefined,updated_at:undefined});if(!old||oldBody!==newBody)item.updatedAt=stamp}for(const [key] of prev)if(!currentKeys.has(key))warithSyncDeleted[cfg.entity].set(key,stamp);return next}
 
 /* Supabase Storage: keep local Base64 for offline use, store only object keys in cloud sync. */
-function warithStorageSafeName(value){return String(value||'file').normalize('NFKC').replace(/[^\\p{L}\\p{N}._-]+/gu,'_').slice(-100)||'file'}
+function warithStorageSafeName(value){return String(value||'file').normalize('NFKC').replace(/[^\p{L}\p{N}._-]+/gu,'_').slice(-100)||'file'}
 function warithStorageDataUrlBlob(value){
   const m=String(value||'').match(/^data:([^;,]+)?(;base64)?,(.*)$/s);if(!m)throw new Error('صيغة الملف غير صالحة');
   const type=m[1]||'application/octet-stream';
