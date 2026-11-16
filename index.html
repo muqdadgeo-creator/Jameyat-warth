@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية السيدة فاطمة عليها السلام الخيرية</title>
-<script>(()=>{try{const v='fatima-v-20261116-watermark-04';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='fatima-v-20261116-navigation-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -336,6 +336,33 @@ textarea.forminput{height:80px;resize:vertical}
 .donor-phone-link{color:#087b54;font-weight:900;text-decoration:none;white-space:nowrap}
 .donor-phone-link:active{opacity:.7}
 
+/* توحيد أشرطة التنقل الرئيسية داخل الأقسام */
+.donation-tabs,.activity-tabs,.in-kind-tabs,.inventory-record-tabs,.tabs{
+  position:sticky;
+  top:0;
+  z-index:50;
+  display:flex;
+  align-items:stretch;
+  gap:7px;
+  padding:8px 0;
+  margin:0 0 12px;
+  background:var(--page-bg,#f3f6f5);
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  scrollbar-width:thin;
+}
+.donation-tabs>.donation-tab,.activity-tabs>.activity-tab,.in-kind-tabs>.in-kind-tab,
+.inventory-record-tabs>.inventory-record-tab,.tabs>.tab{
+  flex:1 0 auto;
+  min-width:max-content;
+}
+.donation-tab.active,.activity-tab.active,.in-kind-tab.active,.tab.active,
+.inventory-record-tab.primary{
+  background:#0f5c4d!important;
+  color:#fff!important;
+  border-color:#0f5c4d!important;
+  box-shadow:0 2px 8px #0f5c4d26;
+}
 /* أزرار سجلات المخزن */
 .inventory-record-tabs{display:flex;direction:rtl;gap:7px;margin:12px 0 10px;align-items:stretch}
 .inventory-record-tabs .inventory-record-tab{flex:1 1 0;min-width:0;margin:0;padding:10px 5px;white-space:normal;line-height:1.35;font-size:11px;text-align:center;justify-content:center}
