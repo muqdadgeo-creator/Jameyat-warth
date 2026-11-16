@@ -847,6 +847,13 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 <b>الأدوار المعتمدة</b>
 <div class="sub" style="margin-top:5px">الأدوار المعتمدة: مدير الجمعية، مسؤول المالية والتبرعات، مسؤول العوائل والكشوفات، مسؤول المخزن، إدخال البيانات، مشاهد/قارئ.</div>
 </div>
+<div class="card" id="legacyAttachmentMigrationCard" style="display:none">
+  <div class="row" style="align-items:center;gap:10px;flex-wrap:wrap">
+    <div class="grow"><b>ترحيل المرفقات القديمة</b><div class="sub">نقل الصور القديمة من سجلات المزامنة إلى مخزن Supabase الخاص والتحقق منها.</div></div>
+    <button class="action primary" id="legacyAttachmentMigrationButton" type="button" onclick="runLegacyAttachmentMigration()">بدء الترحيل</button>
+  </div>
+  <div class="sub" id="legacyAttachmentMigrationStatus" role="status" style="margin-top:10px">هذه العملية متاحة للمالك فقط، ولا تحذف النسخ القديمة إلا بعد نجاح التحقق.</div>
+</div>
 </section>
 <section class="screen" id="ticker-settings">
 <div class="top"><button class="back" onclick="showScreen('settings-hub')">← رجوع</button><div class="screen-title">إعدادات الشريط المتحرك</div></div>
@@ -2483,7 +2490,38 @@ async function performLogin(){
 async function logoutSupabaseUser(){try{if(window.warithSupabase)await window.warithSupabase.auth.signOut({scope:'local'})}catch(e){}localStorage.removeItem(CURRENT_USER_KEY);updateAuthHeaderUI();if(typeof warithTickerShowNext==='function')warithTickerShowNext(false);showScreen('home')}
 function updateCurrentUserBadge(){const u=currentUser();document.querySelectorAll('.current-user-badge').forEach(x=>x.textContent=u?`${u.name} · ${u.role}`:'')}
 function openLogin(){const u=document.getElementById('loginUsername');if(u)u.value='';const p=document.getElementById('loginPassword');if(p)p.value='';const e=document.getElementById('loginError');if(e)e.textContent='';const b=document.getElementById('loginBackdrop');if(b)b.style.display='flex';} function closeLogin(){const b=document.getElementById('loginBackdrop');if(b)b.style.display='none';}
-function updateAuthHeaderUI(){const u=currentUser();const logged=!!u;const btn=document.getElementById('headerLoginBtn');if(btn){btn.textContent=logged?'🚪 خروج':'🔐 تسجيل الدخول';btn.setAttribute('aria-label',logged?'تسجيل الخروج':'تسجيل الدخول');btn.onclick=logged?logoutSupabaseUser:openLogin;}const headerUser=document.getElementById('headerCurrentUser');if(headerUser){headerUser.textContent=logged?String(u.name||u.username||'').trim():'';headerUser.classList.toggle('visible',logged&&!!String(u.name||u.username||'').trim());}const menuBtn=document.getElementById('menuLoginButton');if(menuBtn){menuBtn.textContent=logged?'🚪 تسجيل الخروج':'🔐 تسجيل الدخول';menuBtn.onclick=logged?logoutSupabaseUser:openLogin;}document.querySelectorAll('[data-auth-only]').forEach(el=>el.style.display=logged?'':'none');}
+function updateAuthHeaderUI(){const u=currentUser();const logged=!!u;const btn=document.getElementById('headerLoginBtn');if(btn){btn.textContent=logged?'🚪 خروج':'🔐 تسجيل الدخول';btn.setAttribute('aria-label',logged?'تسجيل الخروج':'تسجيل الدخول');btn.onclick=logged?logoutSupabaseUser:openLogin;}const headerUser=document.getElementById('headerCurrentUser');if(headerUser){headerUser.textContent=logged?String(u.name||u.username||'').trim():'';headerUser.classList.toggle('visible',logged&&!!String(u.name||u.username||'').trim());}const menuBtn=document.getElementById('menuLoginButton');if(menuBtn){menuBtn.textContent=logged?'🚪 تسجيل الخروج':'🔐 تسجيل الدخول';menuBtn.onclick=logged?logoutSupabaseUser:openLogin;}document.querySelectorAll('[data-auth-only]').forEach(el=>el.style.display=logged?'':'none');updateLegacyAttachmentMigrationAccess();}
+function updateLegacyAttachmentMigrationAccess(){
+  const card=document.getElementById('legacyAttachmentMigrationCard');
+  if(card)card.style.display=currentRole()==='المالك'?'':'none';
+}
+async function runLegacyAttachmentMigration(){
+  if(currentRole()!=='المالك'){alert('هذه العملية متاحة للمالك فقط.');return}
+  if(!confirm('سيتم نقل المرفقات القديمة إلى Supabase Storage والتحقق منها. ستبقى النسخ القديمة محفوظة عند أي فشل. هل تريد المتابعة؟'))return;
+  const button=document.getElementById('legacyAttachmentMigrationButton');
+  const status=document.getElementById('legacyAttachmentMigrationStatus');
+  if(button){button.disabled=true;button.textContent='جارٍ الترحيل…'}
+  if(status)status.textContent='جارٍ فحص ورفع المرفقات والتحقق من الملفات…';
+  try{
+    const sb=window.warithSupabase||await window.warithSupabaseReady;
+    if(!sb)throw new Error('اتصال Supabase غير متاح');
+    const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+    if(sessionError)throw sessionError;
+    if(!sessionData?.session?.access_token)throw new Error('انتهت جلسة الدخول؛ سجل الدخول مجدداً');
+    const {data,error}=await sb.functions.invoke('migrate-legacy-attachments',{body:{}});
+    if(error)throw error;
+    const migrated=Number(data?.migrated||0),failed=Number(data?.failed||0),processed=Number(data?.processed||0);
+    const lines=(Array.isArray(data?.results)?data.results:[]).map(x=>(x.status==='migrated'?'✓ ':'✗ ')+x.entity+' / '+x.record_key+(x.error?' — '+x.error:''));
+    if(status)status.textContent='اكتملت العملية: '+migrated+' مرفق ناجح، '+failed+' فشل، من أصل '+processed+'. '+(lines.join(' | ')||'لا توجد مرفقات قديمة متبقية.');
+    alert('نتيجة ترحيل المرفقات\nنجح: '+migrated+'\nفشل: '+failed+'\n'+(lines.join('\n')||'لا توجد مرفقات تحتاج إلى ترحيل.'));
+  }catch(e){
+    console.error('Legacy attachment migration failed',e);
+    if(status)status.textContent='تعذر إكمال الترحيل: '+(e?.message||'خطأ غير معروف')+'. النسخ القديمة لم تُحذف.';
+    alert('تعذر إكمال الترحيل: '+(e?.message||'تحقق من الاتصال وتسجيل الدخول'));
+  }finally{
+    if(button){button.disabled=false;button.textContent='إعادة فحص / ترحيل'}
+  }
+}
 function switchUser(){openLogin()}
 function openSettingsHub(){if(!hasPermission('users-settings')&&!hasPermission('ticker-settings')){alert('ليس لديك صلاحية الوصول إلى الإعدادات.');return}showScreen('settings-hub')}
 function openSettings(){if(!hasPermission('users-settings')){alert('ليس لديك صلاحية إدارة المستخدمين والصلاحيات.');return}showScreen('settings');renderUsers()}
