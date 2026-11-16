@@ -1825,7 +1825,7 @@ function setAppealAttachmentPublic(i,checked){
   appealAttachments[i].showToVisitors=!!checked;
 }
 function removeAppealAttachment(i){appealAttachments.splice(i,1);renderAppealAttachments();}
-async function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction(_edit?'edit':'add','appeals')){alert('ليس لديك صلاحية هذه العملية.');return}
+async async function saveAppeal(){const _edit=editingAppealIndex!==null; if(!hasAction(_edit?'edit':'add','appeals')){alert('ليس لديك صلاحية هذه العملية.');return}
   const date=document.getElementById('a-date').value||new Date().toISOString().slice(0,10);
   if(appealOwnerType==='registered'&&!document.getElementById('a-appeal-family').value){alert('اختر العائلة أولاً');return}
   if(appealOwnerType==='new'&&!document.getElementById('a-name').value.trim()){alert('أدخل اسم صاحب الحالة');return}
