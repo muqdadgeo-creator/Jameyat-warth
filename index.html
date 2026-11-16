@@ -2722,6 +2722,25 @@ function collectFiles(){
   inventoryMovements.filter(x=>!isHiddenRecord(x)).forEach(x=>push('inventoryMovements','مخزن',`#${x.id||''} — ${x.name||'حركة مخزن'}`,x.id,x.attachments));
   return out;
 }
+function uniqueFileRecords(files){
+  const seen=new Set();
+  return files.filter(f=>{
+    let key='';
+    const sourceData=typeof f.data==='string'?f.data:'';
+    if(sourceData){
+      let hash=2166136261;
+      for(let i=0;i<sourceData.length;i++){hash^=sourceData.charCodeAt(i);hash=Math.imul(hash,16777619)}
+      key='data:'+sourceData.length+':'+(hash>>>0);
+    }else{
+      const location=f.storagePath||f.path||f.url||f.publicUrl||'';
+      if(location)key='location:'+String(location);
+      else if(f.id!=null)key='id:'+String(f.id);
+      else key='meta:'+[f.name||'',f.size??'',f.type||'',f.date||''].join('|');
+    }
+    if(seen.has(key))return false;
+    seen.add(key);return true;
+  });
+}
 function renderFilesList(rows){
   const box=document.getElementById('filesList');if(!box)return;
   box.innerHTML=rows.map((f,idx)=>`<div class="file-card"><div class="file-row"><div class="file-icon">${fileTypeIcon(f)}</div><div class="grow"><b>${escapeHtml(f.name||'ملف')}</b><div class="file-meta">${escapeHtml(f.category)} · ${escapeHtml(f.sourceLabel)} · ${escapeHtml(f.recordLabel)}${f.date?' · '+escapeHtml(f.date):''}</div></div><div class="file-actions"><button title="فتح" onclick="openCentralFile(${idx})">👁️</button><button title="حذف" onclick="deleteCentralFile(${idx})">🗑</button></div></div></div>`).join('')||'<div class="empty">لا توجد ملفات مطابقة</div>';
@@ -2730,15 +2749,17 @@ function renderFilesList(rows){
 function renderFilesCenter(){
   const box=document.getElementById('filesList'),content=document.getElementById('filesViewContent');if(!box||!content)return;
   const all=collectFiles().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const uniqueAll=uniqueFileRecords(all);
   const q=(document.getElementById('filesQ')?.value||'').trim().toLowerCase();
   let rows=all.filter(f=>!q||[f.name,f.sourceLabel,f.recordLabel,f.recordKey,f.category].join(' ').toLowerCase().includes(q));
-  const count=document.getElementById('filesCount');if(count)count.textContent=rows.length+' ملف';
+  const count=document.getElementById('filesCount');if(count)count.textContent=(filesView==='overview'?uniqueFileRecords(rows).length:rows.length)+' ملف';
   document.querySelectorAll('#filesNav .files-nav-btn').forEach((b,i)=>b.classList.toggle('active',['overview','categories','linked'][i]===filesView));
   box.innerHTML='';content.innerHTML='';
   if(filesView==='overview'){
-    const cats=FILE_CATEGORIES.map(cat=>({cat,n:all.filter(f=>f.category===cat).length}));
-    content.innerHTML=`<div class="files-stats">${[['إجمالي الملفات',all.length],['شخصية',cats[0].n],['طبية',cats[1].n],['مالية',cats[2].n],['توثيقية',cats[3].n],['رسمية',cats[4].n]].map(x=>`<div class="files-stat"><span>${x[0]}</span><b>${x[1].toLocaleString('en-US')}</b></div>`).join('')}</div><div class="files-subtitle">🕘 أحدث الملفات المضافة</div>`;
-    renderFilesList(rows.slice(0,8));return;
+    const overviewRows=uniqueFileRecords(rows);
+    const cats=FILE_CATEGORIES.map(cat=>({cat,n:uniqueAll.filter(f=>f.category===cat).length}));
+    content.innerHTML=`<div class="files-stats">${[['إجمالي الملفات',uniqueAll.length],['شخصية',cats[0].n],['طبية',cats[1].n],['مالية',cats[2].n],['توثيقية',cats[3].n],['رسمية',cats[4].n]].map(x=>`<div class="files-stat"><span>${x[0]}</span><b>${x[1].toLocaleString('en-US')}</b></div>`).join('')}</div><div class="files-subtitle">🕘 أحدث الملفات المضافة</div>`;
+    renderFilesList(overviewRows.slice(0,8));return;
   }
   if(filesView==='categories'){
     content.innerHTML='<div class="files-vertical-list">'+FILE_CATEGORIES.map(cat=>`<button class="files-option ${filesCategory===cat?'active':''}" onclick="setFilesCategory('${cat}')"><span>${cat==='رسمية'?'🏛️':cat==='شخصية'?'🪪':cat==='طبية'?'🩺':cat==='مالية'?'💰':cat==='توثيقية'?'🗃️':'📄'} ${cat}</span><b>${all.filter(f=>f.category===cat).length.toLocaleString('en-US')}</b></button>`).join('')+`<button class="files-option ${filesCategory==='الكل'?'active':''}" onclick="setFilesCategory('الكل')"><span>📁 جميع التصنيفات</span><b>${all.length.toLocaleString('en-US')}</b></button></div>`;
