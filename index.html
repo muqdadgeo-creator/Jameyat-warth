@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية السيدة فاطمة عليها السلام الخيرية</title>
-<script>(()=>{try{const v='fatima-v-20261117-donation-edit-draft-fix-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='fatima-v-20261117-appeal-edit-draft-fix-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -2089,6 +2089,7 @@ function editAppeal(){if(!hasAction('edit','appeals')){alert('ليس لديك ص
   document.getElementById('a-add-family').checked=false;
   appealAttachments=JSON.parse(JSON.stringify(a.attachments||[]));
   renderAppealAttachments();
+  window.warithSkipAppealDraftRestoreOnce=true;
   showScreen('add-appeal');
 }
 function updateAppealDashboard(){
@@ -2973,7 +2974,9 @@ function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لد
       pendingSaveScreen=null;
       const skipDonationDraftRestore=current==='add-donation'&&window.warithSkipDonationDraftRestoreOnce===true;
       if(skipDonationDraftRestore)window.warithSkipDonationDraftRestoreOnce=false;
-      if(!skipDonationDraftRestore)setTimeout(()=>restoreScreen(current),80);
+      const skipAppealDraftRestore=current==='add-appeal'&&window.warithSkipAppealDraftRestoreOnce===true;
+      if(skipAppealDraftRestore)window.warithSkipAppealDraftRestoreOnce=false;
+      if(!skipDonationDraftRestore&&!skipAppealDraftRestore)setTimeout(()=>restoreScreen(current),80);
       return result;
     };
   }
