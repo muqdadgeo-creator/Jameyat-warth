@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية السيدة فاطمة عليها السلام الخيرية</title>
-<script>(()=>{try{const v='fatima-v-20261117-image-watermark-10pct-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='fatima-v-20261117-image-editor-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -1809,19 +1809,7 @@ function chooseAttachmentCategory(onChoose,onCancel){
   overlay.querySelector('.attachment-category-cancel').onclick=()=>{close();if(onCancel)onCancel();};
   overlay.querySelector('.attachment-category-confirm').onclick=()=>{close();onChoose(selected);};
 }
-function addAppealAttachment(input){
-  const file=input.files?.[0]; if(!file)return;
-  if(file.size>5*1024*1024){alert('الحد الأقصى للمرفق 5 MB');input.value='';return}
-  chooseAttachmentCategory(cat=>{
-    const reader=new FileReader();
-    reader.onload=()=>{
-      appealAttachments.push({name:file.name,type:file.type||'application/octet-stream',size:file.size,data:reader.result,category:cat});
-      renderAppealAttachments();
-      input.value='';
-    };
-    reader.readAsDataURL(file);
-  });
-}
+async function addAppealAttachment(input){const original=input.files?.[0];if(!original)return;if(original.size>5*1024*1024){alert('الحد الأقصى للمرفق 5 MB');input.value='';return}const file=await editImageBeforeUpload(original);if(!file){input.value='';return}chooseAttachmentCategory(cat=>{const reader=new FileReader();reader.onload=()=>{appealAttachments.push({name:original.name,type:file.type||original.type||'application/octet-stream',size:file.size,data:reader.result,category:cat});renderAppealAttachments();input.value=''};reader.readAsDataURL(file)},()=>{input.value=''})}
 function renderAppealAttachments(){
   const box=document.getElementById('appeal-attachments'); if(!box)return;
   box.innerHTML=appealAttachments.map((f,i)=>`<div class="attachment"><div>📎</div><div class="grow"><div class="fname">${escapeHtml(f.name)}</div><div class="fmeta">${Math.ceil((f.size||0)/1024)} KB</div></div><label class="appeal-public-toggle" title="السماح بعرض هذا المرفق للزوار"><input type="checkbox" ${f.showToVisitors===true?'checked':''} onchange="setAppealAttachmentPublic(${i},this.checked)"/> عرض للزوار</label><button class="more" onclick="removeAppealAttachment(${i})">×</button></div>`).join('')||'<div class="empty" style="padding:12px">لا توجد مرفقات</div>';
@@ -3655,7 +3643,7 @@ async function downloadAppealCardPng(){
 
 function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';return (bytes/1024/1024).toFixed(1)+' MB';}
 function renderFamilyAttachments(){const x=getFamily();if(!x)return;const list=x.attachments||[];const ownHtml=list.map((a,i)=>`<div class="attachment"><div>📄</div><div class="grow"><button type="button" class="file-link" onclick="openAttachment(${i})">${escapeHtml(a.name||'ملف')}</button><div class="fmeta">${escapeHtml(a.type||'ملف')} · ${formatFileSize(a.size||0)}</div></div><button type="button" class="more" title="فتح الملف" onclick="openAttachment(${i})">👁️</button><button type="button" class="more" title="حذف المرفق" onclick="deleteAttachment(${i})">🗑</button></div>`).join('');const linked=[];appeals.filter(a=>Number(a.familyCode)===Number(x.c)).forEach((a)=>{const ai=appeals.indexOf(a);(a.attachments||[]).forEach((f,j)=>linked.push(`<div class="attachment"><div>🔗</div><div class="grow"><button type="button" class="file-link" onclick="openAppealAttachment(${ai},${j})">${escapeHtml(f.name||'ملف')}</button><div class="fmeta">${escapeHtml(f.type||'ملف')} · مرتبط بالمناشدة #${escapeHtml(a.id||'')}</div></div><button type="button" class="more" title="فتح الملف" onclick="openAppealAttachment(${ai},${j})">👁️</button></div>`));});const html=[ownHtml,linked.join('')].filter(Boolean).join('')||'<div class="empty" style="padding:15px">لا توجد مرفقات</div>';const box=document.getElementById('familyAttachments');if(box)box.innerHTML=html;const tabBox=document.getElementById('familyAttachmentsTabList');if(tabBox)tabBox.innerHTML=html;}
-function addFamilyAttachment(input){const x=getFamily();const file=input?.files?.[0];if(!x||!file)return;if(file.size>5*1024*1024){alert('حجم الملف أكبر من 5 MB.');input.value='';return}chooseAttachmentCategory(cat=>{const reader=new FileReader();reader.onload=()=>{if(!x.attachments)x.attachments=[];x.attachments.push({name:file.name,type:file.type,size:file.size,data:reader.result,category:cat});try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);renderFamilyAttachments();const box=document.getElementById('new-family-attachments');if(box)box.innerHTML='<div class="sub">تمت إضافة المرفق وسيظهر ضمن سجل العائلة.</div>';alert('تم حفظ المرفق بنجاح ✓');}catch(e){x.attachments.pop();alert('تعذر حفظ المرفق. قد تكون مساحة التخزين غير كافية.');}input.value='';};reader.readAsDataURL(file);});}
+async function addFamilyAttachment(input){const x=getFamily(),original=input?.files?.[0];if(!x||!original)return;if(original.size>5*1024*1024){alert('حجم الملف أكبر من 5 MB.');input.value='';return}const file=await editImageBeforeUpload(original);if(!file){input.value='';return}chooseAttachmentCategory(cat=>{const reader=new FileReader();reader.onload=()=>{if(!x.attachments)x.attachments=[];x.attachments.push({name:original.name,type:file.type||original.type,size:file.size,data:reader.result,category:cat});try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);renderFamilyAttachments();const box=document.getElementById('new-family-attachments');if(box)box.innerHTML='<div class="sub">تمت إضافة المرفق وسيظهر ضمن سجل العائلة.</div>';alert('تم حفظ المرفق بنجاح ✓')}catch(e){x.attachments.pop();alert('تعذر حفظ المرفق. قد تكون مساحة التخزين غير كافية.')}input.value=''};reader.readAsDataURL(file)},()=>{input.value=''})}
 async function openFileViewer(file){
   try{file=await warithStorageResolveFile(file)}catch(e){alert(e?.message||'تعذر فتح الملف');return}
   if(!file?.data)return;
@@ -4414,27 +4402,13 @@ function getTempAttachmentList(listName){
   if(listName==='expenseAttachments')return expenseAttachments;
   throw new Error('قائمة المرفقات غير معروفة: '+listName);
 }
-function addTempAttachment(input,listName,renderId,removeFn){
-  const file=input?.files?.[0]; if(!file)return;
-  if(file.size>5*1024*1024){alert('الحد الأقصى للمرفق 5 MB');input.value='';return}
-  attachmentCategory(category=>{
-    try{
-      const reader=new FileReader();
-      reader.onload=()=>{
-        try{
-          if(typeof reader.result!=='string'||!reader.result.startsWith('data:'))throw new Error('تعذرت قراءة محتوى الملف');
-          const attachmentList=getTempAttachmentList(listName);
-          attachmentList.push({name:file.name,type:file.type||'application/octet-stream',size:file.size,data:reader.result,category});
-          renderTempAttachments(renderId,attachmentList,removeFn);
-          alert('تمت إضافة المرفق إلى السجل. اضغط «حفظ التبرع» لإكمال الحفظ.');
-        }catch(e){console.error('تعذر تجهيز المرفق:',e);alert('تعذرت معالجة المرفق: '+(e?.message||e));}
-        finally{input.value='';}
-      };
-      reader.onerror=()=>{console.error('FileReader failed:',reader.error);alert('تعذرت قراءة الملف من الجهاز. جرّب اختيار الملف مرة أخرى.');input.value='';};
-      reader.readAsDataURL(file);
-    }catch(e){console.error('Attachment selection failed:',e);alert('تعذرت إضافة المرفق: '+(e?.message||e));input.value='';}
-  },()=>{input.value='';});
+
+function editImageBeforeUpload(file){
+  if(!file?.type?.startsWith('image/'))return Promise.resolve(file);
+  return new Promise(resolve=>{const reader=new FileReader();reader.onerror=()=>resolve(null);reader.onload=()=>{const img=new Image();img.onload=()=>{const old=document.getElementById('warithImageEditor');if(old)old.remove();let rotation=0,ratio='original',brightness=100,contrast=100;const overlay=document.createElement('div');overlay.id='warithImageEditor';overlay.style.cssText='position:fixed;inset:0;z-index:10050;background:#000b;display:flex;align-items:center;justify-content:center;padding:12px;direction:rtl';overlay.innerHTML=`<div style="background:#fff;color:#193a33;border-radius:16px;width:min(100%,480px);max-height:94vh;overflow:auto;padding:14px;font-family:Tahoma,Arial"><b style="display:block;margin-bottom:10px">تعديل الصورة قبل الحفظ</b><div style="height:260px;background:#17231f;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden"><img id="wiePreview" style="max-width:100%;max-height:100%;object-fit:contain"></div><div style="display:flex;gap:7px;flex-wrap:wrap;margin:12px 0"><button type="button" data-act="rotate" class="action">↻ تدوير 90°</button><button type="button" data-act="reset" class="action">إعادة ضبط</button><label style="font-size:12px;display:flex;align-items:center;gap:6px">القص <select id="wieRatio" class="forminput" style="width:auto;padding:7px"><option value="original">الأصلية</option><option value="1">مربعة</option><option value="1.333333">4:3</option><option value="1.777778">16:9</option></select></label></div><label style="display:block;font-size:12px">الإضاءة <input id="wieBrightness" type="range" min="50" max="150" value="100" style="width:100%"></label><label style="display:block;font-size:12px">التباين <input id="wieContrast" type="range" min="50" max="150" value="100" style="width:100%"></label><div style="display:flex;gap:8px;margin-top:14px"><button type="button" id="wieCancel" class="action" style="flex:1">إلغاء</button><button type="button" id="wieSave" class="action primary" style="flex:1">اعتماد الصورة</button></div></div>`;document.body.appendChild(overlay);const preview=overlay.querySelector('#wiePreview');const refresh=()=>{preview.src=reader.result;preview.style.transform='rotate('+rotation+'deg)';preview.style.filter='brightness('+brightness+'%) contrast('+contrast+'%)'};refresh();overlay.querySelector('[data-act="rotate"]').onclick=()=>{rotation=(rotation+90)%360;refresh()};overlay.querySelector('[data-act="reset"]').onclick=()=>{rotation=0;ratio='original';brightness=contrast=100;overlay.querySelector('#wieRatio').value=ratio;overlay.querySelector('#wieBrightness').value=100;overlay.querySelector('#wieContrast').value=100;refresh()};overlay.querySelector('#wieRatio').onchange=e=>ratio=e.target.value;overlay.querySelector('#wieBrightness').oninput=e=>{brightness=+e.target.value;refresh()};overlay.querySelector('#wieContrast').oninput=e=>{contrast=+e.target.value;refresh()};const close=v=>{overlay.remove();resolve(v)};overlay.querySelector('#wieCancel').onclick=()=>close(null);overlay.onclick=e=>{if(e.target===overlay)close(null)};overlay.querySelector('#wieSave').onclick=()=>{try{const sw=img.naturalWidth,sh=img.naturalHeight,rw=rotation%180===0?sw:sh,rh=rotation%180===0?sh:sw;let cw=rw,ch=rh;if(ratio!=='original'){const ar=+ratio;if(rw/rh>ar)cw=rh*ar;else ch=rw/ar}const scale=Math.min(1,2400/Math.max(cw,ch)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(cw*scale));canvas.height=Math.max(1,Math.round(ch*scale));const ctx=canvas.getContext('2d');ctx.filter='brightness('+brightness+'%) contrast('+contrast+'%)';ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(rotation*Math.PI/180);ctx.scale(scale,scale);ctx.drawImage(img,-sw/2,-sh/2,sw,sh);canvas.toBlob(blob=>{if(!blob){alert('تعذر تجهيز الصورة');return}close(new File([blob],file.name,{type:'image/jpeg',lastModified:Date.now()}))},'image/jpeg',.9)}catch(err){console.error(err);alert('تعذر تعديل الصورة')}}};img.onerror=()=>resolve(null);img.src=reader.result};reader.readAsDataURL(file)});
 }
+
+async function addTempAttachment(input,listName,renderId,removeFn){const original=input?.files?.[0];if(!original)return;if(original.size>5*1024*1024){alert('الحد الأقصى للمرفق 5 MB');input.value='';return}const file=await editImageBeforeUpload(original);if(!file){input.value='';return}attachmentCategory(category=>{const reader=new FileReader();reader.onload=()=>{try{if(typeof reader.result!=='string'||!reader.result.startsWith('data:'))throw new Error('تعذرت قراءة محتوى الملف');const list=getTempAttachmentList(listName);list.push({name:original.name,type:file.type||original.type||'application/octet-stream',size:file.size,data:reader.result,category});renderTempAttachments(renderId,list,removeFn);alert('تمت إضافة المرفق إلى السجل. اضغط «حفظ» لإكمال الحفظ.')}catch(e){console.error(e);alert('تعذرت معالجة المرفق: '+(e?.message||e))}finally{input.value=''}};reader.onerror=()=>{alert('تعذرت قراءة الملف من الجهاز.');input.value=''};reader.readAsDataURL(file)},()=>{input.value=''})}
 function addDonationAttachment(input){addTempAttachment(input,'donationAttachments','donationAttachmentsList','removeDonationAttachment')}
 function addHelpAttachment(input){addTempAttachment(input,'helpAttachments','helpAttachmentsList','removeHelpAttachment')}
 function addExpenseAttachment(input){addTempAttachment(input,'expenseAttachments','expenseAttachmentsList','removeExpenseAttachment')}
