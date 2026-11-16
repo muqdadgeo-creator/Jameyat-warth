@@ -2470,9 +2470,12 @@ async function performLogin(){
   const err=document.getElementById('loginError');
   if(!username||!pass){if(err)err.textContent='أدخل اسم المستخدم والرمز';return}
   try{
-    if(!window.warithSupabase)throw new Error('Supabase client unavailable');
+    // انتظر تهيئة عميل Supabase دائماً؛ لا تفشل محاولة الدخول بسبب سباق تحميل الصفحة.
+    const sb=window.warithSupabase||await window.warithSupabaseReady;
+    if(!sb)throw new Error('تعذر تهيئة اتصال Supabase؛ أعد المحاولة بعد لحظة');
+    window.warithSupabase=sb;
     const email=username==='admin'?'warthcare@gmail.com':authEmailForUsername(username);
-    const {data,error}=await window.warithSupabase.auth.signInWithPassword({email,password:pass});
+    const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
     if(error||!data?.user)throw new Error('اسم المستخدم أو الرمز غير صحيح');
     const {data:profileData,error:profileError}=await window.warithSupabase.rpc('get_my_app_user');
     const profile=Array.isArray(profileData)?profileData[0]:profileData;
@@ -6069,7 +6072,7 @@ try{renderHomeDashboard();}catch(e){}
 <input class="forminput" id="loginUsername" autocomplete="username" placeholder="اسم المستخدم"/>
 <label class="fl">الرمز</label>
 <input class="forminput" id="loginPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')performLogin()" placeholder="أدخل الرمز" type="password"/>
-<button class="action primary" id="loginSubmitBtn" style="width:100%;margin-top:10px" type="button">دخول</button>
+<button class="action primary" id="loginSubmitBtn" onclick="performLogin()" style="width:100%;margin-top:10px" type="button">دخول</button>
 <div class="sub" id="loginError" style="color:#a33;text-align:center;min-height:18px;margin-top:8px"></div>
 </div>
 </div>
@@ -6184,7 +6187,7 @@ try{renderHomeDashboard();}catch(e){}
     const pass=document.getElementById('loginPassword');
     if(btn && !btn.dataset.bound){
       btn.dataset.bound='1';
-      btn.addEventListener('click', function(e){e.preventDefault(); window.performLogin();});
+      // onclick مباشر موجود كمسار احتياطي؛ لا نضيف مستمعاً ثانياً حتى لا تتكرر محاولة الدخول.
     }
     if(pass && !pass.dataset.bound){
       pass.dataset.bound='1';
