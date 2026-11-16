@@ -380,7 +380,12 @@ textarea.forminput{height:80px;resize:vertical}
 .file-viewer-body .file-image-watermark img{width:auto;height:auto;max-width:100%;max-height:calc(88dvh - 100px);object-fit:contain}
 .file-viewer-body iframe{display:block;width:100%;height:100%;min-height:60vh;border:0;background:#fff}
 .file-viewer-download{display:inline-block;padding:12px 18px;border-radius:12px;background:#075b48;color:#fff;text-decoration:none;font-weight:800}
-.file-image-actions{display:flex;justify-content:center;flex:0 0 auto;padding:10px;background:#18231f}
+.file-viewer-body.file-viewer-body--image{flex-direction:column;gap:8px}
+.file-viewer-body.file-viewer-body--image .file-image-watermark{flex:1 1 auto;min-height:0;width:100%;height:auto}
+.file-viewer-body.file-viewer-body--image .file-image-watermark img{max-height:calc(82dvh - 150px)}
+.file-image-actions{display:flex;justify-content:center;align-items:center;flex:0 0 auto;width:100%;padding:4px 8px 10px;background:#18231f}
+.file-image-actions .file-viewer-download{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 13px;border-radius:9px;font-size:12px;line-height:1.4;font-weight:700;min-height:34px}
+@media(max-width:600px){.file-viewer-body.file-viewer-body--image .file-image-watermark img{max-height:calc(82dvh - 150px)}}
 @media(max-width:600px){.file-viewer-backdrop{padding:8px}.file-viewer{width:100%;height:86dvh;max-height:86dvh;border-radius:14px}.file-viewer-body .file-image-watermark img{max-height:calc(86dvh - 95px)}}
 </style>
 <style id="report-layout-v2">
@@ -3719,8 +3724,8 @@ async function openFileViewer(file){
   const back=document.getElementById('fileViewerBackdrop'),body=document.getElementById('fileViewerBody'),title=document.getElementById('fileViewerTitle');
   if(!back||!body)return;
   title.textContent=file.name||'عرض المرفق';
-  const type=String(file.type||'').toLowerCase(),name=String(file.name||'').toLowerCase();body.innerHTML='';
-  if(type.startsWith('image/')||/\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(name)){
+  const type=String(file.type||'').toLowerCase(),name=String(file.name||'').toLowerCase();body.innerHTML='';body.classList.remove('file-viewer-body--image');
+  if(type.startsWith('image/')||/\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(name)){body.classList.add('file-viewer-body--image');
     const wrap=document.createElement('div');wrap.className='file-image-watermark';
     const img=document.createElement('img');img.src=file.data;img.alt=file.name||'مرفق';wrap.appendChild(img);body.appendChild(wrap);
     if(/\.(jpe?g|png|webp|bmp)$/i.test(name)||/^image\/(jpeg|png|webp|bmp)$/i.test(type)){
