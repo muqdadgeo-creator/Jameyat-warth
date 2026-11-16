@@ -3651,23 +3651,67 @@ function formatFileSize(bytes){if(bytes<1024)return bytes+' B';if(bytes<1024*102
 function renderFamilyAttachments(){const x=getFamily();if(!x)return;const list=x.attachments||[];const ownHtml=list.map((a,i)=>`<div class="attachment"><div>📄</div><div class="grow"><button type="button" class="file-link" onclick="openAttachment(${i})">${escapeHtml(a.name||'ملف')}</button><div class="fmeta">${escapeHtml(a.type||'ملف')} · ${formatFileSize(a.size||0)}</div></div><button type="button" class="more" title="فتح الملف" onclick="openAttachment(${i})">👁️</button><button type="button" class="more" title="حذف المرفق" onclick="deleteAttachment(${i})">🗑</button></div>`).join('');const linked=[];appeals.filter(a=>Number(a.familyCode)===Number(x.c)).forEach((a)=>{const ai=appeals.indexOf(a);(a.attachments||[]).forEach((f,j)=>linked.push(`<div class="attachment"><div>🔗</div><div class="grow"><button type="button" class="file-link" onclick="openAppealAttachment(${ai},${j})">${escapeHtml(f.name||'ملف')}</button><div class="fmeta">${escapeHtml(f.type||'ملف')} · مرتبط بالمناشدة #${escapeHtml(a.id||'')}</div></div><button type="button" class="more" title="فتح الملف" onclick="openAppealAttachment(${ai},${j})">👁️</button></div>`));});const html=[ownHtml,linked.join('')].filter(Boolean).join('')||'<div class="empty" style="padding:15px">لا توجد مرفقات</div>';const box=document.getElementById('familyAttachments');if(box)box.innerHTML=html;const tabBox=document.getElementById('familyAttachmentsTabList');if(tabBox)tabBox.innerHTML=html;}
 async function addFamilyAttachment(input){const x=getFamily(),original=input?.files?.[0];if(!x||!original)return;if(original.size>5*1024*1024){alert('حجم الملف أكبر من 5 MB.');input.value='';return}const file=await editImageBeforeUpload(original);if(!file){input.value='';return}chooseAttachmentCategory(cat=>{const reader=new FileReader();reader.onload=()=>{if(!x.attachments)x.attachments=[];x.attachments.push({name:original.name,type:file.type||original.type,size:file.size,data:reader.result,category:cat});try{const data=JSON.stringify(families);localStorage.setItem('warith_families_v2',data);localStorage.setItem('warith_families',data);renderFamilyAttachments();const box=document.getElementById('new-family-attachments');if(box)box.innerHTML='<div class="sub">تمت إضافة المرفق وسيظهر ضمن سجل العائلة.</div>';alert('تم حفظ المرفق بنجاح ✓')}catch(e){x.attachments.pop();alert('تعذر حفظ المرفق. قد تكون مساحة التخزين غير كافية.')}input.value=''};reader.readAsDataURL(file)},()=>{input.value=''})}
 async function downloadWatermarkedAttachment(file,img){
+  let downloadUrl='';
   try{
-    if(!img?.complete||!img.naturalWidth)throw new Error('الصورة لم تكتمل بعد');
-    const canvas=document.createElement('canvas');canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
-    const ctx=canvas.getContext('2d');if(!ctx)throw new Error('تعذر تجهيز الصورة للتنزيل');
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-    const watermark=new Image();watermark.src=new URL('assets/fatima-charity-watermark.png',location.href).href;
-    if(typeof watermark.decode==='function')await watermark.decode();else await new Promise((resolve,reject)=>{watermark.onload=resolve;watermark.onerror=reject});
-    const displayScale=canvas.width/Math.max(1,img.clientWidth);
-    const markWidth=Math.min(canvas.width*.68,340*displayScale);
+    if(!img)throw new Error('تعذر الوصول إلى الصورة');
+    // انتظر اكتمال تحميل الصورة وفك ترميزها قبل رسمها على Canvas.
+    if(!img.complete||!img.naturalWidth){
+      await new Promise((resolve,reject)=>{
+        const onLoad=()=>{cleanup();resolve()};
+        const onError=()=>{cleanup();reject(new Error('تعذر تحميل الصورة الأصلية'))};
+        const cleanup=()=>{img.removeEventListener('load',onLoad);img.removeEventListener('error',onError)};
+        img.addEventListener('load',onLoad,{once:true});
+        img.addEventListener('error',onError,{once:true});
+        if(img.complete&&img.naturalWidth){cleanup();resolve()}
+      });
+    }
+    if(typeof img.decode==='function')await img.decode();
+    const width=img.naturalWidth,height=img.naturalHeight;
+    if(!width||!height)throw new Error('أبعاد الصورة غير صالحة');
+
+    const canvas=document.createElement('canvas');
+    canvas.width=width;canvas.height=height;
+    const ctx=canvas.getContext('2d');
+    if(!ctx)throw new Error('تعذر تجهيز الصورة للتنزيل');
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality='high';
+    ctx.drawImage(img,0,0,width,height);
+
+    // استخدم مساراً مطلقاً حتى لا يتغير مكان العلامة عند فتح صفحة داخلية.
+    const watermark=new Image();
+    watermark.src=new URL('/assets/fatima-charity-watermark.png',location.origin).href;
+    if(typeof watermark.decode==='function')await watermark.decode();
+    else await new Promise((resolve,reject)=>{watermark.onload=resolve;watermark.onerror=()=>reject(new Error('تعذر تحميل العلامة المائية'))});
+    if(!watermark.naturalWidth||!watermark.naturalHeight)throw new Error('ملف العلامة المائية غير صالح');
+
+    const markWidth=Math.min(width*.68,Math.max(1,width*.68));
     const markHeight=markWidth*(watermark.naturalHeight/watermark.naturalWidth);
-    ctx.save();ctx.globalAlpha=.418;ctx.drawImage(watermark,(canvas.width-markWidth)/2,(canvas.height-markHeight)/2,markWidth,markHeight);ctx.restore();
-    const outputType=/\.jpe?g$/i.test(file.name||'')?'image/jpeg':(/\.webp$/i.test(file.name||'')?'image/webp':'image/png');
-    const blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('تعذر إنشاء ملف التنزيل')),outputType,.92));
-    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;
-    const base=(file.name||'attachment').replace(/\.[^.]+$/,'');a.download=base+'_watermarked.'+(outputType==='image/jpeg'?'jpg':outputType==='image/webp'?'webp':'png');
-    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
-  }catch(e){console.error('downloadWatermarkedAttachment failed',e);alert('تعذر تنزيل الصورة بالعلامة المائية. '+(e?.message||''))}
+    ctx.save();
+    ctx.globalAlpha=.418;
+    ctx.drawImage(watermark,(width-markWidth)/2,(height-markHeight)/2,markWidth,markHeight);
+    ctx.restore();
+
+    const name=String(file?.name||'attachment');
+    const outputType=/\.jpe?g$/i.test(name)?'image/jpeg':(/\.webp$/i.test(name)?'image/webp':'image/png');
+    const blob=await new Promise((resolve,reject)=>{
+      canvas.toBlob(b=>b?resolve(b):reject(new Error('تعذر إنشاء ملف الصورة النهائي')),outputType,.92);
+    });
+    if(!blob||!blob.size)throw new Error('ملف التنزيل الناتج فارغ');
+
+    downloadUrl=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=downloadUrl;
+    const base=name.replace(/\.[^.]+$/,'').replace(/[\\/:*?"<>|]/g,'_');
+    a.download=base+'_watermarked.'+(outputType==='image/jpeg'?'jpg':outputType==='image/webp'?'webp':'png');
+    a.style.display='none';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(downloadUrl),10000);
+    downloadUrl='';
+  }catch(e){
+    if(downloadUrl)URL.revokeObjectURL(downloadUrl);
+    console.error('downloadWatermarkedAttachment failed',e);
+    alert('تعذر تنزيل الصورة بالعلامة المائية. '+(e?.message||'يرجى المحاولة مرة أخرى'));
+  }
 }
 async function openFileViewer(file){
   try{file=await warithStorageResolveFile(file)}catch(e){alert(e?.message||'تعذر فتح الملف');return}
