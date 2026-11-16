@@ -707,6 +707,35 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
   }
 }
 </style>
+
+<style id="files-center-approved-layout">
+#files-center{min-width:0;overflow-x:hidden}
+#files-center .files-note{background:var(--card,#fff);border:1px solid #e5e9e6;border-right:4px solid #c8a96b;border-radius:12px;padding:11px 13px;margin:0 0 12px;font-size:13px;line-height:1.9;color:var(--text,#35584f)}
+#files-center .files-nav{display:flex!important;flex-direction:column!important;align-items:stretch;gap:7px;margin:10px 0 14px;position:sticky;top:84px;z-index:7;background:var(--screen-bg,#f4f6f5);padding:6px 0}
+#files-center .files-nav-btn{display:flex!important;align-items:center;justify-content:flex-start;width:100%;min-height:42px;padding:9px 14px;border:1px solid var(--border,#dce5e0);border-radius:10px;background:var(--card,#fff);color:var(--text,#284b42);text-align:right;font:700 14px Tahoma,Arial,sans-serif;box-shadow:0 2px 6px #0000000a;cursor:pointer}
+#files-center .files-nav-btn.active{background:#0f5c4d;color:#fff;border-color:#0f5c4d;box-shadow:0 3px 9px #0f5c4d22}
+#files-center .files-stats{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 16px}
+#files-center .files-stat{min-width:0;background:var(--card,#fff);border:1px solid var(--border,#e5eae7);border-radius:11px;padding:9px 5px;text-align:center;box-shadow:0 2px 7px #00000008}
+#files-center .files-stat span{display:block;font-size:11px;font-weight:600;color:var(--muted,#71857f);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#files-center .files-stat b{display:block;font-size:17px;line-height:1.35;margin-top:3px;color:#0f5c4d;font-variant-numeric:tabular-nums}
+#files-center .files-subtitle{font-size:15px;font-weight:900;margin:14px 2px 8px;color:var(--text,#284b42)}
+#files-center .files-vertical-list{display:flex;flex-direction:column;gap:7px;margin:10px 0 14px}
+#files-center .files-option{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:40px;padding:8px 12px;border:1px solid var(--border,#dfe8e4);border-radius:10px;background:var(--card,#fff);color:var(--text,#35584f);text-align:right;font:700 13px Tahoma,Arial,sans-serif;box-shadow:0 1px 4px #00000008}
+#files-center .files-option b{flex:0 0 auto;min-width:27px;text-align:center;background:#edf3f0;color:#47675e;border-radius:7px;padding:3px 6px;font-size:11px;font-variant-numeric:tabular-nums}
+#files-center .files-option.active{border-color:#0f5c4d;background:#eaf4f0;color:#0f5c4d}
+#files-center .files-option.active b{background:#0f5c4d;color:#fff}
+#files-center .file-card{background:var(--card,#fff);border:1px solid var(--border,#e6eeeb);border-radius:13px;padding:11px;margin:8px 0;box-shadow:0 2px 8px #0000000a;min-width:0}
+#files-center .file-row{display:flex;align-items:center;gap:10px;min-width:0}
+#files-center .file-icon{width:40px;height:40px;flex:0 0 40px;border-radius:10px;background:#edf5f1;display:grid;place-items:center;font-size:19px}
+#files-center .file-row .grow{min-width:0;overflow:hidden}
+#files-center .file-row .grow>b{display:block;font-size:13px;overflow-wrap:anywhere;color:var(--text,#284b42)}
+#files-center .file-meta{font-size:11px;color:var(--muted,#748780);line-height:1.7;margin-top:4px;overflow-wrap:anywhere}
+#files-center .file-actions{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
+#files-center .file-actions button{width:30px;height:30px;padding:0;border:1px solid #dce8e2;border-radius:8px;background:#edf4f1;color:#0f5c4d;font-size:14px}
+#files-center .file-actions button[title="حذف"]{background:#fbefef;color:#a33;border-color:#f0dddd}
+#files-center .search{position:relative;z-index:3;margin:10px 0 14px}
+@media(min-width:700px){#files-center .files-stats{grid-template-columns:repeat(6,minmax(0,1fr))}}
+</style>
 </head>
 <body>
 <div class="app">
