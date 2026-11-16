@@ -954,6 +954,12 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 </section>
 <section class="screen" id="in-kind-donations">
 <div class="top"><button class="back" onclick="goBackFromInKindDonations()">← رجوع</button><div class="screen-title">التبرعات العينية</div></div>
+<div class="donation-tabs in-kind-main-tabs" aria-label="التنقل الرئيسي للتبرعات">
+<button class="donation-tab" type="button" onclick="showScreen('donations')">👤 المتبرعون</button>
+<button class="donation-tab" type="button" onclick="showScreen('donations');switchDonationTab('records')">📋 سجل التبرعات</button>
+<button class="donation-tab" type="button" onclick="showScreen('donations');switchDonationTab('unpaid')">🔴 غير المستلمة</button>
+<button class="donation-tab active" type="button" aria-current="page">🎁 التبرعات العينية</button>
+</div>
 <div class="stats">
 <div class="stat">📦 <b id="inKindAllCount">0</b><span>إجمالي العينية</span></div>
 <div class="stat">⏳ <b id="inKindPendingCount">0</b><span>غير المستلمة</span></div>
