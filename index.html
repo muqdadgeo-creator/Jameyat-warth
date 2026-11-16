@@ -833,16 +833,15 @@ header>.brand-slogan{order:10;flex:0 0 100%;display:block;width:fit-content;max-
 </section>
 <section class="screen" id="files-center">
 <div class="top"><button class="back" onclick="showScreen('home')">← رجوع</button><div class="screen-title">الملفات والتوثيق</div><div class="count" id="filesCount"></div></div>
-<div class="files-note">🔐 هذا القسم مخصص للملفات المرتبطة بسجلات الجمعية، والوصول إليه يحدد حسب صلاحيات المستخدم. أما توثيق النشاطات فسيكون لاحقاً داخل قسم النشاطات ومتاحاً للجميع.</div>
-<div class="search"><span>🔎</span><input id="filesQ" oninput="renderFilesCenter()" placeholder="ابحث باسم الملف أو رقم العائلة أو المتبرع أو المناشدة"/></div>
-<div class="files-toolbar" id="filesCategoryBar">
-<button class="chip active" onclick="setFilesCategory('الكل')">الكل</button>
-<button class="chip" onclick="setFilesCategory('شخصية')">شخصية</button>
-<button class="chip" onclick="setFilesCategory('طبية')">طبية</button>
-<button class="chip" onclick="setFilesCategory('مالية')">مالية</button>
-<button class="chip" onclick="setFilesCategory('توثيقية')">توثيقية</button>
-<button class="chip" onclick="setFilesCategory('ملفات')">ملفات</button>
+<div class="files-note">🔐 أرشيف الجمعية المركزي. تُعرض الوثائق من سجلاتها الأصلية دون إنشاء نسخ مكررة، وتبقى صلاحيات الوصول والحذف مطبقة.</div>
+<div class="files-nav" id="filesNav">
+<button class="files-nav-btn active" onclick="setFilesView('overview')">📊 نظرة عامة</button>
+<button class="files-nav-btn" onclick="setFilesView('all')">📁 جميع الملفات</button>
+<button class="files-nav-btn" onclick="setFilesView('categories')">🗂️ التصنيفات</button>
+<button class="files-nav-btn" onclick="setFilesView('linked')">🔗 الملفات المرتبطة</button>
 </div>
+<div class="search"><span>🔎</span><input id="filesQ" oninput="renderFilesCenter()" placeholder="ابحث باسم الملف أو رقم السجل أو الجهة المرتبطة"/></div>
+<div id="filesViewContent"></div>
 <div id="filesList"></div>
 </section>
 <section class="screen" id="families">
@@ -1745,7 +1744,7 @@ function resetAppealForm(){
 function addAppealAttachment(input){
   const file=input.files?.[0]; if(!file)return;
   if(file.size>5*1024*1024){alert('الحد الأقصى للمرفق 5 MB');input.value='';return}
-  const category=prompt('تصنيف المرفق: شخصية / طبية / مالية / توثيقية / ملفات','ملفات');if(category===null)return;const allowed=['شخصية','طبية','مالية','توثيقية','ملفات'];const cat=allowed.includes(category.trim())?category.trim():'ملفات';const reader=new FileReader();
+  const category=prompt('تصنيف المرفق: شخصية / طبية / مالية / توثيقية / رسمية / ملفات','ملفات');if(category===null)return;const allowed=['شخصية','طبية','مالية','توثيقية','رسمية','ملفات'];const cat=allowed.includes(category.trim())?category.trim():'ملفات';const reader=new FileReader();
   reader.onload=()=>{
     appealAttachments.push({name:file.name,type:file.type||'application/octet-stream',size:file.size,data:reader.result,category:cat});
     renderAppealAttachments();
@@ -2634,14 +2633,21 @@ window.addEventListener('online',warithRefreshSession);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')warithRefreshSession()});
 
 let filesCategory='الكل';
+let filesView='overview';
+let filesSource='الكل';
+const FILE_CATEGORIES=['شخصية','طبية','مالية','توثيقية','رسمية','ملفات'];
+const FILE_SOURCES=[['الكل','كل الجهات'],['families','العوائل'],['donors','المتبرعون'],['donations','التبرعات'],['appeals','المناشدات'],['helps','المساعدات'],['programs','البرامج'],['expenses','المصروفات'],['inventoryMovements','المخزن']];
 function canAccessFiles(){return hasPermission('files-center')}
 function openFilesCenter(){
   if(!canAccessFiles()){alert('ليس لديك صلاحية الوصول إلى الملفات والتوثيق.');return;}
+  filesView='overview';filesCategory='الكل';filesSource='الكل';
   showScreen('files-center');
 }
-function setFilesCategory(v){filesCategory=v;document.querySelectorAll('#filesCategoryBar .chip').forEach(b=>b.classList.toggle('active',b.textContent.trim()===v));renderFilesCenter();}
+function setFilesView(v){filesView=v;renderFilesCenter();}
+function setFilesCategory(v){filesCategory=v;renderFilesCenter();}
+function setFilesSource(v){filesSource=v;renderFilesCenter();}
 function fileCategoryOf(a){
-  if(a?.category&&['شخصية','طبية','مالية','توثيقية','ملفات'].includes(a.category))return a.category;
+  if(a?.category&&FILE_CATEGORIES.includes(a.category))return a.category;
   return 'ملفات';
 }
 function fileTypeIcon(a){const t=String(a?.type||'').toLowerCase(),n=String(a?.name||'').toLowerCase();if(t.startsWith('image/')||/\.(jpg|jpeg|png|webp|gif)$/i.test(n))return '🖼️';if(t.includes('pdf')||/\.pdf$/i.test(n))return '📕';if(/\.(xls|xlsx|csv)$/i.test(n))return '📊';if(/\.(doc|docx)$/i.test(n))return '📘';return '📄';}
@@ -2658,15 +2664,34 @@ function collectFiles(){
   inventoryMovements.filter(x=>!isHiddenRecord(x)).forEach(x=>push('inventoryMovements','مخزن',`#${x.id||''} — ${x.name||'حركة مخزن'}`,x.id,x.attachments));
   return out;
 }
-function renderFilesCenter(){
+function renderFilesList(rows){
   const box=document.getElementById('filesList');if(!box)return;
-  const q=(document.getElementById('filesQ')?.value||'').trim().toLowerCase();
-  let rows=collectFiles().filter(f=>filesCategory==='الكل'||f.category===filesCategory);
-  if(q)rows=rows.filter(f=>[f.name,f.sourceLabel,f.recordLabel,f.recordKey,f.category].join(' ').toLowerCase().includes(q));
-  rows.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
-  const c=document.getElementById('filesCount');if(c)c.textContent=rows.length+' ملف';
   box.innerHTML=rows.map((f,idx)=>`<div class="file-card"><div class="file-row"><div class="file-icon">${fileTypeIcon(f)}</div><div class="grow"><b>${escapeHtml(f.name||'ملف')}</b><div class="file-meta">${escapeHtml(f.category)} · ${escapeHtml(f.sourceLabel)} · ${escapeHtml(f.recordLabel)}${f.date?' · '+escapeHtml(f.date):''}</div></div><div class="file-actions"><button title="فتح" onclick="openCentralFile(${idx})">👁️</button><button title="حذف" onclick="deleteCentralFile(${idx})">🗑</button></div></div></div>`).join('')||'<div class="empty">لا توجد ملفات مطابقة</div>';
   window._visibleFiles=rows;
+}
+function renderFilesCenter(){
+  const box=document.getElementById('filesList'),content=document.getElementById('filesViewContent');if(!box||!content)return;
+  const all=collectFiles().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const q=(document.getElementById('filesQ')?.value||'').trim().toLowerCase();
+  let rows=all.filter(f=>!q||[f.name,f.sourceLabel,f.recordLabel,f.recordKey,f.category].join(' ').toLowerCase().includes(q));
+  const count=document.getElementById('filesCount');if(count)count.textContent=rows.length+' ملف';
+  document.querySelectorAll('#filesNav .files-nav-btn').forEach((b,i)=>b.classList.toggle('active',['overview','all','categories','linked'][i]===filesView));
+  box.innerHTML='';content.innerHTML='';
+  if(filesView==='overview'){
+    const cats=FILE_CATEGORIES.map(cat=>({cat,n:all.filter(f=>f.category===cat).length}));
+    content.innerHTML=`<div class="files-stats">${[['إجمالي الملفات',all.length],['شخصية',cats[0].n],['طبية',cats[1].n],['مالية',cats[2].n],['توثيقية',cats[3].n],['رسمية',cats[4].n]].map(x=>`<div class="files-stat"><span>${x[0]}</span><b>${x[1].toLocaleString('en-US')}</b></div>`).join('')}</div><div class="files-subtitle">🕘 أحدث الملفات المضافة</div>`;
+    renderFilesList(rows.slice(0,8));return;
+  }
+  if(filesView==='categories'){
+    content.innerHTML='<div class="files-vertical-list">'+FILE_CATEGORIES.map(cat=>`<button class="files-option ${filesCategory===cat?'active':''}" onclick="setFilesCategory('${cat}')"><span>${cat==='رسمية'?'🏛️':cat==='شخصية'?'🪪':cat==='طبية'?'🩺':cat==='مالية'?'💰':cat==='توثيقية'?'🗃️':'📄'} ${cat}</span><b>${all.filter(f=>f.category===cat).length.toLocaleString('en-US')}</b></button>`).join('')+`<button class="files-option ${filesCategory==='الكل'?'active':''}" onclick="setFilesCategory('الكل')"><span>📁 جميع التصنيفات</span><b>${all.length.toLocaleString('en-US')}</b></button></div>`;
+    rows=rows.filter(f=>filesCategory==='الكل'||f.category===filesCategory);renderFilesList(rows);return;
+  }
+  if(filesView==='linked'){
+    content.innerHTML='<div class="files-vertical-list">'+FILE_SOURCES.map(([key,label])=>`<button class="files-option ${filesSource===key?'active':''}" onclick="setFilesSource('${key}')"><span>🔗 ${label}</span><b>${all.filter(f=>key==='الكل'||f.source===key).length.toLocaleString('en-US')}</b></button>`).join('')+'</div>';
+    rows=rows.filter(f=>filesSource==='الكل'||f.source===filesSource);renderFilesList(rows);return;
+  }
+  content.innerHTML='<div class="files-vertical-list">'+['الكل',...FILE_CATEGORIES].map(cat=>`<button class="files-option ${filesCategory===cat?'active':''}" onclick="setFilesCategory('${cat}')"><span>${cat==='الكل'?'📁':'🗂️'} ${cat}</span><b>${(cat==='الكل'?all.length:all.filter(f=>f.category===cat).length).toLocaleString('en-US')}</b></button>`).join('')+'</div>';
+  rows=rows.filter(f=>filesCategory==='الكل'||f.category===filesCategory);renderFilesList(rows);
 }
 function openCentralFile(i){const f=window._visibleFiles?.[i];openFileViewer(f);}
 function deleteCentralFile(i){if(!hasAction('delete','files-center')){alert('ليس لديك صلاحية حذف المرفقات.');return}const f=window._visibleFiles?.[i];if(!f)return;if(!confirm('حذف هذا المرفق نهائياً من السجل؟'))return;const arr=window[f.source];if(!Array.isArray(arr)||!arr[f.recordIndex]){const rec=arr?.find(x=>String(x.id)===String(f.recordKey)||String(x.c)===String(f.recordKey));if(!rec?.attachments?.[f.index])return;rec.attachments.splice(f.index,1);}else{arr[f.recordIndex].attachments.splice(f.index,1);}localStorage.setItem({families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'}[f.source],JSON.stringify(arr));if(f.source==='families')localStorage.setItem('warith_families',JSON.stringify(arr));renderFilesCenter();}
@@ -3147,6 +3172,35 @@ function doExportPrint(){
 <\/script>
 
 
+
+<style id="files-center-restructure-v1">
+#files-center{min-width:0;overflow-x:hidden}
+#files-center .files-note{background:#fff;border-right:3px solid #c8a96b;border-radius:10px;padding:10px 11px;margin:0 0 10px;font-size:10px;line-height:1.8;color:#587069}
+#files-center .files-nav{display:flex;flex-direction:column;gap:6px;margin:8px 0 12px;position:sticky;top:0;z-index:8;background:#f3f6f5;padding:5px 0}
+#files-center .files-nav-btn{width:100%;min-height:35px;padding:7px 10px;border:1px solid #dce7e3;border-radius:9px;background:#fff;color:#35584f;text-align:right;font:700 10px Tahoma,Arial,sans-serif;box-shadow:0 1px 4px #00000008}
+#files-center .files-nav-btn.active{background:#0f5c4d;color:#fff;border-color:#0f5c4d}
+#files-center .files-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0 12px}
+#files-center .files-stat{min-width:0;background:#fff;border-radius:9px;padding:7px 5px;text-align:center;box-shadow:0 1px 5px #00000008}
+#files-center .files-stat span{display:block;font-size:8px;color:#71857f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#files-center .files-stat b{display:block;font-size:13px;line-height:1.4;margin-top:3px;color:#0f5c4d;font-variant-numeric:tabular-nums}
+#files-center .files-subtitle{font-size:12px;font-weight:900;margin:12px 2px 7px}
+#files-center .files-vertical-list{display:flex;flex-direction:column;gap:5px;margin:8px 0 12px}
+#files-center .files-option{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:32px;padding:6px 9px;border:1px solid #dfe8e4;border-radius:8px;background:#fff;color:#35584f;text-align:right;font:700 10px Tahoma,Arial,sans-serif}
+#files-center .files-option b{flex:0 0 auto;min-width:22px;text-align:center;background:#edf3f0;color:#47675e;border-radius:6px;padding:2px 4px;font-size:9px;font-variant-numeric:tabular-nums}
+#files-center .files-option.active{border-color:#0f5c4d;background:#eaf4f0;color:#0f5c4d}
+#files-center .files-option.active b{background:#0f5c4d;color:#fff}
+#files-center .file-card{background:#fff;border:1px solid #e6eeeb;border-radius:11px;padding:9px;margin:7px 0;box-shadow:0 1px 6px #00000008;min-width:0}
+#files-center .file-row{display:flex;align-items:center;gap:8px;min-width:0}
+#files-center .file-icon{width:34px;height:34px;flex:0 0 34px;border-radius:9px;background:#edf5f1;display:grid;place-items:center;font-size:17px}
+#files-center .file-row .grow{min-width:0;overflow:hidden}
+#files-center .file-row .grow>b{display:block;font-size:10px;overflow-wrap:anywhere}
+#files-center .file-meta{font-size:8px;color:#748780;line-height:1.6;margin-top:3px;overflow-wrap:anywhere}
+#files-center .file-actions{display:flex;flex-direction:column;gap:4px;flex:0 0 auto}
+#files-center .file-actions button{width:25px;height:25px;padding:0;border:0;border-radius:6px;background:#edf4f1;color:#0f5c4d;font-size:12px}
+#files-center .file-actions button[title="حذف"]{background:#fbefef;color:#a33}
+#files-center .search{position:relative;z-index:3}
+@media(min-width:700px){#files-center .files-stats{grid-template-columns:repeat(6,minmax(0,1fr))}}
+</style>
 </body>
 
 </html>`);w.document.close();w.focus();setTimeout(()=>w.print(),450);
