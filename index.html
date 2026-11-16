@@ -6506,8 +6506,10 @@ async function warithSyncPushChanges(entity,force=false){
     const d=typeof v==='number'||/^\d{10,13}$/.test(String(v||''))?new Date(Number(v)):new Date(v||Date.now());
     const ts=Number.isNaN(d.getTime())?new Date().toISOString():d.toISOString();
     if(oldDeleted&&itemTs<=oldTs)continue;
-    if(!old||oldDeleted||JSON.stringify(old)!==JSON.stringify(item)||force)
-      const cloudData=await warithStoragePrepareCloudRecord(entity,key,item);rows.push({entity,record_key:key,data:cloudData,updated_at:ts,deleted:false});
+    const cloudData=await warithStoragePrepareCloudRecord(entity,key,item);
+    if(!old||oldDeleted||JSON.stringify(old)!==JSON.stringify(cloudData)||force){
+      rows.push({entity,record_key:key,data:cloudData,updated_at:ts,deleted:false});
+    }
   }
   for(const [key,ts] of warithSyncDeleted[entity]||new Map())
     rows.push({entity,record_key:String(key),data:null,updated_at:ts,deleted:true});
