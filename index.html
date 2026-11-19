@@ -859,6 +859,30 @@ html,body,.app,main{background:#f7f6f0!important}
 <div class="card">
   <button class="tile" data-perm="users-settings" style="width:100%;margin-bottom:10px" onclick="openSettings()">👥 إعدادات المستخدمين والصلاحيات</button>
   <button class="tile" data-perm="ticker-settings" style="width:100%" onclick="openTickerSettings()">📢 إعدادات الشريط المتحرك</button>
+  <button class="tile" style="width:100%;margin-top:10px" onclick="openThemeSettings()">🎨 المظهر والثيمات</button>
+</div>
+</section>
+
+<section class="screen" id="theme-settings">
+<div class="top"><button class="back" onclick="showScreen('settings-hub')">← رجوع</button><div class="screen-title">المظهر والثيمات</div></div>
+<div class="card">
+  <b>اختر المظهر الذي يناسبك</b>
+  <div class="sub" style="margin-top:5px">اختيارك يُحفظ على هذا الجهاز والمتصفح، ويظهر لك وحدك حتى لو كنت زائراً.</div>
+  <div class="theme-options">
+    <button type="button" class="theme-option" data-theme-choice="base" onclick="selectWarithTheme('base')">
+      <span class="theme-swatches"><i style="background:#ffffff;border:1px solid #d9e3e8"></i><i style="background:#87ceeb"></i></span>
+      <span class="theme-option-copy"><b>الأساسي</b><small>الألوان والتصميم الحاليان للنظام</small></span><span class="theme-selected">✓ محدد</span>
+    </button>
+    <button type="button" class="theme-option" data-theme-choice="indigo-maroon" onclick="selectWarithTheme('indigo-maroon')">
+      <span class="theme-swatches"><i style="background:#49366f"></i><i style="background:#7b294c"></i></span>
+      <span class="theme-option-copy"><b>النيلي والماروني</b><small>طابع رسمي وفخم</small></span><span class="theme-selected">✓ محدد</span>
+    </button>
+    <button type="button" class="theme-option" data-theme-choice="blue-gold" onclick="selectWarithTheme('blue-gold')">
+      <span class="theme-swatches"><i style="background:#2878c8"></i><i style="background:#d9af4b"></i></span>
+      <span class="theme-option-copy"><b>الأزرق البراق والذهبي</b><small>أزرق أكثر إشراقاً مع لمسات ذهبية</small></span><span class="theme-selected">✓ محدد</span>
+    </button>
+  </div>
+  <div class="theme-current" id="themeCurrentLabel">الثيم الحالي: الأساسي</div>
 </div>
 </section>
 <section class="screen" id="settings">
@@ -2501,7 +2525,7 @@ function updateCurrentUserBadge(){const u=currentUser();document.querySelectorAl
 function openLogin(){const u=document.getElementById('loginUsername');if(u)u.value='';const p=document.getElementById('loginPassword');if(p)p.value='';const e=document.getElementById('loginError');if(e)e.textContent='';const b=document.getElementById('loginBackdrop');if(b)b.style.display='flex';} function closeLogin(){const b=document.getElementById('loginBackdrop');if(b)b.style.display='none';}
 function updateAuthHeaderUI(){const u=currentUser();const logged=!!u;const btn=document.getElementById('headerLoginBtn');if(btn){btn.textContent=logged?'🚪 خروج':'🔐 تسجيل الدخول';btn.setAttribute('aria-label',logged?'تسجيل الخروج':'تسجيل الدخول');btn.onclick=logged?logoutSupabaseUser:openLogin;}const headerUser=document.getElementById('headerCurrentUser');if(headerUser){headerUser.textContent=logged?String(u.name||u.username||'').trim():'';headerUser.classList.toggle('visible',logged&&!!String(u.name||u.username||'').trim());}const menuBtn=document.getElementById('menuLoginButton');if(menuBtn){menuBtn.textContent=logged?'🚪 تسجيل الخروج':'🔐 تسجيل الدخول';menuBtn.onclick=logged?logoutSupabaseUser:openLogin;}document.querySelectorAll('[data-auth-only]').forEach(el=>el.style.display=logged?'':'none');}
 function switchUser(){openLogin()}
-function openSettingsHub(){if(!hasPermission('users-settings')&&!hasPermission('ticker-settings')){alert('ليس لديك صلاحية الوصول إلى الإعدادات.');return}showScreen('settings-hub')}
+function openSettingsHub(){showScreen('settings-hub')}
 function openSettings(){if(!hasPermission('users-settings')){alert('ليس لديك صلاحية إدارة المستخدمين والصلاحيات.');return}showScreen('settings');renderUsers()}
 let remoteUsersCache=[];
 async function loadRemoteUsers(){
@@ -2793,7 +2817,7 @@ function openCentralFile(i){const f=window._visibleFiles?.[i];openFileViewer(f);
 function deleteCentralFile(i){if(!hasAction('delete','files-center')){alert('ليس لديك صلاحية حذف المرفقات.');return}const f=window._visibleFiles?.[i];if(!f)return;if(!confirm('حذف هذا المرفق نهائياً من السجل الأصلي؟'))return;if(f.linkedAppealIndex!==undefined&&f.linkedAppealIndex!==null){const appeal=appeals[f.linkedAppealIndex];if(!appeal?.attachments?.[f.index])return;appeal.attachments.splice(f.index,1);localStorage.setItem('warith_appeals',JSON.stringify(appeals));}else{const arr=window[f.source];if(!Array.isArray(arr)||!arr[f.recordIndex]){const rec=arr?.find(x=>String(x.id)===String(f.recordKey)||String(x.c)===String(f.recordKey));if(!rec?.attachments?.[f.index])return;rec.attachments.splice(f.index,1);}else{arr[f.recordIndex].attachments.splice(f.index,1);}localStorage.setItem({families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'}[f.source],JSON.stringify(arr));if(f.source==='families')localStorage.setItem('warith_families',JSON.stringify(arr));}renderFilesCenter();}
 
 function goBackFromInKindDonations(){const u=currentUser();showScreen(u&&u.active!==false&&normalizeRole(u.role)==='مسؤول المخزن'&&!hasPermission('donations')?'inventory':'donations')}
-function showScreen(id){if(id!=='home'&&!canAccessScreen(id)){alert('ليس لديك صلاحية الوصول إلى هذا القسم.');return}document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-followup')renderFamilyFollowup();if(id==='add-family'&&editingFamilyCode===null){const fc=document.getElementById('f-code');if(fc){fc.value=String(nextFamilyCode());fc.readOnly=true;}}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor'&&editingDonorIndex===null)resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
+function showScreen(id){if(!['home','settings-hub','theme-settings'].includes(id)&&!canAccessScreen(id)){alert('ليس لديك صلاحية الوصول إلى هذا القسم.');return}document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-followup')renderFamilyFollowup();if(id==='add-family'&&editingFamilyCode===null){const fc=document.getElementById('f-code');if(fc){fc.value=String(nextFamilyCode());fc.readOnly=true;}}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor'&&editingDonorIndex===null)resetDonorForm();if(id==='add-donation'&&editingDonationIndex===null)resetDonationForm();if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
 
 /* ===== استعادة الصفحة والمسودات غير المحفوظة على الجهاز ===== */
 (function initWarithSessionDrafts(){
@@ -5492,6 +5516,125 @@ function exportProgramPDF(i){
   to { opacity: 0; transform: translateY(-110%); }
 }
 </style>
+
+<style id="warith-theme-settings-v1">
+.theme-options{display:grid;gap:9px;margin-top:14px}
+.theme-option{width:100%;display:flex;align-items:center;gap:11px;text-align:right;border:1px solid #dce6e2;background:#fff;border-radius:13px;padding:12px;color:#29483f;font:inherit;cursor:pointer}
+.theme-option.active{border:2px solid #2878c8;box-shadow:0 0 0 3px #2878c81a;padding:11px}
+.theme-swatches{display:flex;gap:5px;flex:0 0 58px}
+.theme-swatches i{width:25px;height:30px;border-radius:7px;display:block}
+.theme-option-copy{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.theme-option-copy b{font-size:12px}.theme-option-copy small{font-size:10px;color:#75857f}
+.theme-selected{display:none;font-size:9px;font-weight:900;color:#2878c8;white-space:nowrap}
+.theme-option.active .theme-selected{display:block}
+.theme-current{margin-top:12px;padding:9px 11px;border-radius:9px;background:#f2f7f5;color:#45665d;font-size:10px;font-weight:800}
+html[data-warith-theme="indigo-maroon"] body,
+html[data-warith-theme="indigo-maroon"] .app{background:#f4f1f7!important;color:#302744!important}
+html[data-warith-theme="indigo-maroon"] main{background:#f4f1f7!important}
+html[data-warith-theme="indigo-maroon"] header{background:linear-gradient(135deg,#39285f 0%,#554078 100%)!important;border-bottom-color:#7b294c!important}
+html[data-warith-theme="indigo-maroon"] .brand small,
+html[data-warith-theme="indigo-maroon"] .header-current-user{color:#f0dce5!important}
+html[data-warith-theme="indigo-maroon"] .card,
+html[data-warith-theme="indigo-maroon"] .stat,
+html[data-warith-theme="indigo-maroon"] .tile,
+html[data-warith-theme="indigo-maroon"] .info,
+html[data-warith-theme="indigo-maroon"] .search,
+html[data-warith-theme="indigo-maroon"] .donation-table-wrap,
+html[data-warith-theme="indigo-maroon"] .in-kind-contact-card{background:#fff!important}
+html[data-warith-theme="indigo-maroon"] .tile,
+html[data-warith-theme="indigo-maroon"] .back,
+html[data-warith-theme="indigo-maroon"] .action,
+html[data-warith-theme="indigo-maroon"] .tab,
+html[data-warith-theme="indigo-maroon"] .donation-tab,
+html[data-warith-theme="indigo-maroon"] .in-kind-tab,
+html[data-warith-theme="indigo-maroon"] .type-btn,
+html[data-warith-theme="indigo-maroon"] .more{color:#49366f!important}
+html[data-warith-theme="indigo-maroon"] .primary,
+html[data-warith-theme="indigo-maroon"] .search button,
+html[data-warith-theme="indigo-maroon"] .fab,
+html[data-warith-theme="indigo-maroon"] .tab.active,
+html[data-warith-theme="indigo-maroon"] .donation-tab.active,
+html[data-warith-theme="indigo-maroon"] .in-kind-tab.active,
+html[data-warith-theme="indigo-maroon"] .type-btn.active,
+html[data-warith-theme="indigo-maroon"] .report-detail-heading,
+html[data-warith-theme="indigo-maroon"] .donation-table th{background:#49366f!important;color:#fff!important}
+html[data-warith-theme="indigo-maroon"] .badge,
+html[data-warith-theme="indigo-maroon"] .avatar,
+html[data-warith-theme="indigo-maroon"] .donor-stat,
+html[data-warith-theme="indigo-maroon"] .donor-alloc-row,
+html[data-warith-theme="indigo-maroon"] .attachment,
+html[data-warith-theme="indigo-maroon"] .meta div{background:#f5edf2!important;color:#7b294c!important}
+html[data-warith-theme="indigo-maroon"] .link,
+html[data-warith-theme="indigo-maroon"] .code,
+html[data-warith-theme="indigo-maroon"] .donation-table .donation-amount,
+html[data-warith-theme="indigo-maroon"] .donor-table-allocation b,
+html[data-warith-theme="indigo-maroon"] .report-detail-cell b{color:#7b294c!important}
+html[data-warith-theme="indigo-maroon"] .in-kind-contact-card{border-right-color:#7b294c!important}
+html[data-warith-theme="indigo-maroon"] .forminput:focus{border-color:#806a9f!important;box-shadow:0 0 0 3px #49366f18!important}
+html[data-warith-theme="indigo-maroon"] .filterbar .chip,
+html[data-warith-theme="indigo-maroon"] .chip{border-color:#ded4e7!important;color:#49366f!important}
+html[data-warith-theme="indigo-maroon"] .chip.active{background:#49366f!important;color:#fff!important}
+html[data-warith-theme="indigo-maroon"] .menu{background:#fff!important}
+html[data-warith-theme="indigo-maroon"] .menu button{color:#49366f!important}
+html[data-warith-theme="indigo-maroon"] .menu button:hover{background:#f5edf2!important}
+html[data-warith-theme="blue-gold"] body,
+html[data-warith-theme="blue-gold"] .app{background:#f1f6fc!important;color:#203b59!important}
+html[data-warith-theme="blue-gold"] main{background:#f1f6fc!important}
+html[data-warith-theme="blue-gold"] header{background:linear-gradient(135deg,#2878c8 0%,#4a96df 100%)!important;border-bottom-color:#d9af4b!important}
+html[data-warith-theme="blue-gold"] .brand small,
+html[data-warith-theme="blue-gold"] .header-current-user{color:#fff0c7!important}
+html[data-warith-theme="blue-gold"] .card,
+html[data-warith-theme="blue-gold"] .stat,
+html[data-warith-theme="blue-gold"] .tile,
+html[data-warith-theme="blue-gold"] .info,
+html[data-warith-theme="blue-gold"] .search,
+html[data-warith-theme="blue-gold"] .donation-table-wrap,
+html[data-warith-theme="blue-gold"] .in-kind-contact-card{background:#fff!important}
+html[data-warith-theme="blue-gold"] .tile,
+html[data-warith-theme="blue-gold"] .back,
+html[data-warith-theme="blue-gold"] .action,
+html[data-warith-theme="blue-gold"] .tab,
+html[data-warith-theme="blue-gold"] .donation-tab,
+html[data-warith-theme="blue-gold"] .in-kind-tab,
+html[data-warith-theme="blue-gold"] .type-btn,
+html[data-warith-theme="blue-gold"] .more{color:#2468aa!important}
+html[data-warith-theme="blue-gold"] .primary,
+html[data-warith-theme="blue-gold"] .search button,
+html[data-warith-theme="blue-gold"] .fab,
+html[data-warith-theme="blue-gold"] .tab.active,
+html[data-warith-theme="blue-gold"] .donation-tab.active,
+html[data-warith-theme="blue-gold"] .in-kind-tab.active,
+html[data-warith-theme="blue-gold"] .type-btn.active,
+html[data-warith-theme="blue-gold"] .report-detail-heading,
+html[data-warith-theme="blue-gold"] .donation-table th{background:#2878c8!important;color:#fff!important}
+html[data-warith-theme="blue-gold"] .badge,
+html[data-warith-theme="blue-gold"] .avatar,
+html[data-warith-theme="blue-gold"] .donor-stat,
+html[data-warith-theme="blue-gold"] .donor-alloc-row,
+html[data-warith-theme="blue-gold"] .attachment,
+html[data-warith-theme="blue-gold"] .meta div{background:#edf4fc!important;color:#2468aa!important}
+html[data-warith-theme="blue-gold"] .link,
+html[data-warith-theme="blue-gold"] .code,
+html[data-warith-theme="blue-gold"] .donation-table .donation-amount,
+html[data-warith-theme="blue-gold"] .donor-table-allocation b,
+html[data-warith-theme="blue-gold"] .report-detail-cell b{color:#2468aa!important}
+html[data-warith-theme="blue-gold"] .in-kind-contact-card{border-right-color:#d9af4b!important}
+html[data-warith-theme="blue-gold"] .forminput:focus{border-color:#d9af4b!important;box-shadow:0 0 0 3px #d9af4b26!important}
+html[data-warith-theme="blue-gold"] .filterbar .chip,
+html[data-warith-theme="blue-gold"] .chip{border-color:#d7e4f2!important;color:#2468aa!important}
+html[data-warith-theme="blue-gold"] .chip.active{background:#2878c8!important;color:#fff!important}
+html[data-warith-theme="blue-gold"] .section b,
+html[data-warith-theme="blue-gold"] .screen-title{color:#1f4f7e!important}
+html[data-warith-theme="blue-gold"] .section{border-right:3px solid #d9af4b;padding-right:8px}
+html[data-warith-theme="blue-gold"] .menu{background:#fff!important}
+html[data-warith-theme="blue-gold"] .menu button{color:#2468aa!important}
+html[data-warith-theme="blue-gold"] .menu button:hover{background:#edf4fc!important}
+@media(max-width:380px){.theme-option{gap:8px;padding:10px}.theme-option-copy small{font-size:9px}}
+</style>
+<script id="warith-theme-early-init-v1">
+(()=>{try{const k='warith_personal_theme_v1';const t=localStorage.getItem(k)||'base';if(t==='indigo-maroon'||t==='blue-gold')document.documentElement.dataset.warithTheme=t;else document.documentElement.removeAttribute('data-warith-theme');}catch(e){}})();
+</script>
+
 </head><body><h2>جمعية السيدة فاطمة الخيرية — ${esc(x.name)}</h2><div class="meta">التاريخ: ${esc(x.date||'—')}　 |　 الحالة: ${esc(x.status||'—')}<br>التفاصيل: ${esc(x.details||'بدون وصف')}<br>عدد العوائل: ${fs.length}　 |　 تم الاستلام: ${fs.filter(v=>v.received).length}</div><table><thead><tr><th>ت</th><th>رقم العائلة</th><th>رب الأسرة</th><th>الهاتف</th><th>عنوان السكن</th><th>أقرب نقطة</th><th>استلم</th></tr></thead><tbody>${rows||'<tr><td colspan="7">لا توجد عوائل مرتبطة بهذا البرنامج</td></tr>'}</tbody></table><script>window.onload=()=>{window.focus();window.print()}<\/script></body></html>`);w.document.close();
 }
 function renderPrograms(){const q=(document.getElementById('programQ')?.value||'').trim().toLowerCase();const all=sortRecords(programs.filter(x=>!isHiddenRecord(x)&&(x.name+' '+x.details+' '+x.status).toLowerCase().includes(q)), 'date', ['name']);const a=activityExpanded.program?all:all.slice(0,5);const c=document.getElementById('programMoreBtn');if(c)c.textContent=all.length>5?(activityExpanded.program?'عرض آخر 5':'عرض الكل'):'';const b=document.getElementById('programList');if(!b)return;b.innerHTML=a.map(x=>{const i=programs.indexOf(x),fs=normalizeProgramFamilies(x),received=fs.filter(v=>v.received).length;return `<div class="card"><div class="row"><div class="avatar">🎯</div><div class="grow"><div class="name">${escapeHtml(x.name)}</div><div class="sub">${escapeHtml(x.status)} · ${escapeHtml(x.date)}</div><div class="sub">العوائل: ${fs.length} · تم الاستلام: ${received}</div><div class="sub">${escapeHtml(x.details||'بدون وصف')}</div></div></div><div class="member-actions"><button class="action primary" onclick="openProgramDetail(${i})">👁️ العوائل</button><button class="action" onclick="exportProgramExcel(${i})">📊 Excel</button><button class="action" onclick="exportProgramPDF(${i})">📄 PDF</button><button class="action" onclick="openActivityForm('program',${i})">✏️ تعديل</button><button class="action" onclick="hideRecord('programs',${i},'البرنامج')">🚫 حجب</button><button class="action" onclick="deleteActivity('program',${i})">🗑 حذف</button></div></div>`}).join('')||'<div class="empty">لا توجد برامج بعد</div>';} 
@@ -6404,6 +6547,31 @@ try{renderHomeDashboard();}catch(e){}
   .in-kind-history-table-wrap{overflow-x:auto}
 }
 </style>
+
+<script id="warith-theme-runtime-v1">
+const WARITH_THEME_KEY='warith_personal_theme_v1';
+const WARITH_THEME_NAMES={base:'الأساسي', 'indigo-maroon':'النيلي والماروني', 'blue-gold':'الأزرق البراق والذهبي'};
+function applyWarithTheme(theme,save=true){
+  if(!Object.prototype.hasOwnProperty.call(WARITH_THEME_NAMES,theme))theme='base';
+  if(theme==='base')document.documentElement.removeAttribute('data-warith-theme');
+  else document.documentElement.dataset.warithTheme=theme;
+  if(save){try{localStorage.setItem(WARITH_THEME_KEY,theme)}catch(e){}}
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta)meta.content=theme==='indigo-maroon'?'#49366f':theme==='blue-gold'?'#2878c8':'#0b5b4f';
+  document.querySelectorAll('[data-theme-choice]').forEach(el=>{
+    const active=el.dataset.themeChoice===theme;
+    el.classList.toggle('active',active);
+    el.setAttribute('aria-pressed',active?'true':'false');
+  });
+  const label=document.getElementById('themeCurrentLabel');
+  if(label)label.textContent='الثيم الحالي: '+WARITH_THEME_NAMES[theme];
+  return theme;
+}
+function selectWarithTheme(theme){applyWarithTheme(theme,true)}
+function openThemeSettings(){showScreen('theme-settings');let t='base';try{t=localStorage.getItem(WARITH_THEME_KEY)||'base'}catch(e){}applyWarithTheme(t,false)}
+(()=>{let t='base';try{t=localStorage.getItem(WARITH_THEME_KEY)||'base'}catch(e){}applyWarithTheme(t,false)})();
+</script>
+
 </body>
 <script>
 /* استرجاع حالتي المساعدات المحذوفتين */
