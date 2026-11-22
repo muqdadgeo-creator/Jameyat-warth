@@ -199,6 +199,11 @@ textarea.forminput{height:80px;resize:vertical}
 .home-monthly-aid-pair .home-card-title{align-items:flex-start;line-height:1.5}
 .home-monthly-aid-pair .home-big-value{font-size:clamp(16px,4.5vw,24px);overflow-wrap:anywhere;text-align:center}
 .home-monthly-aid-pair .home-card-note{line-height:1.5}
+.home-financial-pair{display:grid;grid-template-columns:1fr;gap:7px;margin:7px 0}
+.home-financial-pair>div{background:#f4f7f6;border-radius:8px;padding:7px 8px;text-align:center}
+.home-financial-pair span{display:block;font-size:10px;color:#647a73;font-weight:800}
+.home-financial-pair b{display:block;margin-top:3px;font-size:clamp(14px,3.8vw,20px);color:#0f5c4d;overflow-wrap:anywhere}
+.home-financial-pair>div:last-child b{color:#a04a4a}
 
 .home-card{background:#fff;border-radius:11px;padding:8px;box-shadow:0 2px 7px #0000000a}
 .home-card-title{display:flex;align-items:center;gap:4px;font-size:11px;color:#24473f;margin-bottom:6px}
@@ -878,9 +883,12 @@ function selectWarithTheme(theme){applyWarithTheme(theme,true)}function openThem
 </div>
 <div class="home-monthly-aid-pair">
 <div class="home-card home-financial-aid-card">
-<div class="home-card-title">💵 <b>المساعدات المالية (لهذا الشهر)</b></div>
-<div class="home-big-value" id="homeMonthlyFinancialAidTotal">0 د.ع</div>
-<div class="home-card-note">مجموع المساعدات المالية خلال الشهر الحالي</div>
+<div class="home-card-title">💵 <b>المساعدات والمصروفات (هذا الشهر)</b></div>
+<div class="home-financial-pair">
+<div><span>المساعدات</span><b id="homeMonthlyFinancialAidTotal">0 د.ع</b></div>
+<div><span>المصروفات</span><b id="homeMonthlyExpensesTotal">0 د.ع</b></div>
+</div>
+<div class="home-card-note">إجمالي المبالغ المسجلة خلال الشهر الحالي</div>
 </div>
 <div class="home-card home-beneficiary-families-card">
 <div class="home-card-title">👨‍👩‍👧‍👦 <b>عوائل مستفيدة (هذا الشهر)</b></div>
@@ -2363,6 +2371,11 @@ function renderHomeDashboard(){
   const financialAidTotal=monthlyHelps.reduce((n,x)=>n+aidAmount(x),0);
   const financialAidTotalEl=document.getElementById('homeMonthlyFinancialAidTotal');
   if(financialAidTotalEl)financialAidTotalEl.textContent=financialAidTotal.toLocaleString('en-US')+' د.ع';
+  // إجمالي المصروفات المسجلة خلال الشهر الحالي.
+  const monthlyExpenses=expenses.filter(x=>x&&!isHiddenRecord(x)&&homeIsCurrentMonth(x.date));
+  const monthlyExpensesTotal=monthlyExpenses.reduce((n,x)=>n+aidAmount(x),0);
+  const monthlyExpensesTotalEl=document.getElementById('homeMonthlyExpensesTotal');
+  if(monthlyExpensesTotalEl)monthlyExpensesTotalEl.textContent=monthlyExpensesTotal.toLocaleString('en-US')+' د.ع';
 
   // عدد العوائل المستفيدة من كل أنواع المساعدة هذا الشهر؛ كل عائلة تُحسب مرة واحدة فقط.
   const beneficiaryKeys=new Set();
@@ -6592,7 +6605,7 @@ try{renderHomeDashboard();}catch(e){}
 function warithHasSignedInUser(){try{return !!(typeof currentUser==='function'&&currentUser())}catch(e){return false}}
 function openHomeAppealDonation(id){const a=appeals.find(x=>Number(x.id)===Number(id))||(window.warithPublicAppeals||[]).find(x=>Number(x.id)===Number(id));if(a)donateToAppeal(a)}
 function renderWarithPublicDashboardLoading(){
-  const ids=['homeFamiliesActive','homeFamiliesOpen','homeFamiliesClosed','homeMonthlyDonationsReceived','homeMonthlyDonationsPending','homeMonthlyFinancialAidTotal','homeMonthlyBeneficiaryFamilies','homeAppealsDone','homeAppealsNotDone'];
+  const ids=['homeFamiliesActive','homeFamiliesOpen','homeFamiliesClosed','homeMonthlyDonationsReceived','homeMonthlyDonationsPending','homeMonthlyFinancialAidTotal','homeMonthlyExpensesTotal','homeMonthlyBeneficiaryFamilies','homeAppealsDone','homeAppealsNotDone'];
   ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='…'});
   const inv=document.getElementById('homeInventoryItems');if(inv)inv.innerHTML='<div class="home-empty">جار تحميل بيانات العرض العام…</div>';
   const recent=document.getElementById('homeRecentActivities');if(recent)recent.innerHTML='<div class="empty">يتم تحديث لوحة العرض من السحابة…</div>';
@@ -6606,6 +6619,7 @@ function renderWarithPublicDashboard(){
   const rec=document.getElementById('homeMonthlyDonationsReceived');if(rec)rec.textContent=Number(d.donations?.received||0).toLocaleString('en-US')+' د.ع';
   const pend=document.getElementById('homeMonthlyDonationsPending');if(pend)pend.textContent=Number(d.donations?.pending||0).toLocaleString('en-US')+' د.ع';
   const aid=document.getElementById('homeMonthlyFinancialAidTotal');if(aid)aid.textContent=Number(d.help?.amount||0).toLocaleString('en-US')+' د.ع';
+  const expenseTotal=document.getElementById('homeMonthlyExpensesTotal');if(expenseTotal)expenseTotal.textContent=Number(d.expenses?.amount||0).toLocaleString('en-US')+' د.ع';
   setText('homeMonthlyBeneficiaryFamilies',d.help?.beneficiaries);
   setText('homeAppealsDone',d.appeals?.done);setText('homeAppealsNotDone',d.appeals?.notDone);
   const inv=document.getElementById('homeInventoryItems');
