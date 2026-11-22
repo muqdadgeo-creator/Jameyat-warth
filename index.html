@@ -883,12 +883,9 @@ function selectWarithTheme(theme){applyWarithTheme(theme,true)}function openThem
 </div>
 <div class="home-monthly-aid-pair">
 <div class="home-card home-financial-aid-card">
-<div class="home-card-title">💵 <b>المساعدات والمصروفات (هذا الشهر)</b></div>
-<div class="home-financial-pair">
-<div><span>المساعدات</span><b id="homeMonthlyFinancialAidTotal">0 د.ع</b></div>
-<div><span>المصروفات</span><b id="homeMonthlyExpensesTotal">0 د.ع</b></div>
-</div>
-<div class="home-card-note">إجمالي المبالغ المسجلة خلال الشهر الحالي</div>
+<div class="home-card-title">💵 <b>المساعدات المالية (لهذا الشهر)</b></div>
+<div class="home-big-value" id="homeMonthlyFinancialAidTotal">0 د.ع</div>
+<div class="home-card-note">إجمالي المساعدات والمصروفات خلال الشهر الحالي</div>
 </div>
 <div class="home-card home-beneficiary-families-card">
 <div class="home-card-title">👨‍👩‍👧‍👦 <b>عوائل مستفيدة (هذا الشهر)</b></div>
@@ -2369,13 +2366,12 @@ function renderHomeDashboard(){
     return Number(raw)||0;
   };
   const financialAidTotal=monthlyHelps.reduce((n,x)=>n+aidAmount(x),0);
-  const financialAidTotalEl=document.getElementById('homeMonthlyFinancialAidTotal');
-  if(financialAidTotalEl)financialAidTotalEl.textContent=financialAidTotal.toLocaleString('en-US')+' د.ع';
-  // إجمالي المصروفات المسجلة خلال الشهر الحالي.
+  // مجموع المساعدات المالية والمصروفات المسجلة خلال الشهر الحالي.
   const monthlyExpenses=expenses.filter(x=>x&&!isHiddenRecord(x)&&homeIsCurrentMonth(x.date));
   const monthlyExpensesTotal=monthlyExpenses.reduce((n,x)=>n+aidAmount(x),0);
-  const monthlyExpensesTotalEl=document.getElementById('homeMonthlyExpensesTotal');
-  if(monthlyExpensesTotalEl)monthlyExpensesTotalEl.textContent=monthlyExpensesTotal.toLocaleString('en-US')+' د.ع';
+  const combinedMonthlyFinancialTotal=financialAidTotal+monthlyExpensesTotal;
+  const financialAidTotalEl=document.getElementById('homeMonthlyFinancialAidTotal');
+  if(financialAidTotalEl)financialAidTotalEl.textContent=combinedMonthlyFinancialTotal.toLocaleString('en-US')+' د.ع';
 
   // عدد العوائل المستفيدة من كل أنواع المساعدة هذا الشهر؛ كل عائلة تُحسب مرة واحدة فقط.
   const beneficiaryKeys=new Set();
@@ -6605,7 +6601,7 @@ try{renderHomeDashboard();}catch(e){}
 function warithHasSignedInUser(){try{return !!(typeof currentUser==='function'&&currentUser())}catch(e){return false}}
 function openHomeAppealDonation(id){const a=appeals.find(x=>Number(x.id)===Number(id))||(window.warithPublicAppeals||[]).find(x=>Number(x.id)===Number(id));if(a)donateToAppeal(a)}
 function renderWarithPublicDashboardLoading(){
-  const ids=['homeFamiliesActive','homeFamiliesOpen','homeFamiliesClosed','homeMonthlyDonationsReceived','homeMonthlyDonationsPending','homeMonthlyFinancialAidTotal','homeMonthlyExpensesTotal','homeMonthlyBeneficiaryFamilies','homeAppealsDone','homeAppealsNotDone'];
+  const ids=['homeFamiliesActive','homeFamiliesOpen','homeFamiliesClosed','homeMonthlyDonationsReceived','homeMonthlyDonationsPending','homeMonthlyFinancialAidTotal','homeMonthlyBeneficiaryFamilies','homeAppealsDone','homeAppealsNotDone'];
   ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='…'});
   const inv=document.getElementById('homeInventoryItems');if(inv)inv.innerHTML='<div class="home-empty">جار تحميل بيانات العرض العام…</div>';
   const recent=document.getElementById('homeRecentActivities');if(recent)recent.innerHTML='<div class="empty">يتم تحديث لوحة العرض من السحابة…</div>';
@@ -6618,8 +6614,7 @@ function renderWarithPublicDashboard(){
   setText('homeFamiliesActive',d.families?.active);setText('homeFamiliesOpen',d.families?.open);setText('homeFamiliesClosed',d.families?.closed);
   const rec=document.getElementById('homeMonthlyDonationsReceived');if(rec)rec.textContent=Number(d.donations?.received||0).toLocaleString('en-US')+' د.ع';
   const pend=document.getElementById('homeMonthlyDonationsPending');if(pend)pend.textContent=Number(d.donations?.pending||0).toLocaleString('en-US')+' د.ع';
-  const aid=document.getElementById('homeMonthlyFinancialAidTotal');if(aid)aid.textContent=Number(d.help?.amount||0).toLocaleString('en-US')+' د.ع';
-  const expenseTotal=document.getElementById('homeMonthlyExpensesTotal');if(expenseTotal)expenseTotal.textContent=Number(d.expenses?.amount||0).toLocaleString('en-US')+' د.ع';
+  const aid=document.getElementById('homeMonthlyFinancialAidTotal');if(aid)aid.textContent=(Number(d.help?.amount||0)+Number(d.expenses?.amount||0)).toLocaleString('en-US')+' د.ع';
   setText('homeMonthlyBeneficiaryFamilies',d.help?.beneficiaries);
   setText('homeAppealsDone',d.appeals?.done);setText('homeAppealsNotDone',d.appeals?.notDone);
   const inv=document.getElementById('homeInventoryItems');
