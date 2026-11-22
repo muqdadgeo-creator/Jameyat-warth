@@ -2910,7 +2910,7 @@ function showScreen(id){if(!['home','settings-hub','theme-settings'].includes(id
 (function initWarithSessionDrafts(){
   const DRAFT_KEY='warith_session_drafts_v1';
   const ACTIVE_KEY='warith_active_screen_v1';
-  const EDIT_STATE_KEYS=['selectedFamilyCode','editingFamilyCode','editingMemberIndex','editingAppealIndex','selectedAppealIndex','selectedAid','editingDonorIndex','editingDonationIndex','editingInventoryIndex','editingActivityIndex','editingActivityType'];
+  const EDIT_STATE_KEYS=['editingFamilyCode','editingMemberIndex','editingAppealIndex','selectedAppealIndex','selectedAid','editingDonorIndex','editingDonationIndex','editingInventoryIndex','editingActivityIndex','editingActivityType'];
   const excludedTypes=new Set(['password','file','button','submit','reset','image']);
   let restoreInProgress=false;
   let saveTimer=null;
@@ -2962,7 +2962,6 @@ function showScreen(id){if(!['home','settings-hub','theme-settings'].includes(id
     try{if(typeof editingActivityIndex!=='undefined')state.editingActivityIndex=editingActivityIndex}catch(e){}
     try{if(typeof editingActivityType!=='undefined')state.editingActivityType=editingActivityType}catch(e){}
     try{if(typeof selectedAid!=='undefined')state.selectedAid=selectedAid}catch(e){}
-    try{if(typeof selectedFamilyCode!=='undefined')state.selectedFamilyCode=selectedFamilyCode}catch(e){}
     return state;
   }
   function applyEditState(state){
@@ -2970,7 +2969,6 @@ function showScreen(id){if(!['home','settings-hub','theme-settings'].includes(id
     Object.entries(state).forEach(([key,value])=>{
       try{
         switch(key){
-          case 'selectedFamilyCode': if(typeof selectedFamilyCode!=='undefined')selectedFamilyCode=value; break;
           case 'editingFamilyCode': if(typeof editingFamilyCode!=='undefined')editingFamilyCode=value; break;
           case 'editingMemberIndex': if(typeof editingMemberIndex!=='undefined')editingMemberIndex=value; break;
           case 'editingAppealIndex': if(typeof editingAppealIndex!=='undefined')editingAppealIndex=value; break;
@@ -3098,13 +3096,18 @@ function showScreen(id){if(!['home','settings-hub','theme-settings'].includes(id
       if(skipDonationDraftRestore)window.warithSkipDonationDraftRestoreOnce=false;
       const skipAppealDraftRestore=current==='add-appeal'&&window.warithSkipAppealDraftRestoreOnce===true;
       if(skipAppealDraftRestore)window.warithSkipAppealDraftRestoreOnce=false;
-      if(!skipDonationDraftRestore&&!skipAppealDraftRestore)setTimeout(()=>restoreScreen(current),80);
+      const skipFamilyDraftRestore=current==='family-detail'||current==='edit-family';
+      if(!skipDonationDraftRestore&&!skipAppealDraftRestore&&!skipFamilyDraftRestore)setTimeout(()=>restoreScreen(current),80);
       return result;
     };
   }
   function restoreLastPage(){
     let saved='home';try{saved=sessionStorage.getItem(ACTIVE_KEY)||'home'}catch(e){}
     if(!document.getElementById(saved))saved='home';
+    if(saved==='family-detail'||saved==='edit-family'){
+      saved='families';
+      try{const clean=readDrafts();delete clean['family-detail'];delete clean['edit-family'];writeDrafts(clean);sessionStorage.setItem(ACTIVE_KEY,'families')}catch(e){}
+    }
     const drafts=readDrafts();
     if(drafts[saved]?.state)applyEditState(drafts[saved].state);
     if(typeof window.showScreen==='function'&&saved!=='home')window.showScreen(saved);
@@ -3517,6 +3520,7 @@ function openFamily(code){
   const exists=families.some(x=>String(x?.c??'').trim()!==''&&Number(x.c)===n);
   if(!exists){selectedFamilyCode=null;alert('لم يتم العثور على سجل العائلة المطلوب.');return}
   selectedFamilyCode=n;
+  try{const drafts=JSON.parse(localStorage.getItem(DRAFT_KEY)||'{}');delete drafts['family-detail'];delete drafts['edit-family'];localStorage.setItem(DRAFT_KEY,JSON.stringify(drafts))}catch(e){}
   showScreen('family-detail');
 }
 function familyExportText(x){
