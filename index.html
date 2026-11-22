@@ -3104,14 +3104,18 @@ function showScreen(id){if(!['home','settings-hub','theme-settings'].includes(id
   function restoreLastPage(){
     let saved='home';try{saved=sessionStorage.getItem(ACTIVE_KEY)||'home'}catch(e){}
     if(!document.getElementById(saved))saved='home';
+    let restoreFamilyCode=null;
     if(saved==='family-detail'||saved==='edit-family'){
-      saved='families';
-      try{const clean=readDrafts();delete clean['family-detail'];delete clean['edit-family'];writeDrafts(clean);sessionStorage.setItem(ACTIVE_KEY,'families')}catch(e){}
+      try{restoreFamilyCode=Number(sessionStorage.getItem('warith_active_family_code'))}catch(e){}
+      const valid=Number.isFinite(restoreFamilyCode)&&restoreFamilyCode>0&&families.some(x=>String(x?.c??'').trim()!==''&&Number(x.c)===restoreFamilyCode);
+      if(valid)selectedFamilyCode=restoreFamilyCode;
+      else{saved='families';try{sessionStorage.setItem(ACTIVE_KEY,'families')}catch(e){}}
     }
     const drafts=readDrafts();
-    if(drafts[saved]?.state)applyEditState(drafts[saved].state);
+    if(drafts[saved]?.state&&saved!=='family-detail'&&saved!=='edit-family')applyEditState(drafts[saved].state);
     if(typeof window.showScreen==='function'&&saved!=='home')window.showScreen(saved);
     else if(saved==='home')restoreScreen('home');
+    if(saved==='edit-family'&&restoreFamilyCode&&typeof window.editFamily==='function')window.editFamily();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(restoreLastPage,120),{once:true});
   else setTimeout(restoreLastPage,120);
@@ -3520,6 +3524,7 @@ function openFamily(code){
   const exists=families.some(x=>String(x?.c??'').trim()!==''&&Number(x.c)===n);
   if(!exists){selectedFamilyCode=null;alert('لم يتم العثور على سجل العائلة المطلوب.');return}
   selectedFamilyCode=n;
+  try{sessionStorage.setItem('warith_active_family_code',String(n))}catch(e){}
   try{const drafts=JSON.parse(localStorage.getItem(DRAFT_KEY)||'{}');delete drafts['family-detail'];delete drafts['edit-family'];localStorage.setItem(DRAFT_KEY,JSON.stringify(drafts))}catch(e){}
   showScreen('family-detail');
 }
