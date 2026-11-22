@@ -2218,7 +2218,16 @@ function deleteAppeal(){if(!hasAction('delete','appeals')){alert('ليس لدي�
   showScreen('appeals');
 }
 
-function getFamily(){return families.find(x=>Number(x.c)===Number(selectedFamilyCode));}
+function getFamily(){
+  const code=Number(selectedFamilyCode);
+  if(selectedFamilyCode===null||selectedFamilyCode===undefined||String(selectedFamilyCode).trim()===''||!Number.isFinite(code)||code<=0)return null;
+  return families.find(x=>{
+    const familyCode=String(x?.c??'').trim();
+    if(!familyCode)return false;
+    const n=Number(familyCode);
+    return Number.isFinite(n)&&n>0&&n===code;
+  })||null;
+}
 function homeDateLabel(v){
   if(!v)return '';
   const today=new Date().toISOString().slice(0,10);
@@ -3502,7 +3511,14 @@ function renderFamilies(){
   document.getElementById('count').textContent=a.length+' عائلة';
   document.getElementById('familyList').innerHTML=a.map(x=>`<div class="card" onclick="openFamily(${x.c})"><div class="row"><div class="avatar">ع</div><div class="grow"><div class="code">رقم العائلة #${x.c}</div><div class="name">${x.n}</div><div class="sub">رب الأسرة: ${x.head||x.n} · المعرف: ${x.i}</div></div><span class="badge">${x.st}</span><button type="button" class="more" onclick="event.preventDefault();event.stopPropagation();hideFamilyByCode(${x.c})">🚫</button></div><div class="meta"><div>👨‍👩‍👧 ${x.m} أفراد</div><div>💼 ${x.j}</div><div>💰 ${x.s}</div><div>💳 راتب: ${x.hasSalary||"غير محدد"}</div><div>🏢 ${x.salarySource||"لا توجد جهة مانحة"}</div><div>🏠 ${x.h}</div><div>📍 ${x.address||"العنوان غير مسجل"}</div><div>🔢 رمز العنوان: ${x.addressCode||"—"}</div><div>⚖️ الحقوق: ${x.r}</div><div>📍 ${x.map?'الموقع محفوظ':'الموقع غير مضاف'}</div></div></div>`).join('')||'<div class="empty">لا توجد عوائل مطابقة للفلاتر أو البحث</div>'}
 
-function openFamily(code){selectedFamilyCode=Number(code);showScreen('family-detail');}
+function openFamily(code){
+  const raw=String(code??'').trim(),n=Number(raw);
+  if(!raw||!Number.isFinite(n)||n<=0){selectedFamilyCode=null;alert('تعذر فتح العائلة: رقم العائلة غير صالح.');return}
+  const exists=families.some(x=>String(x?.c??'').trim()!==''&&Number(x.c)===n);
+  if(!exists){selectedFamilyCode=null;alert('لم يتم العثور على سجل العائلة المطلوب.');return}
+  selectedFamilyCode=n;
+  showScreen('family-detail');
+}
 function familyExportText(x){
  if(!x)return '';
  const members=x.membersList||[];
