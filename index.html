@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية السيدة فاطمة عليها السلام الخيرية</title>
-<script>(()=>{try{const v='fatima-v-20261123-monthly-beneficiaries-materials-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='fatima-v-20261123-inventory-search-filters-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -849,7 +849,17 @@ const WARITH_THEME_KEY='warith_personal_theme_v1';const WARITH_THEME_NAMES={base
 function applyWarithTheme(theme,save=true){if(!Object.prototype.hasOwnProperty.call(WARITH_THEME_NAMES,theme))theme='base';if(theme==='base')document.documentElement.removeAttribute('data-warith-theme');else document.documentElement.dataset.warithTheme=theme;if(save){try{localStorage.setItem(WARITH_THEME_KEY,theme)}catch(e){}}const meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=theme==='indigo-maroon'?'#49366f':theme==='blue-gold'?'#2878c8':theme==='olive-earth'?'#3f4a2a':theme==='pink-sky'?'#e9b9ce':'#0b5b4f';document.querySelectorAll('[data-theme-choice]').forEach(el=>{const active=el.dataset.themeChoice===theme;el.classList.toggle('active',active);el.setAttribute('aria-pressed',active?'true':'false')});const label=document.getElementById('themeCurrentLabel');if(label)label.textContent='الثيم الحالي: '+WARITH_THEME_NAMES[theme];return theme}
 function selectWarithTheme(theme){applyWarithTheme(theme,true)}function openThemeSettings(){showScreen('theme-settings');let t='base';try{t=localStorage.getItem(WARITH_THEME_KEY)||'base'}catch(e){}applyWarithTheme(t,false)}
 </script>
-</head>
+<style>
+.inventory-action-row{display:flex;direction:rtl;align-items:center;gap:7px;margin:4px 0 13px}
+.inventory-action-row .inventory-move-btn{flex:0 0 25%;min-width:0;margin:0;padding:12px 5px;white-space:nowrap}
+.inventory-action-row .inventory-search{flex:1 1 50%;min-width:0;margin:0}
+.inventory-action-row .inventory-search input{min-width:0;padding:9px 4px;font-size:11px}
+.inventory-movement-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px;align-items:end}
+.inventory-movement-filters label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text,#34564e);font-weight:700}
+.inventory-movement-filters input,.inventory-movement-filters select{width:100%;min-width:0;border:1px solid #dce7e2;border-radius:11px;background:var(--card,#fff);color:inherit;padding:10px 8px;font:inherit;font-size:11px}
+.inventory-movement-filters>.action{grid-column:1/-1;margin:0;padding:9px}
+@media(max-width:380px){.inventory-action-row{gap:5px}.inventory-action-row .inventory-move-btn{flex-basis:23%;font-size:10px}.inventory-action-row .inventory-search input{font-size:10px}}
+</style></head>
 <body>
 <div class="app">
 <header><button class="icon" onclick="openMenu()">☰</button><div class="logo"><img alt="شعار جمعية السيدة فاطمة عليها السلام الخيرية" src="assets/logo.png?v=20261020-1"/></div><div class="brand"><b>جمعية السيدة فاطمة عليها السلام الخيرية</b></div><div class="brand-slogan" role="note">خدمة الناس مسؤولية وأمانة</div><div class="notification-wrap" data-auth-only style="display:none"><button aria-label="الإشعارات" class="icon notification-bell" onclick="toggleNotifications()">🔔<span class="notification-count" id="notificationCount">0</span></button><div class="notification-panel" id="notificationPanel"><div class="notification-head"><div class="grow"><b>الإشعارات</b><div class="sub" id="notificationSummary">لا توجد إشعارات جديدة</div></div><button class="link" onclick="markAllNotificationsRead();event.stopPropagation()">تحديد الكل كمقروء</button></div><div id="notificationList"></div><div class="notification-actions"><button class="action" onclick="markAllNotificationsRead();toggleNotifications(false)">تمت القراءة</button><button class="action primary" onclick="requestNotificationPermission()">📱 تفعيل إشعارات الجهاز</button></div></div></div><div class="header-auth-wrap"><button aria-label="تسجيل الدخول" class="header-login-btn" id="headerLoginBtn" onclick="openLogin()" type="button">🔐 تسجيل الدخول</button><div class="header-current-user" id="headerCurrentUser" aria-live="polite"></div><button type="button" class="warith-sync-status" id="warithSyncStatus" data-state="busy" onclick="warithSyncManualRefresh()" title="اضغط لإعادة فحص المزامنة">فحص المزامنة…</button></div></header>
@@ -1338,15 +1348,15 @@ function selectWarithTheme(theme){applyWarithTheme(theme,true)}function openThem
 <div class="screen-title">المخزن</div>
 <div class="count" id="inventoryCount"></div>
 </div>
-<div class="actions">
-<button class="action" id="inventoryInKindBtn" onclick="showScreen('in-kind-donations')" style="display:none">🎁 التبرعات العينية</button>
-<button class="action primary" onclick="openInventoryMovement('وارد')">＋ إدخال</button>
-<button class="action" onclick="openInventoryMovement('صادر')">− إخراج</button>
-</div>
-<div class="search">
+<div class="inventory-action-row">
+<button class="action primary inventory-move-btn" onclick="openInventoryMovement('وارد')">＋ إدخال</button>
+<div class="search inventory-search">
 <span>🔎</span>
 <input id="inventoryQ" oninput="renderInventory()" placeholder="ابحث باسم الجهاز أو المادة"/>
 </div>
+<button class="action inventory-move-btn" onclick="openInventoryMovement('صادر')">− إخراج</button>
+</div>
+<button class="action" id="inventoryInKindBtn" onclick="showScreen('in-kind-donations')" style="display:none">🎁 التبرعات العينية</button>
 <div class="inventory-record-tabs" role="tablist" aria-label="سجلات المخزن">
 <button type="button" class="action primary inventory-record-tab" id="inventoryTabStatus" role="tab" aria-selected="true" aria-controls="inventoryRecordStatus" onclick="switchInventoryRecord('status')">الموقف</button>
 <button type="button" class="action inventory-record-tab" id="inventoryTabPriority" role="tab" aria-selected="false" aria-controls="inventoryRecordPriority" onclick="switchInventoryRecord('priority')">أولوية التسليم</button>
@@ -1375,6 +1385,12 @@ function selectWarithTheme(theme){applyWarithTheme(theme,true)}function openThem
 </div>
 <div class="inventory-record-panel" id="inventoryRecordMovements" role="tabpanel" aria-labelledby="inventoryTabMovements" style="display:none">
 <div class="section"><b>سجل حركة الأجهزة والمواد</b></div>
+<div class="inventory-movement-filters">
+<label>التاريخ<input id="inventoryMovementDateFilter" type="date" onchange="renderInventory()"/></label>
+<label>الحركة<select id="inventoryMovementTypeFilter" onchange="renderInventory()"><option value="">كل الحركات</option><option value="وارد">وارد (إدخال)</option><option value="صادر">صادر (إخراج)</option></select></label>
+<label>التصنيف<select id="inventoryItemTypeFilter" onchange="renderInventory()"><option value="">كل الأصناف</option><option value="جهاز">أجهزة</option><option value="مواد">مواد</option></select></label>
+<button type="button" class="action" onclick="['inventoryMovementDateFilter','inventoryMovementTypeFilter','inventoryItemTypeFilter'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});renderInventory();">مسح الفلاتر</button>
+</div>
 <div class="card" style="padding:0;overflow:hidden">
 <div style="overflow-x:auto">
 <table style="width:100%;border-collapse:collapse;min-width:850px">
@@ -5342,7 +5358,17 @@ function renderInventory(){
 
   const movements=document.getElementById('inventoryMovementBody');
   if(movements){
-    const latest=sortRecords(inventoryMovements.filter(m=>!isHiddenRecord(m)), 'date', ['name','move']);
+    const movementDate=document.getElementById('inventoryMovementDateFilter')?.value||'';
+    const movementType=document.getElementById('inventoryMovementTypeFilter')?.value||'';
+    const itemType=document.getElementById('inventoryItemTypeFilter')?.value||'';
+    const latest=sortRecords(inventoryMovements.filter(m=>{
+      if(!m||isHiddenRecord(m))return false;
+      if(movementDate&&String(m.date||'')!==movementDate)return false;
+      if(movementType&&String(m.move||'')!==movementType)return false;
+      if(itemType&&String(m.type||'جهاز')!==itemType)return false;
+      if(q&&!([m.name,m.beneficiary,m.move,m.type,m.status,m.date].filter(Boolean).join(' ').toLowerCase().includes(q)))return false;
+      return true;
+    }), 'date', ['name','move']);
 
     movements.innerHTML=latest.map((m,i)=>{
       const originalIndex=inventoryMovements.indexOf(m);
