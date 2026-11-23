@@ -2386,7 +2386,23 @@ function renderHomeDashboard(){
     if(c&&c!=='0'&&c!=='null'&&c!=='undefined'){beneficiaryKeys.add('code:'+c);return;}
     if(n)beneficiaryKeys.add('name:'+n);
   };
+  // المساعدات المالية: كل السجلات المسجلة خلال الشهر الحالي.
   monthlyHelps.forEach(x=>addBeneficiary(x.familyCode??x.family_code,x.familyName??x.family_name));
+
+  // البرامج: لا تُحتسب العائلة إلا عند تأكيد الاستلام، ويُعتمد تاريخ البرنامج.
+  programs.filter(p=>p&&!isHiddenRecord(p)&&homeIsCurrentMonth(p.date)).forEach(p=>{
+    normalizeProgramFamilies(p).filter(v=>v.received).forEach(v=>{
+      addBeneficiary(v.familyCode, '');
+    });
+  });
+
+  // الأجهزة: احتساب المستفيد من حركات إخراج الأجهزة فقط خلال الشهر الحالي.
+  visibleInventory.filter(x=>
+    x&&x.move==='صادر'&&x.type==='جهاز'&&homeIsCurrentMonth(x.date)
+  ).forEach(x=>{
+    addBeneficiary(x.familyCode,x.beneficiary);
+  });
+
   setText('homeMonthlyBeneficiaryFamilies',beneficiaryKeys.size);
 
   // المناشدات: مكتملة / غير مكتملة لهذا الشهر.
