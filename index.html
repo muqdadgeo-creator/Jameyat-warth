@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية السيدة فاطمة عليها السلام الخيرية</title>
-<script>(()=>{try{const v='fatima-v-20261123-inventory-search-filters-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='fatima-v-20261123-inventory-date-period-filters-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -854,10 +854,13 @@ function selectWarithTheme(theme){applyWarithTheme(theme,true)}function openThem
 .inventory-action-row .inventory-move-btn{flex:0 0 25%;min-width:0;margin:0;padding:12px 5px;white-space:nowrap}
 .inventory-action-row .inventory-search{flex:1 1 50%;min-width:0;margin:0}
 .inventory-action-row .inventory-search input{min-width:0;padding:9px 4px;font-size:11px}
-.inventory-movement-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px;align-items:end}
-.inventory-movement-filters label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text,#34564e);font-weight:700}
-.inventory-movement-filters input,.inventory-movement-filters select{width:100%;min-width:0;border:1px solid #dce7e2;border-radius:11px;background:var(--card,#fff);color:inherit;padding:10px 8px;font:inherit;font-size:11px}
-.inventory-movement-filters>.action{grid-column:1/-1;margin:0;padding:9px}
+.inventory-movement-filters{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) 34px;gap:5px;margin:0 0 8px;align-items:center;direction:rtl}
+.inventory-movement-filters select{width:100%;min-width:0;height:38px;border:1px solid #dce7e2;border-radius:10px;background:var(--card,#fff);color:inherit;padding:6px 5px;font:inherit;font-size:10px}
+.inventory-movement-filters .inventory-filter-reset{width:34px;height:38px;min-width:34px;margin:0;padding:0;border-radius:10px;font-size:19px;flex:none}
+.inventory-custom-date-range{display:flex;direction:rtl;gap:8px;margin:0 0 12px}
+.inventory-custom-date-range label{display:flex;flex:1;min-width:0;align-items:center;gap:6px;font-size:10px;color:var(--text,#34564e);font-weight:700}
+.inventory-custom-date-range input{width:100%;min-width:0;border:1px solid #dce7e2;border-radius:10px;background:var(--card,#fff);color:inherit;padding:8px 5px;font:inherit;font-size:10px}
+@media(max-width:380px){.inventory-movement-filters{grid-template-columns:minmax(0,1.15fr) minmax(0,.9fr) minmax(0,.9fr) 30px;gap:4px}.inventory-movement-filters select{font-size:9px;padding:5px 3px}.inventory-movement-filters .inventory-filter-reset{width:30px;min-width:30px}}
 @media(max-width:380px){.inventory-action-row{gap:5px}.inventory-action-row .inventory-move-btn{flex-basis:23%;font-size:10px}.inventory-action-row .inventory-search input{font-size:10px}}
 </style></head>
 <body>
@@ -1386,10 +1389,16 @@ function selectWarithTheme(theme){applyWarithTheme(theme,true)}function openThem
 <div class="inventory-record-panel" id="inventoryRecordMovements" role="tabpanel" aria-labelledby="inventoryTabMovements" style="display:none">
 <div class="section"><b>سجل حركة الأجهزة والمواد</b></div>
 <div class="inventory-movement-filters">
-<label>التاريخ<input id="inventoryMovementDateFilter" type="date" onchange="renderInventory()"/></label>
-<label>الحركة<select id="inventoryMovementTypeFilter" onchange="renderInventory()"><option value="">كل الحركات</option><option value="وارد">وارد (إدخال)</option><option value="صادر">صادر (إخراج)</option></select></label>
-<label>التصنيف<select id="inventoryItemTypeFilter" onchange="renderInventory()"><option value="">كل الأصناف</option><option value="جهاز">أجهزة</option><option value="مواد">مواد</option></select></label>
-<button type="button" class="action" onclick="['inventoryMovementDateFilter','inventoryMovementTypeFilter','inventoryItemTypeFilter'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});renderInventory();">مسح الفلاتر</button>
+<select id="inventoryMovementDateFilter" aria-label="الفترة الزمنية" title="الفترة الزمنية" onchange="toggleInventoryCustomDates();renderInventory()">
+<option value="">كل الفترات</option><option value="this-month">هذا الشهر</option><option value="last-month">الشهر الماضي</option><option value="this-year">هذه السنة</option><option value="last-year">السنة الماضية</option><option value="custom">فترة محددة</option>
+</select>
+<select id="inventoryMovementTypeFilter" aria-label="نوع الحركة" title="نوع الحركة" onchange="renderInventory()"><option value="">كل الحركات</option><option value="وارد">وارد</option><option value="صادر">صادر</option></select>
+<select id="inventoryItemTypeFilter" aria-label="تصنيف الصنف" title="تصنيف الصنف" onchange="renderInventory()"><option value="">كل الأصناف</option><option value="جهاز">أجهزة</option><option value="مواد">مواد</option></select>
+<button type="button" class="action inventory-filter-reset" title="مسح الفلاتر" aria-label="مسح الفلاتر" onclick="['inventoryMovementDateFilter','inventoryMovementTypeFilter','inventoryItemTypeFilter','inventoryMovementFromDate','inventoryMovementToDate'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});toggleInventoryCustomDates();renderInventory();">↺</button>
+</div>
+<div class="inventory-custom-date-range" id="inventoryCustomDateRange" style="display:none">
+<label>من<input id="inventoryMovementFromDate" type="date" onchange="renderInventory()"/></label>
+<label>إلى<input id="inventoryMovementToDate" type="date" onchange="renderInventory()"/></label>
 </div>
 <div class="card" style="padding:0;overflow:hidden">
 <div style="overflow-x:auto">
@@ -5335,6 +5344,11 @@ function switchInventoryRecord(tab){
   });
 }
 
+function toggleInventoryCustomDates(){
+  const period=document.getElementById('inventoryMovementDateFilter')?.value||'';
+  const box=document.getElementById('inventoryCustomDateRange');
+  if(box)box.style.display=period==='custom'?'flex':'none';
+}
 function renderInventory(){
   const q=(document.getElementById('inventoryQ')?.value||'').trim().toLowerCase();
 
@@ -5361,9 +5375,21 @@ function renderInventory(){
     const movementDate=document.getElementById('inventoryMovementDateFilter')?.value||'';
     const movementType=document.getElementById('inventoryMovementTypeFilter')?.value||'';
     const itemType=document.getElementById('inventoryItemTypeFilter')?.value||'';
+    const fromCustom=document.getElementById('inventoryMovementFromDate')?.value||'';
+    const toCustom=document.getElementById('inventoryMovementToDate')?.value||'';
+    const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    let rangeStart='',rangeEnd='';
+    const isoDate=d=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;};
+    if(movementDate==='this-month'){rangeStart=isoDate(new Date(now.getFullYear(),now.getMonth(),1));rangeEnd=isoDate(new Date(now.getFullYear(),now.getMonth()+1,0));}
+    else if(movementDate==='last-month'){rangeStart=isoDate(new Date(now.getFullYear(),now.getMonth()-1,1));rangeEnd=isoDate(new Date(now.getFullYear(),now.getMonth(),0));}
+    else if(movementDate==='this-year'){rangeStart=now.getFullYear()+'-01-01';rangeEnd=now.getFullYear()+'-12-31';}
+    else if(movementDate==='last-year'){rangeStart=(now.getFullYear()-1)+'-01-01';rangeEnd=(now.getFullYear()-1)+'-12-31';}
+    else if(movementDate==='custom'){rangeStart=fromCustom;rangeEnd=toCustom;}
     const latest=sortRecords(inventoryMovements.filter(m=>{
       if(!m||isHiddenRecord(m))return false;
-      if(movementDate&&String(m.date||'')!==movementDate)return false;
+      const recordDate=String(m.date||'').slice(0,10);
+      if(rangeStart&&(!recordDate||recordDate<rangeStart))return false;
+      if(rangeEnd&&(!recordDate||recordDate>rangeEnd))return false;
       if(movementType&&String(m.move||'')!==movementType)return false;
       if(itemType&&String(m.type||'جهاز')!==itemType)return false;
       if(q&&!([m.name,m.beneficiary,m.move,m.type,m.status,m.date].filter(Boolean).join(' ').toLowerCase().includes(q)))return false;
