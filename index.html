@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية السيدة فاطمة عليها السلام الخيرية</title>
-<script>(()=>{try{const v='fatima-v-20261124-donation-register-race-fix-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='fatima-v-20261124-donation-summary-safe-02';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -4938,7 +4938,8 @@ function renderDonations(){
   const ink=visibleDonations.filter(d=>d.type!=='مالي').reduce((n,d)=>n+Number(d.qty||0),0);
   document.getElementById('donorTotal').textContent=donors.length;
   document.getElementById('cashTotal').textContent=cash.toLocaleString('en-US')+' د.ع';
-  document.getElementById('inKindTotal').textContent=ink;
+  const inKindTotalEl=document.getElementById('inKindTotal');
+  if(inKindTotalEl)inKindTotalEl.textContent=ink;
   document.getElementById('donationTotal').textContent=visibleDonations.length;
   const box=document.getElementById('donationList');
   if(!box)return;
