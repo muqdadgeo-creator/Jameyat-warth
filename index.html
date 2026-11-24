@@ -4664,12 +4664,72 @@ function openDonationSearch(type){var id=type==='donor'?'dn-donor-search':'dn-be
 function filterDonationDonorOptions(){var q=(document.getElementById('dn-donor-search')?.value||'').trim().toLowerCase(),s=document.getElementById('dn-donor');if(!s)return;[...s.options].forEach(o=>o.hidden=!!q&&!o.textContent.toLowerCase().includes(q));s.size=Math.min(8,Math.max(1,[...s.options].filter(o=>!o.hidden).length));}
 function filterDonationBeneficiaryOptions(){var q=(document.getElementById('dn-beneficiary-search')?.value||'').trim().toLowerCase(),s=document.getElementById('dn-beneficiary');if(!s)return;[...s.options].forEach(o=>o.hidden=!!q&&!o.textContent.toLowerCase().includes(q));s.size=Math.min(8,Math.max(1,[...s.options].filter(o=>!o.hidden).length));}
 function syncDonationSearch(type){var s=document.getElementById(type==='donor'?'dn-donor':'dn-beneficiary'),i=document.getElementById(type==='donor'?'dn-donor-search':'dn-beneficiary-search');if(s&&i){i.value='';s.size=1;}}
+const WARITH_ZERO_BALANCE_DONOR_MIGRATION='zero_balance_donors_once_v1';
+async function runOneTimeZeroBalanceDonorCleanup(){
+  if(window.warithZeroBalanceDonorCleanupPromise)return window.warithZeroBalanceDonorCleanupPromise;
+  window.warithZeroBalanceDonorCleanupPromise=(async()=>{
+    const sb=window.warithSupabase||await window.warithSupabaseReady;
+    if(!sb||!warithSyncReady)return false;
+    const {data:marker,error:markerError}=await sb.from('client_sync_records')
+      .select('record_key,data,deleted')
+      .eq('entity','system_migrations')
+      .eq('record_key',WARITH_ZERO_BALANCE_DONOR_MIGRATION)
+      .maybeSingle();
+    if(markerError)throw markerError;
+    if(marker&&!marker.deleted&&marker.data?.completed===true)return false;
+
+    const cats=['خاص','عام','صناديق','خمس السادة خمس','سهم الإمام','أخرى'];
+    const zeroBalanceDonors=donors.filter(d=>{
+      if(!d||d.hidden)return false;
+      const totals=donorAllocationTotals(d.id);
+      const balance=cats.reduce((sum,cat)=>sum+(Number(totals[cat])||0),0);
+      return balance===0;
+    });
+    const now=new Date().toISOString();
+    const cfg=warithSyncCfg('donors');
+    const rows=zeroBalanceDonors.map(d=>{
+      d.hidden=true;
+      d.hiddenAt=now;
+      d.hiddenBy='تنظيف لمرة واحدة';
+      d.hiddenReason='رصيد التبرعات المالي صفر وقت تنفيذ التنظيف الأولي';
+      d.updatedAt=now;
+      return {entity:'donors',record_key:cfg.id(d),data:{...d},updated_at:now,deleted:false};
+    });
+    if(rows.length){
+      const {data:saved,error}=await sb.from('client_sync_records')
+        .upsert(rows,{onConflict:'entity,record_key'})
+        .select('record_key,data,deleted');
+      if(error)throw error;
+      const savedKeys=new Set((saved||[]).filter(x=>x.data?.hidden&&!x.deleted).map(x=>String(x.record_key)));
+      if(rows.some(x=>!savedKeys.has(String(x.record_key))))throw new Error('لم يتم تأكيد حجب جميع المتبرعين ذوي الرصيد الصفري');
+      if(warithSyncShadow.donors)rows.forEach(x=>warithSyncShadow.donors.set(String(x.record_key),x.data));
+      localStorage.setItem('warith_donors',JSON.stringify(donors));
+      warithSyncPending.delete('donors');
+    }
+    const migrationRow={entity:'system_migrations',record_key:WARITH_ZERO_BALANCE_DONOR_MIGRATION,data:{completed:true,completedAt:now,hiddenDonors:rows.length},updated_at:now,deleted:false};
+    const {data:done,error:doneError}=await sb.from('client_sync_records')
+      .upsert(migrationRow,{onConflict:'entity,record_key'})
+      .select('record_key,data,deleted').single();
+    if(doneError)throw doneError;
+    if(!done?.data?.completed)throw new Error('لم يتم تثبيت علامة اكتمال التنظيف');
+    return rows.length>0;
+  })().catch(error=>{
+    console.error('One-time zero-balance donor cleanup failed:',error);
+    alert('تعذر إكمال تنظيف المتبرعين ذوي الرصيد الصفري. لم يتم اعتماد العملية كمنجزة، وسيعاد فحصها لاحقاً.\\n'+(error?.message||error));
+    return false;
+  }).finally(()=>{window.warithZeroBalanceDonorCleanupPromise=null;});
+  return window.warithZeroBalanceDonorCleanupPromise;
+}
 function populateDonors(selectedId=''){
   const sel=document.getElementById('dn-donor');if(!sel)return;
   const currentId=selectedId==null?'':String(selectedId);
-  const sorted=[...donors].sort((a,b)=>naturalAlphaCompare(String(a.name||''),String(b.name||''))||Number(a.id||0)-Number(b.id||0));
+  const sorted=[...donors].filter(d=>!isHiddenRecord(d)).sort((a,b)=>naturalAlphaCompare(String(a.name||''),String(b.name||''))||Number(a.id||0)-Number(b.id||0));
   sel.innerHTML='<option value="">اختر المتبرع</option>'+sorted.map(d=>`<option value="${escapeHtml(String(d.id))}">${escapeHtml(d.name||'غير محدد')}</option>`).join('');
   sel.value=currentId;syncDonationSearch('donor');
+  if(warithSyncReady&&!localStorage.getItem('warith_zero_balance_donors_cleanup_ui_started')){
+    localStorage.setItem('warith_zero_balance_donors_cleanup_ui_started','1');
+    runOneTimeZeroBalanceDonorCleanup().then(changed=>{if(changed)populateDonors(currentId);});
+  }
 }
 function populateDonationBeneficiaries(selectedCode='', legacyName=''){
   const sel=document.getElementById('dn-beneficiary');
