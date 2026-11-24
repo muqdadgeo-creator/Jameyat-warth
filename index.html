@@ -4812,7 +4812,7 @@ function editDonation(i){
   showScreen('add-donation');
 }
 
-function deleteDonation(i){if(!hasAction('delete','donations')){alert('ليس لديك صلاحية حذف التبرعات.');return}if(!donations[i])return;if(!confirm('حذف هذا التبرع؟'))return;donations.splice(i,1);localStorage.setItem('warith_donations',JSON.stringify(donations));renderDonations();}
+async function deleteDonation(i){if(!hasAction('delete','donations')){alert('ليس لديك صلاحية حذف التبرعات.');return}const item=donations[i];if(!item)return;if(!confirm('حذف هذا التبرع نهائياً من جميع الأجهزة؟'))return;try{await warithSyncDeleteRecord('donations',item.id);donations.splice(i,1);localStorage.setItem('warith_donations',JSON.stringify(donations));renderDonations();alert('تم حذف التبرع من السحابة وجميع الأجهزة ✓')}catch(e){console.error('حذف التبرع سحابياً فشل:',e);alert('لم يتم حذف التبرع؛ تعذر تأكيد الحذف في السحابة.\n'+(e?.message||e));}}
 function normalizeDonationSearchText(value){
   return String(value==null?'':value)
     .toLowerCase()
@@ -5868,18 +5868,16 @@ async function unhideRecord(collectionName,index){
   refreshAllViews();
 }
 
-function deleteHiddenRecord(collectionName,index){
+async function deleteHiddenRecord(collectionName,index){
   const collections={families,donors,donations,appeals,helps,programs,expenses,inventoryMovements};
   const arr=collections[collectionName]; if(!Array.isArray(arr)||!arr[index])return;
   const x=arr[index];
-  if(!confirm('⚠️ هذا حذف نهائي ولا يمكن التراجع عنه. هل تريد حذف السجل نهائياً؟'))return;
+  if(!confirm('⚠️ هذا حذف نهائي ولا يمكن التراجع عنه. هل تريد حذف السجل نهائياً من جميع الأجهزة؟'))return;
   const keys={families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'};
-  const key=keys[collectionName];
-  if(key)localStorage.setItem(key,JSON.stringify(arr.filter((_,i)=>i!==index)));
-  arr.splice(index,1);
-  if(collectionName==='families')localStorage.setItem('warith_families',JSON.stringify(arr));
-  refreshAllViews();
-  alert('تم الحذف النهائي ✓');
+  const entities={families:'families',donors:'donors',donations:'donations',appeals:'appeals',helps:'help',programs:'programs',expenses:'expenses',inventoryMovements:'inventory'};
+  const key=keys[collectionName],entity=entities[collectionName];
+  try{if(entity)await warithSyncDeleteRecord(entity,x.id??x.c);arr.splice(index,1);if(key)localStorage.setItem(key,JSON.stringify(arr));if(collectionName==='families')localStorage.setItem('warith_families',JSON.stringify(arr));refreshAllViews();alert('تم الحذف النهائي من السحابة وجميع الأجهزة ✓')}
+  catch(e){console.error('الحذف النهائي سحابياً فشل:',e);alert('لم يتم حذف السجل؛ تعذر تأكيد الحذف في السحابة.\n'+(e?.message||e))}
 }
 function refreshAllViews(){renderFamilies();renderDonors();renderDonations();renderAppeals();renderInventory();renderActivities();renderActiveReport();renderHomeDashboard();}
 
@@ -6848,6 +6846,21 @@ async function warithSyncPushChanges(entity,force=false){
     const failedKeys=rows.filter(row=>!succeeded.has(row)).map(row=>row.record_key);
     throw new Error('تعذر رفع '+failedKeys.length+' سجل/سجلات من '+entity+'؛ ستتم إعادة المحاولة. المفاتيح: '+failedKeys.slice(0,10).join(','));
   }
+  return true;
+}
+async function warithSyncDeleteRecord(entity,key){
+  const cleanKey=String(key||'');
+  if(!entity||!cleanKey||cleanKey==='undefined'||cleanKey==='null')throw new Error('مفتاح الحذف غير صالح');
+  const sb=window.warithSupabase||await window.warithSupabaseReady;
+  if(!sb)throw new Error('خدمة السحابة غير متاحة؛ لم يتم حذف السجل');
+  const session=await sb.auth.getSession();
+  if(!session?.data?.session?.user)throw new Error('يجب تسجيل الدخول قبل الحذف النهائي');
+  const ts=new Date().toISOString();
+  const {error}=await sb.from('client_sync_records').upsert({entity,record_key:cleanKey,data:null,updated_at:ts,deleted:true},{onConflict:'entity,record_key'});
+  if(error)throw error;
+  if(warithSyncShadow[entity])warithSyncShadow[entity].set(cleanKey,{__warithDeleted:true,updatedAt:ts});
+  if(warithSyncDeleted[entity])warithSyncDeleted[entity].delete(cleanKey);
+  warithSyncPending.delete(entity);
   return true;
 }
 function warithSyncQueueAll(){Object.values(WARITH_SYNC_CONFIG).forEach(cfg=>warithSyncPending.add(cfg.entity));warithSyncFlushSoon()}
