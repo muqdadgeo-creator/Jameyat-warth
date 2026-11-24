@@ -4726,8 +4726,7 @@ function populateDonors(selectedId=''){
   const sorted=[...donors].filter(d=>!isHiddenRecord(d)).sort((a,b)=>naturalAlphaCompare(String(a.name||''),String(b.name||''))||Number(a.id||0)-Number(b.id||0));
   sel.innerHTML='<option value="">اختر المتبرع</option>'+sorted.map(d=>`<option value="${escapeHtml(String(d.id))}">${escapeHtml(d.name||'غير محدد')}</option>`).join('');
   sel.value=currentId;syncDonationSearch('donor');
-  if(warithSyncReady&&!localStorage.getItem('warith_zero_balance_donors_cleanup_ui_started')){
-    localStorage.setItem('warith_zero_balance_donors_cleanup_ui_started','1');
+  if(warithSyncReady){
     runOneTimeZeroBalanceDonorCleanup().then(changed=>{if(changed)populateDonors(currentId);});
   }
 }
