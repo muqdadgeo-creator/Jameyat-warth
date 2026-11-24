@@ -4781,6 +4781,7 @@ async function saveDonation(){
   alert(editingDonationIndex!==null?'تم تعديل التبرع وتوحيد الاسم ✓':'تم حفظ التبرع بنجاح ✓');
   editingDonationIndex=null;
   showScreen('donations');
+  await switchDonationTab('records');
 }
 
 function editDonation(i){
