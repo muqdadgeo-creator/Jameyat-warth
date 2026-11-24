@@ -4269,7 +4269,7 @@ function toggleDonationSortDirection(){
   if(btn)btn.textContent=donationSortDirection==='desc'?'تنازلي ↓':'تصاعدي ↑';
   renderDonations();
 }
-async function ensureDonationCloudVisible(){try{const sb=window.warithSupabase||await window.warithSupabaseReady;if(!sb)return;window.warithSupabase=sb;const {data:sessionData}=await sb.auth.getSession();if(!sessionData?.session?.user)return;for(const entity of ['donors','donations']){const rows=[];for(let from=0;;from+=1000){const {data,error}=await sb.from('client_sync_records').select('record_key,data,updated_at,deleted').eq('entity',entity).eq('deleted',false).range(from,from+999);if(error)throw error;rows.push(...(data||[]));if(!data||data.length<1000)break;}const arr=rows.filter(r=>r?.data).map(r=>r.data);if(entity==='donors'){donors=arr;warithSyncLocalSet(warithSyncCfg('donors'),donors);warithSyncShadow.donors=new Map(arr.map(x=>[String(x.id),x]));}else{donations=arr;warithSyncLocalSet(warithSyncCfg('donations'),donations);warithSyncShadow.donations=new Map(arr.map(x=>[String(x.id),x]));}}}catch(e){console.warn('Donation records cloud refresh failed:',e)}}
+async function ensureDonationCloudVisible(){try{const sb=window.warithSupabase||await window.warithSupabaseReady;if(!sb)return;window.warithSupabase=sb;const {data:sessionData}=await sb.auth.getSession();if(!sessionData?.session?.user)return;for(const entity of ['donors','donations']){const rows=[];for(let from=0;;from+=1000){const {data,error}=await sb.from('client_sync_records').select('record_key,data,updated_at,deleted').eq('entity',entity).range(from,from+999);if(error)throw error;rows.push(...(data||[]));if(!data||data.length<1000)break;}const remote=new Map(rows.filter(r=>r?.record_key).map(r=>[String(r.record_key),r]));const local=entity==='donors'?donors:donations;const merged=[],seen=new Set();for(const item of Array.isArray(local)?local:[]){const key=String(item?.id??'');if(!key||seen.has(key))continue;seen.add(key);const rr=remote.get(key);if(rr?.deleted)continue;merged.push(rr?.data||item);}for(const [key,rr] of remote){if(seen.has(key)||rr.deleted||!rr.data)continue;merged.push(rr.data);}if(entity==='donors'){donors=merged;warithSyncLocalSet(warithSyncCfg('donors'),donors);warithSyncShadow.donors=new Map([...remote.entries()].filter(([_,rr])=>rr.data||rr.deleted).map(([key,rr])=>[key,rr.deleted?{__warithDeleted:true,updatedAt:rr.updated_at}:rr.data]));}else{donations=merged;warithSyncLocalSet(warithSyncCfg('donations'),donations);warithSyncShadow.donations=new Map([...remote.entries()].filter(([_,rr])=>rr.data||rr.deleted).map(([key,rr])=>[key,rr.deleted?{__warithDeleted:true,updatedAt:rr.updated_at}:rr.data]));}}}catch(e){console.warn('Donation records cloud refresh failed:',e)}}
 let inKindDonationTab='pending';
 let inKindDonationsCache=[];
 function normalizeInKindPhone(phone){
@@ -4769,7 +4769,13 @@ async function saveDonation(){
       deleted:false
     },{onConflict:'entity,record_key'});
     if(error)throw error;
-    if(warithSyncShadow.donations)warithSyncShadow.donations.set(key,cloudItem);
+    // Do not report success until the exact saved row is readable back from the cloud.
+    const {data:verified,error:verifyError}=await sb.from('client_sync_records')
+      .select('record_key,data,deleted').eq('entity','donations').eq('record_key',key).maybeSingle();
+    if(verifyError)throw verifyError;
+    if(!verified||verified.deleted||!verified.data||String(verified.data.id)!==key)
+      throw new Error('لم يتم العثور على سجل التبرع بعد الحفظ السحابي؛ لم يتم تأكيد ظهوره في السجل');
+    if(warithSyncShadow.donations)warithSyncShadow.donations.set(key,verified.data);
     if(warithSyncDeleted.donations)warithSyncDeleted.donations.delete(key);
   }catch(e){
     console.error('حفظ التبرع سحابياً فشل:',e);
