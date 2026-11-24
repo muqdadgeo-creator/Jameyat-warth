@@ -1103,7 +1103,7 @@ function selectWarithTheme(theme){applyWarithTheme(theme,true)}function openThem
 <button class="donation-tab" id="tabInKind" onclick="showScreen('in-kind-donations')">🎁 التبرعات العينية</button>
 </div>
 <div class="actions" style="margin:12px 0">
-<button class="action primary" style="width:100%;padding:13px;font-size:14px" onclick="showScreen('add-donation')">＋ تسجيل تبرع جديد</button>
+<button class="action primary" style="width:100%;padding:13px;font-size:14px" onclick="startNewDonation()">＋ تسجيل تبرع جديد</button>
 </div>
 <div id="donorsTab">
 <div class="actions">
@@ -4749,6 +4749,17 @@ function resetDonationForm(){
   document.getElementById('dn-received').value='لا';
   renderTempAttachments('donationAttachmentsList',donationAttachments,'removeDonationAttachment');
 }
+function createNewDonationId(){
+  const used=new Set((Array.isArray(donations)?donations:[]).map(d=>String(d?.id??'')));
+  let id=Date.now();
+  while(used.has(String(id)))id++;
+  return id;
+}
+function startNewDonation(){
+  // Always clear a previous edit selection before opening a genuinely new record.
+  resetDonationForm();
+  showScreen('add-donation');
+}
 function addDonationForAppeal(appealId){
   showScreen('add-donation');
   setDonationType('مالي');
@@ -4763,6 +4774,7 @@ function addHelpForAppeal(appealId){
   populateHelpAppeals(appealId);
 }
 async function saveDonation(){
+  if(window.warithDonationSaving)return;
   const _edit=editingDonationIndex!==null;
   if(!hasAction(_edit?'edit':'add','donations')){alert('ليس لديك صلاحية هذه العملية.');return}
   const donorId=document.getElementById('dn-donor').value;
@@ -4771,12 +4783,14 @@ async function saveDonation(){
   if(!donorId){alert('اختر المتبرع أولاً');return}
   if(type==='مالي'&&!document.getElementById('dn-amount').value){alert('أدخل مبلغ التبرع');return}
   if(type!=='مالي'&&!document.getElementById('dn-item').value.trim()){alert('أدخل اسم الجهاز أو المادة');return}
+  window.warithDonationSaving=true;
+  try{
   const donor=donors.find(d=>String(d.id)===String(donorId));
   const beneficiaryCode=document.getElementById('dn-beneficiary')?.value||'';
   const beneficiary=beneficiaryCode?families.find(f=>String(f.c)===String(beneficiaryCode)):null;
   const appealId=type==='مالي'?(document.getElementById('dn-appeal')?.value||''):'';
   const item={
-    id:editingDonationIndex!==null?donations[editingDonationIndex].id:Date.now(),
+    id:_edit?donations[editingDonationIndex].id:createNewDonationId(),
     donorId:Number(donorId),donorName:donor?.name||'',
     appealId:appealId?Number(appealId):null,type,date,
     amount:type==='مالي'?Number(document.getElementById('dn-amount').value):0,
@@ -4842,6 +4856,9 @@ async function saveDonation(){
   window.warithSkipDonationDefaultTabOnce=true;
   showScreen('donations');
   await switchDonationTab('records');
+  }finally{
+    window.warithDonationSaving=false;
+  }
 }
 
 function editDonation(i){
