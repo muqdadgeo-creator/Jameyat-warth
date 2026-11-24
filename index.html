@@ -9,7 +9,7 @@
 <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/>
 <meta content="#0b5b4f" name="theme-color"/>
 <title>جمعية السيدة فاطمة عليها السلام الخيرية</title>
-<script>(()=>{try{const v='fatima-v-20261123-inventory-date-period-filters-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
+<script>(()=>{try{const v='fatima-v-20261124-donation-register-race-fix-01';if(localStorage.getItem('warith_app_cache_version')!==v){localStorage.setItem('warith_app_cache_version',v);if('caches'in window)caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));}}catch(e){}})();</script>
 <style>
 *{box-sizing:border-box}html,body{margin:0;background:#f3f6f5;color:#193a33;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}.app{max-width:520px;min-height:100vh;margin:auto;background:#f3f6f5}
@@ -2954,7 +2954,7 @@ function openCentralFile(i){const f=window._visibleFiles?.[i];openFileViewer(f);
 function deleteCentralFile(i){if(!hasAction('delete','files-center')){alert('ليس لديك صلاحية حذف المرفقات.');return}const f=window._visibleFiles?.[i];if(!f)return;if(!confirm('حذف هذا المرفق نهائياً من السجل الأصلي؟'))return;if(f.linkedAppealIndex!==undefined&&f.linkedAppealIndex!==null){const appeal=appeals[f.linkedAppealIndex];if(!appeal?.attachments?.[f.index])return;appeal.attachments.splice(f.index,1);localStorage.setItem('warith_appeals',JSON.stringify(appeals));}else{const arr=window[f.source];if(!Array.isArray(arr)||!arr[f.recordIndex]){const rec=arr?.find(x=>String(x.id)===String(f.recordKey)||String(x.c)===String(f.recordKey));if(!rec?.attachments?.[f.index])return;rec.attachments.splice(f.index,1);}else{arr[f.recordIndex].attachments.splice(f.index,1);}localStorage.setItem({families:'warith_families_v2',donors:'warith_donors',donations:'warith_donations',appeals:'warith_appeals',helps:'warith_help',programs:'warith_programs',expenses:'warith_expenses',inventoryMovements:'warith_inventory'}[f.source],JSON.stringify(arr));if(f.source==='families')localStorage.setItem('warith_families',JSON.stringify(arr));}renderFilesCenter();}
 
 function goBackFromInKindDonations(){const u=currentUser();showScreen(u&&u.active!==false&&normalizeRole(u.role)==='مسؤول المخزن'&&!hasPermission('donations')?'inventory':'donations')}
-function showScreen(id){if(!['home','settings-hub','theme-settings'].includes(id)&&!canAccessScreen(id)){alert('ليس لديك صلاحية الوصول إلى هذا القسم.');return}document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-followup')renderFamilyFollowup();if(id==='add-family'&&editingFamilyCode===null){const fc=document.getElementById('f-code');if(fc){fc.value=String(nextFamilyCode());fc.readOnly=true;}}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){switchDonationTab('donors');}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor'&&editingDonorIndex===null)resetDonorForm();if(id==='add-donation'){if(editingDonationIndex===null)resetDonationForm();const refreshDonationLists=()=>{const form=document.getElementById('add-donation');if(!form?.classList.contains('active'))return;const donorId=document.getElementById('dn-donor')?.value||'';const beneficiaryCode=document.getElementById('dn-beneficiary')?.value||'';const appealId=document.getElementById('dn-appeal')?.value||'';const beneficiaryName=beneficiaryCode?(families.find(f=>String(f.c)===String(beneficiaryCode))?.n||''):'';populateDonors(donorId);populateDonationBeneficiaries(beneficiaryCode,beneficiaryName);populateAppealDonations(appealId);};if(warithSyncReady){refreshDonationLists();}else{initWarithCloudSync().then(refreshDonationLists).catch(e=>console.warn('تحديث قوائم نافذة تسجيل التبرع بعد المزامنة فشل:',e));}}if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
+function showScreen(id){if(!['home','settings-hub','theme-settings'].includes(id)&&!canAccessScreen(id)){alert('ليس لديك صلاحية الوصول إلى هذا القسم.');return}document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const target=document.getElementById(id);if(!target)return;target.classList.add('active');window.scrollTo(0,0);if(id==='home')renderHomeDashboard();if(id==='files-center')renderFilesCenter();if(id==='families'){populateFamilyFilterOptions();renderFamilies();}if(id==='family-followup')renderFamilyFollowup();if(id==='add-family'&&editingFamilyCode===null){const fc=document.getElementById('f-code');if(fc){fc.value=String(nextFamilyCode());fc.readOnly=true;}}if(id==='family-detail'){renderFamilyDetail();showFamilyTab('data');}if(id==='family-members')renderMembers();if(id==='add-member'&&editingMemberIndex===null)resetMemberForm();if(id==='donations'){if(window.warithSkipDonationDefaultTabOnce){window.warithSkipDonationDefaultTabOnce=false;}else{switchDonationTab('donors');}}if(id==='inventory'){renderInventory();}if(id==='activities'){switchActivityTab('help');renderActivities();}if(id==='add-activity'&&editingActivityIndex===null)resetActivityForm();if(id==='donors'){switchDonationTab('donors');}if(id==='add-donor'&&editingDonorIndex===null)resetDonorForm();if(id==='add-donation'){if(editingDonationIndex===null)resetDonationForm();const refreshDonationLists=()=>{const form=document.getElementById('add-donation');if(!form?.classList.contains('active'))return;const donorId=document.getElementById('dn-donor')?.value||'';const beneficiaryCode=document.getElementById('dn-beneficiary')?.value||'';const appealId=document.getElementById('dn-appeal')?.value||'';const beneficiaryName=beneficiaryCode?(families.find(f=>String(f.c)===String(beneficiaryCode))?.n||''):'';populateDonors(donorId);populateDonationBeneficiaries(beneficiaryCode,beneficiaryName);populateAppealDonations(appealId);};if(warithSyncReady){refreshDonationLists();}else{initWarithCloudSync().then(refreshDonationLists).catch(e=>console.warn('تحديث قوائم نافذة تسجيل التبرع بعد المزامنة فشل:',e));}}if(id==='appeals')renderAppeals();if(id==='appeal-detail'&&selectedAppealIndex!==null)openAppeal(selectedAppealIndex);if(id==='add-appeal'&&editingAppealIndex===null)resetAppealForm();if(id==='reports'){setDefaultReportDates();renderActiveReport();}}
 
 /* ===== استعادة الصفحة والمسودات غير المحفوظة على الجهاز ===== */
 (function initWarithSessionDrafts(){
@@ -4269,7 +4269,56 @@ function toggleDonationSortDirection(){
   if(btn)btn.textContent=donationSortDirection==='desc'?'تنازلي ↓':'تصاعدي ↑';
   renderDonations();
 }
-async function ensureDonationCloudVisible(){try{const sb=window.warithSupabase||await window.warithSupabaseReady;if(!sb)return;window.warithSupabase=sb;const {data:sessionData}=await sb.auth.getSession();if(!sessionData?.session?.user)return;for(const entity of ['donors','donations']){const rows=[];for(let from=0;;from+=1000){const {data,error}=await sb.from('client_sync_records').select('record_key,data,updated_at,deleted').eq('entity',entity).range(from,from+999);if(error)throw error;rows.push(...(data||[]));if(!data||data.length<1000)break;}const remote=new Map(rows.filter(r=>r?.record_key).map(r=>[String(r.record_key),r]));const local=entity==='donors'?donors:donations;const merged=[],seen=new Set();for(const item of Array.isArray(local)?local:[]){const key=String(item?.id??'');if(!key||seen.has(key))continue;seen.add(key);const rr=remote.get(key);if(rr?.deleted)continue;merged.push(rr?.data||item);}for(const [key,rr] of remote){if(seen.has(key)||rr.deleted||!rr.data)continue;merged.push(rr.data);}if(entity==='donors'){donors=merged;warithSyncLocalSet(warithSyncCfg('donors'),donors);warithSyncShadow.donors=new Map([...remote.entries()].filter(([_,rr])=>rr.data||rr.deleted).map(([key,rr])=>[key,rr.deleted?{__warithDeleted:true,updatedAt:rr.updated_at}:rr.data]));}else{donations=merged;warithSyncLocalSet(warithSyncCfg('donations'),donations);warithSyncShadow.donations=new Map([...remote.entries()].filter(([_,rr])=>rr.data||rr.deleted).map(([key,rr])=>[key,rr.deleted?{__warithDeleted:true,updatedAt:rr.updated_at}:rr.data]));}}}catch(e){console.warn('Donation records cloud refresh failed:',e)}}
+let warithDonationCloudRefreshPromise=null;
+async function ensureDonationCloudVisible(){
+  if(warithDonationCloudRefreshPromise)return warithDonationCloudRefreshPromise;
+  warithDonationCloudRefreshPromise=(async()=>{
+    try{
+      const sb=window.warithSupabase||await window.warithSupabaseReady;
+      if(!sb)return false;
+      window.warithSupabase=sb;
+      const {data:sessionData,error:sessionError}=await sb.auth.getSession();
+      if(sessionError)throw sessionError;
+      if(!sessionData?.session?.user)return false;
+      for(const entity of ['donors','donations']){
+        // Use the same deterministic, ordered pagination as the main sync engine.
+        const rows=await warithSyncFetchEntityRows(entity);
+        const remote=new Map(rows.filter(r=>r?.record_key).map(r=>[String(r.record_key),r]));
+        const local=entity==='donors'?donors:donations;
+        const merged=[],seen=new Set();
+        for(const item of Array.isArray(local)?local:[]){
+          const key=String(item?.id??'');
+          if(!key||seen.has(key))continue;
+          seen.add(key);
+          const rr=remote.get(key);
+          const localTs=Date.parse(item.updatedAt||item.updated_at||0)||0;
+          const remoteTs=Date.parse(rr?.data?.updatedAt||rr?.data?.updated_at||rr?.updated_at||0)||0;
+          if(rr?.deleted&&(!localTs||remoteTs>=localTs))continue;
+          if(rr?.data&&remoteTs>localTs)merged.push(warithSyncNormalizeRemoteData(entity,rr.data));
+          else merged.push(item);
+        }
+        for(const [key,rr] of remote){
+          if(seen.has(key)||rr.deleted||!rr.data)continue;
+          merged.push(warithSyncNormalizeRemoteData(entity,rr.data));
+        }
+        if(entity==='donors'){
+          donors=merged;
+          warithSyncLocalSet(warithSyncCfg('donors'),donors);
+          warithSyncShadow.donors=new Map([...remote.entries()].filter(([_,rr])=>rr.data||rr.deleted).map(([key,rr])=>[key,rr.deleted?{__warithDeleted:true,updatedAt:rr.updated_at}:rr.data]));
+        }else{
+          donations=merged;
+          warithSyncLocalSet(warithSyncCfg('donations'),donations);
+          warithSyncShadow.donations=new Map([...remote.entries()].filter(([_,rr])=>rr.data||rr.deleted).map(([key,rr])=>[key,rr.deleted?{__warithDeleted:true,updatedAt:rr.updated_at}:rr.data]));
+        }
+      }
+      return true;
+    }catch(e){
+      console.warn('Donation records cloud refresh failed:',e);
+      return false;
+    }
+  })().finally(()=>{warithDonationCloudRefreshPromise=null;});
+  return warithDonationCloudRefreshPromise;
+}
 let inKindDonationTab='pending';
 let inKindDonationsCache=[];
 function normalizeInKindPhone(phone){
@@ -4777,6 +4826,9 @@ async function saveDonation(){
       throw new Error('لم يتم العثور على سجل التبرع بعد الحفظ السحابي؛ لم يتم تأكيد ظهوره في السجل');
     if(warithSyncShadow.donations)warithSyncShadow.donations.set(key,verified.data);
     if(warithSyncDeleted.donations)warithSyncDeleted.donations.delete(key);
+    // The direct, verified upsert already persisted this exact snapshot; cancel its queued duplicate push.
+    if(warithSyncPending)warithSyncPending.delete('donations');
+    if(warithSyncTimers?.donations){clearTimeout(warithSyncTimers.donations);delete warithSyncTimers.donations;}
   }catch(e){
     console.error('حفظ التبرع سحابياً فشل:',e);
     alert('تم حفظ التعديل على هذا الجهاز، لكن تعذر تأكيد حفظه في السحابة.\n'+(e?.message||e)+'\nلا تغلق الصفحة قبل التأكد من المزامنة.');
@@ -4786,6 +4838,8 @@ async function saveDonation(){
   renderDonors();
   alert(editingDonationIndex!==null?'تم تعديل التبرع وتوحيد الاسم ✓':'تم حفظ التبرع بنجاح ✓');
   editingDonationIndex=null;
+  // Avoid launching the default donors refresh in parallel with the records refresh.
+  window.warithSkipDonationDefaultTabOnce=true;
   showScreen('donations');
   await switchDonationTab('records');
 }
